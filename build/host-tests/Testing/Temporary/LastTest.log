@@ -1,46 +1,32 @@
-Start testing: Jul 27 21:28 Mauritius Standard Time
+Start testing: Jul 27 21:53 Mauritius Standard Time
 ----------------------------------------------------------
-7/7 Testing: local_core
-7/7 Test: local_core
-Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_local_core.exe"
-Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"local_core" start time: Jul 27 21:28 Mauritius Standard Time
+8/8 Testing: assets
+8/8 Test: assets
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_assets.exe"
+Directory: C:/Users/highj/Documents/Projects/EvoTime/tests/host/../..
+"assets" start time: Jul 27 21:53 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
-ok   local State <= 3KB
-ok   local block == 3KB
-ok   notif store <= 4KB
-  local State=60 block=3072 budget=3072
-  notif Store=2564 budget=4096
-ok   synced
-ok   unix at sync
-ok   unix +1000
-ok   drift updated
-ok   persist reload synced
-ok   persist drift kept
-ok   upsert
-ok   count 1
-ok   title
-ok   when
-ok   stale
-ok   remove
-ok   empty
-ok   add alarm
-ok   alarm fires
-ok   alarm once/day
-ok   timer
-ok   timer not yet
-ok   timer fires
-ok   face list
-ok   alert screen
-ok   haptic on alert
-all local-core tests passed
+ok   open core.slap
+ok   read pack
+ok   parse ok
+ok   has font0
+  glyph cache hit rate = 100.00%
+ok   hit rate >= 95%
+ok   cache within 6KB
+ok   skip unknown
+ok   skip unknown
+ok   xfer active
+ok   received all
+ok   commit done
+ok   pack replaced
+all asset tests passed
 <end of output>
-Test time =   0.03 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"local_core" end time: Jul 27 21:28 Mauritius Standard Time
-"local_core" time elapsed: 00:00:00
+"assets" end time: Jul 27 21:53 Mauritius Standard Time
+"assets" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Jul 27 21:28 Mauritius Standard Time
+End testing: Jul 27 21:53 Mauritius Standard Time

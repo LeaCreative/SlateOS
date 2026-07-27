@@ -6,6 +6,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import android.content.Context
 import slate.app.apps.ClockApp
 import slate.app.apps.NotificationsApp
 import slate.app.apps.TestApp
@@ -16,6 +17,7 @@ import slate.app.notif.NotifChange
 import slate.app.notif.NotifPrefs
 import slate.app.notif.NotifStore
 import slate.app.notif.toJsonArray
+import slate.app.script.ScriptRuntimeHost
 import slate.compositor.Compositor
 import slate.compositor.FocusReason
 import slate.compositor.StackOp
@@ -23,11 +25,13 @@ import slate.frame.SdpFrame
 import slate.host.HostOutbound
 import slate.host.PriorityClass
 import slate.notif.SystemNotifCodec
+import slate.script.ScriptConsole
 
 /**
  * Binds [Compositor] to the GATT link and notification bridge inside the FGS.
  */
 class CompositorHost(
+    private val context: Context,
     private val gatt: SlateGattClient,
     private val scope: CoroutineScope,
     private val notifPrefs: NotifPrefs,
@@ -46,11 +50,21 @@ class CompositorHost(
     private val clock = ClockApp()
     private val test = TestApp()
     private val notifications = NotificationsApp()
+    private val scripts = ScriptRuntimeHost(context, scope, compositor)
 
     fun start() {
         compositor.register(clock)
         compositor.register(test)
         compositor.register(notifications)
+        scope.launch {
+            try {
+                scripts.ensureTimerRegistered()
+                LinkLog.i("JS timer registered; render IPC≈${scripts.lastRenderIpcMs}ms")
+            } catch (t: Throwable) {
+                ScriptConsole.log("slate.runtime", "error", "JS sandbox: ${t.message}")
+                LinkLog.e("JS sandbox failed", t)
+            }
+        }
         scope.launch {
             gatt.metrics.collect { m ->
                 compositor.linkConnected = m.connected
@@ -75,6 +89,17 @@ class CompositorHost(
         stopTicker()
         notifJob?.cancel()
         notifJob = null
+        scripts.close()
+    }
+
+    suspend fun openTimer() {
+        scripts.ensureTimerRegistered()
+        compositor.requestFocus(
+            "slate.timer",
+            PriorityClass.NORMAL,
+            FocusReason.UserNavigation,
+            StackOp.Push,
+        )
     }
 
     fun setWatchProtocolVersion(version: Int) {

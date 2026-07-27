@@ -127,3 +127,23 @@ add_executable(test_local_core
 target_include_directories(test_local_core PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_local_core PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_local_core local_core)
+
+add_executable(test_assets
+  test_assets.cpp
+  "${SLATE_ROOT}/src/asset_pack.cpp"
+  "${SLATE_ROOT}/src/glyph_cache.cpp"
+  "${SLATE_ROOT}/src/asset_xfer.cpp"
+)
+target_include_directories(test_assets PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_assets PRIVATE -Wall -Wextra -Wpedantic)
+# Run from repo root so shared/generated/core.slap resolves.
+add_test(NAME assets COMMAND test_assets)
+set_tests_properties(assets PROPERTIES
+  WORKING_DIRECTORY "${SLATE_ROOT}")
+if(WIN32 AND DEFINED SLATE_HOST_TEST_PATH_ESC)
+  set_tests_properties(assets PROPERTIES
+    ENVIRONMENT "PATH=${SLATE_HOST_TEST_PATH_ESC}")
+endif()
+if(TARGET slate_host_runtime_dlls)
+  add_dependencies(test_assets slate_host_runtime_dlls)
+endif()

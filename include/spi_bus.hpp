@@ -38,9 +38,20 @@ void release();
 // `data` must remain valid and in RAM for the duration (EasyDMA cannot read flash).
 void transmit(const std::uint8_t* data, std::size_t len);
 
+// Full-duplex transfer for SPI NOR (XT25). TX `tx_len` bytes then clock
+// `rx_len` dummy bytes into `rx` (or TX zeros while receiving).
+// Either pointer may be null if its length is 0. Buffers must be in RAM.
+void transfer(const std::uint8_t* tx, std::size_t tx_len,
+              std::uint8_t* rx, std::size_t rx_len);
+
 // Convenience: assert (low) / deassert (high) a GPIO CS pin.
 void cs_assert(std::uint32_t pin);
 void cs_deassert(std::uint32_t pin);
+
+// Flash CS pin (P0.05) — shared bus with display CS P0.25.
+constexpr std::uint32_t kPinCsFlash = 5u;
+constexpr std::uint32_t kPinCsDisplay = 25u;
+constexpr std::uint32_t kPinMiso = 4u;
 
 // Set DC/RS line (display command vs. data).
 void dc_command();

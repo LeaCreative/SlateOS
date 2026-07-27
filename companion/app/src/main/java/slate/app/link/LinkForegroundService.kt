@@ -24,6 +24,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import slate.app.MainActivity
 import slate.app.host.CompositorHost
+import slate.app.repo.RepoUpdateScheduler
 
 /**
  * Foreground service (`connectedDevice`) that owns the GATT connection and
@@ -37,17 +38,20 @@ class LinkForegroundService : Service() {
 
     private lateinit var client: SlateGattClient
     private var compositorHost: CompositorHost? = null
+    private var repoScheduler: RepoUpdateScheduler? = null
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         client = SharedLink.gatt(applicationContext)
         compositorHost = CompositorHost(
+            applicationContext,
             client,
             scope,
             slate.app.notif.NotifPrefs(applicationContext),
         ).also { it.start() }
         SharedLink.compositorHost = compositorHost
+        repoScheduler = RepoUpdateScheduler(applicationContext, scope).also { it.start() }
         createChannel()
         val notification = buildNotification("Slate link starting…")
         if (Build.VERSION.SDK_INT >= 34) {
@@ -107,6 +111,11 @@ class LinkForegroundService : Service() {
                     compositorHost?.openNotifications()
                 }
             }
+            ACTION_OPEN_TIMER -> {
+                scope.launch {
+                    compositorHost?.openTimer()
+                }
+            }
         }
         return START_STICKY
     }
@@ -114,6 +123,8 @@ class LinkForegroundService : Service() {
     override fun onDestroy() {
         stopRtt()
         stopReconnect()
+        repoScheduler?.stop()
+        repoScheduler = null
         compositorHost?.stop()
         SharedLink.compositorHost = null
         client.close()
@@ -209,6 +220,7 @@ class LinkForegroundService : Service() {
         const val ACTION_PRESENCE_DISAPPEARED = "slate.app.PRESENCE_DISAPPEARED"
         const val ACTION_OPEN_TEST_APP = "slate.app.OPEN_TEST_APP"
         const val ACTION_OPEN_NOTIFICATIONS = "slate.app.OPEN_NOTIFICATIONS"
+        const val ACTION_OPEN_TIMER = "slate.app.OPEN_TIMER"
         const val EXTRA_ADDRESS = "address"
 
         @Volatile
@@ -236,6 +248,14 @@ class LinkForegroundService : Service() {
             context.startService(
                 Intent(context, LinkForegroundService::class.java).apply {
                     action = ACTION_OPEN_NOTIFICATIONS
+                },
+            )
+        }
+
+        fun openTimer(context: Context) {
+            context.startService(
+                Intent(context, LinkForegroundService::class.java).apply {
+                    action = ACTION_OPEN_TIMER
                 },
             )
         }

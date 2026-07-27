@@ -1,0 +1,12 @@
+{
+  "id": "slate.timer",
+  "name": "Timer",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["storage"],
+  "allowedHosts": []
+}

@@ -76,6 +76,13 @@ add_executable(slate_firmware.elf
   src/battery_hw.cpp
   src/local_ui.cpp
   src/local_core.cpp
+  src/xt25.cpp
+  src/lfs_fs.cpp
+  src/asset_pack.cpp
+  src/glyph_cache.cpp
+  src/asset_xfer.cpp
+  third_party/littlefs/lfs.c
+  third_party/littlefs/lfs_util.c
   src/ble_link.cpp
   src/ble_conn.cpp
   src/ble_gatt.cpp
@@ -87,6 +94,8 @@ add_executable(slate_firmware.elf
 target_include_directories(slate_firmware.elf PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/config"
+  "${CMAKE_CURRENT_SOURCE_DIR}/third_party/littlefs"
+  "${CMAKE_CURRENT_SOURCE_DIR}/shared/generated"
 )
 
 target_compile_definitions(slate_firmware.elf PRIVATE
@@ -99,6 +108,7 @@ target_compile_definitions(slate_firmware.elf PRIVATE
   $<$<CONFIG:Release>:SLATE_LOG_LEVEL=2>
   $<$<CONFIG:Debug>:SLATE_BLE_DIAG=1>
   $<$<CONFIG:Release>:SLATE_BLE_DIAG=0>
+  LFS_NO_MALLOC=1
 )
 
 target_compile_options(slate_firmware.elf PRIVATE

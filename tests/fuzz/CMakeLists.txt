@@ -39,3 +39,22 @@ target_compile_options(sdp_parser_fuzz PRIVATE
 target_link_options(sdp_parser_fuzz PRIVATE
   -fsanitize=fuzzer,address,undefined
 )
+
+add_executable(asset_pack_fuzz
+  asset_pack_fuzz.cpp
+  "${SLATE_ROOT}/src/asset_pack.cpp"
+)
+
+target_include_directories(asset_pack_fuzz PRIVATE
+  "${SLATE_ROOT}/include"
+)
+
+target_compile_options(asset_pack_fuzz PRIVATE
+  -Wall -Wextra -Wpedantic
+  -fsanitize=fuzzer,address,undefined
+  -fno-omit-frame-pointer
+)
+
+target_link_options(asset_pack_fuzz PRIVATE
+  -fsanitize=fuzzer,address,undefined
+)

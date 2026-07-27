@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="slate.app.debug"
     android:versionCode="1"
-    android:versionName="0.1.0-m6" >
+    android:versionName="0.1.0-m13" >
 
     <uses-sdk
         android:minSdkVersion="30"
@@ -23,6 +23,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
@@ -56,6 +58,14 @@
             android:name="slate.app.bench.BenchmarkActivity"
             android:exported="false"
             android:label="Slate benchmarks" />
+        <activity
+            android:name="slate.app.script.DevConsoleActivity"
+            android:exported="false"
+            android:label="Script console" />
+        <activity
+            android:name="slate.app.repo.RepoActivity"
+            android:exported="false"
+            android:label="Sub-app repository" />
 
         <service
             android:name="slate.app.link.LinkForegroundService"
@@ -79,10 +89,20 @@
             </intent-filter>
         </service>
 
+        <activity
+            android:name="androidx.compose.ui.tooling.PreviewActivity"
+            android:exported="true" />
+
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="slate.app.debug.androidx-startup"
             android:exported="false" >
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                android:value="androidx.startup" />
+            <meta-data
+                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+                android:value="androidx.startup" />
             <meta-data
                 android:name="androidx.profileinstaller.ProfileInstallerInitializer"
                 android:value="androidx.startup" />

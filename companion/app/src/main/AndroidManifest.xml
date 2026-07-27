@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
@@ -36,6 +38,16 @@
             android:name=".bench.BenchmarkActivity"
             android:exported="false"
             android:label="Slate benchmarks" />
+
+        <activity
+            android:name=".script.DevConsoleActivity"
+            android:exported="false"
+            android:label="Script console" />
+
+        <activity
+            android:name=".repo.RepoActivity"
+            android:exported="false"
+            android:label="Sub-app repository" />
 
         <service
             android:name=".link.LinkForegroundService"

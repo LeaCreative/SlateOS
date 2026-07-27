@@ -16,10 +16,11 @@ constexpr std::uint32_t kMaxElemDepth  = 8u;
 constexpr std::uint32_t kMaxHitElems   = 32u;
 
 // M3 registered ID ranges (until M11 asset packs expand them).
-constexpr std::uint8_t  kMaxFontId     = 0u;   // font 0 = built-in 3×5
+// Runtime packs may raise these; see shared/generated/asset_ids.hpp from pack.py.
+constexpr std::uint8_t  kMaxFontId     = 0u;   // font 0 = built-in / pack
 constexpr std::uint8_t  kMaxAtlasId    = 0u;
 constexpr std::uint8_t  kMaxAssetId    = 0u;
-constexpr std::uint16_t kMaxIconId     = 0u;   // atlas 0 icon 0 only (stub)
+constexpr std::uint16_t kMaxIconId     = 2u;   // category atlas icons 0..2
 constexpr std::uint16_t kMaxImageId    = 0u;
 
 // ── Opcodes (§4.3) ───────────────────────────────────────────────────────────
@@ -203,7 +204,7 @@ constexpr std::uint8_t GOODBYE        = 0x0Bu;  // either
 
 constexpr std::uint16_t kProtocolVersion = 1u;
 constexpr std::uint8_t  kFwMajor = 0u;
-constexpr std::uint8_t  kFwMinor = 10u;  // M10 resilient core
+constexpr std::uint8_t  kFwMinor = 11u;  // M11 asset packs
 constexpr std::uint8_t  kFwPatch = 0u;
 constexpr std::uint8_t  kOpcodeBitmapBytes = 32u;
 constexpr std::uint8_t  kPhoneIdBytes = 8u;

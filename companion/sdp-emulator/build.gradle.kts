@@ -18,6 +18,7 @@ kotlin {
 dependencies {
     implementation(project(":sdp-core"))
     implementation(compose.desktop.currentOs)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 }
 
 compose.desktop {

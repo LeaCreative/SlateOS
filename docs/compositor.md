@@ -19,11 +19,12 @@ Rules:
 `KotlinSlateApp` adapts hooks → messages. `ClockApp` / `TestApp` /
 `NotificationsApp` subclass it. See [notifications.md](notifications.md) for M9.
 
-### JS (future)
+### JS (M12)
 
-`companion/examples/js-app-hello.md` shows the same contract as JSON + base64 lists.
-A `JsSlateAppEndpoint` will `evaluateJavaScriptAsync("dispatch(...)")` and decode
-outbound messages — the [Compositor] never knows which runtime answered.
+See [script-runtime.md](script-runtime.md). `JsSlateAppEndpoint` evaluates
+`__slate_dispatch(...)` inside an isolate (Android) or Rhino (desktop/tests) and
+decodes outbound JSON — the [Compositor] never knows which runtime answered.
+Display lists are base64 of the same SDP bytes the Kotlin DSL emits (golden-tested).
 
 ## Focus-stealing rules
 
@@ -49,6 +50,12 @@ entry with **Focus** again. Ambient is the singleton base under higher screens.
 
 Refresh policies (`on-change` / `periodic` / `manual`) only mark dirty; the compositor
 coalesces on `tick()` and still applies quota + credit.
+
+## Repository (M13)
+
+See [repository.md](repository.md) and [official-repo-content-policy.md](official-repo-content-policy.md).
+Sub-apps arrive as signed-index `.slate` packages; the compositor still only sees
+`SlateAppEndpoint` once the script runtime loads an installed package.
 
 ## Tests
 

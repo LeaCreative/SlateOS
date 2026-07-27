@@ -462,6 +462,65 @@ build test_local_core.exe: CXX_EXECUTABLE_LINKER__test_local_core_ CMakeFiles/te
   TARGET_PDB = test_local_core.exe.dbg
   TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
 
+# =============================================================================
+# Object build statements for EXECUTABLE target test_assets
+
+
+#############################################
+# Order-only phony target for test_assets
+
+build cmake_object_order_depends_target_test_assets: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_assets.dir/test_assets.cpp.obj: CXX_COMPILER__test_assets_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_assets.cpp || cmake_object_order_depends_target_test_assets
+  DEP_FILE = CMakeFiles\test_assets.dir\test_assets.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_assets.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_assets.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_assets.dir
+
+build CMakeFiles/test_assets.dir/C_/Users/highj/Documents/Projects/EvoTime/src/asset_pack.cpp.obj: CXX_COMPILER__test_assets_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/asset_pack.cpp || cmake_object_order_depends_target_test_assets
+  DEP_FILE = CMakeFiles\test_assets.dir\C_\Users\highj\Documents\Projects\EvoTime\src\asset_pack.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_assets.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_assets.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_assets.dir
+
+build CMakeFiles/test_assets.dir/C_/Users/highj/Documents/Projects/EvoTime/src/glyph_cache.cpp.obj: CXX_COMPILER__test_assets_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/glyph_cache.cpp || cmake_object_order_depends_target_test_assets
+  DEP_FILE = CMakeFiles\test_assets.dir\C_\Users\highj\Documents\Projects\EvoTime\src\glyph_cache.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_assets.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_assets.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_assets.dir
+
+build CMakeFiles/test_assets.dir/C_/Users/highj/Documents/Projects/EvoTime/src/asset_xfer.cpp.obj: CXX_COMPILER__test_assets_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/asset_xfer.cpp || cmake_object_order_depends_target_test_assets
+  DEP_FILE = CMakeFiles\test_assets.dir\C_\Users\highj\Documents\Projects\EvoTime\src\asset_xfer.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_assets.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_assets.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_assets.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_assets
+
+
+#############################################
+# Link the executable test_assets.exe
+
+build test_assets.exe: CXX_EXECUTABLE_LINKER__test_assets_ CMakeFiles/test_assets.dir/test_assets.cpp.obj CMakeFiles/test_assets.dir/C_/Users/highj/Documents/Projects/EvoTime/src/asset_pack.cpp.obj CMakeFiles/test_assets.dir/C_/Users/highj/Documents/Projects/EvoTime/src/glyph_cache.cpp.obj CMakeFiles/test_assets.dir/C_/Users/highj/Documents/Projects/EvoTime/src/asset_xfer.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_assets.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_assets.exe
+  TARGET_IMPLIB = libtest_assets.dll.a
+  TARGET_PDB = test_assets.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_assets.dir
+
 
 #############################################
 # Utility command for test
@@ -509,6 +568,8 @@ build CMakeFiles/slate_host_runtime_dlls | ${cmake_ninja_workdir}CMakeFiles/slat
 # =============================================================================
 # Target aliases.
 
+build test_assets: phony test_assets.exe
+
 build test_ble_link: phony test_ble_link.exe
 
 build test_hit_test: phony test_hit_test.exe
@@ -531,7 +592,7 @@ build test_session: phony test_session.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_sdp_frame.exe test_ble_link.exe test_sdp_diag.exe test_session.exe test_local_core.exe
+build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_sdp_frame.exe test_ble_link.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_assets.exe
 
 # =============================================================================
 # Built-in targets

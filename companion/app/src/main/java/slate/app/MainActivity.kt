@@ -29,6 +29,8 @@ import slate.app.link.LinkMetrics
 import slate.app.link.SharedLink
 import slate.app.notif.NotifPrefs
 import slate.app.notif.SlateNotificationListener
+import slate.app.repo.RepoActivity
+import slate.app.script.DevConsoleActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -75,10 +77,10 @@ class MainActivity : ComponentActivity() {
             setPadding(pad)
         }
 
-        root.addView(text("Slate companion (M9)", 22f, true))
+        root.addView(text("Slate companion (M12)", 22f, true))
         root.addView(
             text(
-                "CDM · FGS · compositor · notifications bridge · §4.2 framing",
+                "CDM · FGS · compositor · JS sub-apps (interpreted only) · notifications",
                 14f,
                 false,
             ),
@@ -133,6 +135,16 @@ class MainActivity : ComponentActivity() {
         root.addView(button("Open Notifications") {
             LinkForegroundService.openNotifications(this)
             statusView.text = "Requested Notifications focus"
+        })
+        root.addView(button("Open Timer (JS sub-app)") {
+            LinkForegroundService.openTimer(this)
+            statusView.text = "Requested Timer JS focus"
+        })
+        root.addView(button("Script console") {
+            startActivity(Intent(this, DevConsoleActivity::class.java))
+        })
+        root.addView(button("Sub-app repository") {
+            startActivity(Intent(this, RepoActivity::class.java))
         })
         root.addView(button("Interrupt filter: allow this phone's SMS pkgs") {
             val prefs = NotifPrefs(this)

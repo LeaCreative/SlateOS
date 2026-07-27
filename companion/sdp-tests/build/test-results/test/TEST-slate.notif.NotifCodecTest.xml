@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.notif.NotifCodecTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-07-27T17:11:23" hostname="DAN01" time="0.002">
-  <properties/>
-  <testcase name="remove_and_clear()" classname="slate.notif.NotifCodecTest" time="0.0"/>
-  <testcase name="upsert_roundTripLayout()" classname="slate.notif.NotifCodecTest" time="0.0"/>
-  <testcase name="icon_mapper_message_and_monogram()" classname="slate.notif.NotifCodecTest" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

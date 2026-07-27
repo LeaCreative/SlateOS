@@ -1,4 +1,5 @@
 #include "alarm_sched.hpp"
+#include "asset_xfer.hpp"
 #include "backlight.hpp"
 #include "battery_hw.hpp"
 #include "ble_conn.hpp"
@@ -11,6 +12,7 @@
 #include "cst816s.hpp"
 #include "input_event.hpp"
 #include "input_router.hpp"
+#include "lfs_fs.hpp"
 #include "local_core.hpp"
 #include "nrf52832_regs.hpp"
 #include "persist.hpp"
@@ -27,6 +29,7 @@
 #include "slate_uuids.hpp"
 #include "twi.hpp"
 #include "wall_clock.hpp"
+#include "xt25.hpp"
 
 #include <cstdint>
 
@@ -48,7 +51,73 @@ static slate::session::Manager g_session;
 static slate::InputRouter g_input;
 static slate::bma::Driver g_bma;
 static slate::core::Core g_core;
+static slate::asset::Receiver g_asset;
 static bool g_local_owns_screen = true;
+
+static constexpr char kStagingPath[] = "/assets/.staging";
+
+static bool asset_write_staging(std::uint32_t offset, const std::uint8_t* data,
+                                std::size_t len, void*) {
+  return slate::fs::write_file_at(kStagingPath, offset, data, len);
+}
+
+static bool asset_commit_staging(const char* name, std::uint32_t total,
+                                 std::uint32_t hash, void*) {
+  // Read staging, verify FNV of bytes[12..), write to /assets/<name>.
+  if (name == nullptr || total < 20u) {
+    return false;
+  }
+  // Stream hash without holding whole file in RAM.
+  std::uint32_t h = 2166136261u;
+  std::uint8_t buf[256];
+  std::uint32_t off = 12u;
+  while (off < total) {
+    const std::size_t n =
+        (total - off > sizeof(buf)) ? sizeof(buf) : (total - off);
+    if (slate::fs::read_file(kStagingPath, off, buf, n) != n) {
+      return false;
+    }
+    for (std::size_t i = 0u; i < n; ++i) {
+      h ^= buf[i];
+      h *= 16777619u;
+    }
+    off += static_cast<std::uint32_t>(n);
+  }
+  if (h != hash) {
+    return false;
+  }
+  // Copy staging → final path in chunks.
+  char path[48] = "/assets/";
+  std::size_t plen = 8u;
+  for (std::size_t i = 0u; name[i] != '\0' && plen + 1u < sizeof(path); ++i) {
+    path[plen++] = name[i];
+  }
+  path[plen] = '\0';
+  (void)slate::fs::remove_file(path);
+  off = 0u;
+  while (off < total) {
+    const std::size_t n =
+        (total - off > sizeof(buf)) ? sizeof(buf) : (total - off);
+    if (slate::fs::read_file(kStagingPath, off, buf, n) != n) {
+      return false;
+    }
+    if (!slate::fs::write_file_at(path, off, buf, n)) {
+      return false;
+    }
+    off += static_cast<std::uint32_t>(n);
+  }
+  (void)slate::fs::remove_file(kStagingPath);
+  return true;
+}
+
+static bool asset_abort_staging(void*) {
+  return slate::fs::remove_file(kStagingPath);
+}
+
+static bool asset_send(const std::uint8_t* msg, std::size_t len, void* ctx) {
+  return static_cast<ble::Link*>(ctx)->send_message(sdp::frame::kChanAsset, msg,
+                                                    len);
+}
 
 static std::uint32_t now_ms() { return board::micros() / 1000u; }
 
@@ -179,12 +248,17 @@ static void on_app_message(std::uint8_t channel, const std::uint8_t* msg,
     g_session.on_display(msg, len, t);
   } else if (channel == sdp::frame::kChanSystem) {
     g_core.on_system_message(msg, len);
+  } else if (channel == sdp::frame::kChanAsset) {
+    // Yield while remote UI is actively receiving display lists.
+    g_asset.set_yield_busy(g_session.remote_depth() > 0u &&
+                           !g_local_owns_screen);
+    g_asset.on_message(msg, len);
   }
 }
 
 extern "C" int main() {
   rtt::init();
-  rtt::log(rtt::Level::Info, "Slate M10 — resilient local core");
+  rtt::log(rtt::Level::Info, "Slate M11 — assets + LittleFS");
   rtt::log(rtt::Level::Info, slate::uuid::kBaseString);
   timer1_init();
 
@@ -196,6 +270,14 @@ extern "C" int main() {
   cst816s::init();
   button::init();
   input::init();
+
+  slate::xt25::init();
+  if (slate::fs::mount()) {
+    rtt::log(rtt::Level::Info, "LittleFS mounted");
+    slate::fs::sleep_flash();
+  } else {
+    rtt::log(rtt::Level::Warn, "LittleFS mount failed");
+  }
 
   slate::rtc_hw::init();
   slate::persist_nvmc::init();
@@ -230,6 +312,14 @@ extern "C" int main() {
   ckh.haptic = &do_haptic;
   ckh.backlight = &core_backlight;
   g_core.init(ckh, &g_bma);
+
+  slate::asset::Hooks ah;
+  ah.write_staging = &asset_write_staging;
+  ah.commit_staging = &asset_commit_staging;
+  ah.abort_staging = &asset_abort_staging;
+  ah.send = &asset_send;
+  ah.ctx = &g_link;
+  g_asset.init(ah);
 
   {
     const auto b = g_core.budgets();
