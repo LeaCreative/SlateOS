@@ -9,8 +9,8 @@ std::size_t g_rect_count = 0u;
 
 input::SwipeDir gesture_to_swipe(cst816s::Gesture g) {
   switch (g) {
-    case cst816s::Gesture::SlideDown:  return input::SwipeDir::Down;
     case cst816s::Gesture::SlideUp:    return input::SwipeDir::Up;
+    case cst816s::Gesture::SlideDown:  return input::SwipeDir::Down;
     case cst816s::Gesture::SlideLeft:  return input::SwipeDir::Left;
     case cst816s::Gesture::SlideRight: return input::SwipeDir::Right;
     default:                           return input::SwipeDir::Down;
@@ -34,7 +34,6 @@ void set_hit_rects(const HitRect* rects, std::size_t count) {
 Event poll() {
   Event ev{};
 
-  // Button first — cheap strobe, independent of touch sleep.
   {
     const button::Event be = button::poll();
     if (be.valid && be.action != button::Action::None) {
@@ -62,8 +61,8 @@ Event poll() {
       ev.element_id = hit_test(sample.x, sample.y, g_rects, g_rect_count);
       break;
     case cst816s::Gesture::DoubleTap:
-      // Surface as Tap; protocol MULTI_TAP comes later.  Still useful for demos.
-      ev.type = EventType::Tap;
+      ev.type = EventType::MultiTap;
+      ev.multi_count = 2u;
       ev.element_id = hit_test(sample.x, sample.y, g_rects, g_rect_count);
       break;
     case cst816s::Gesture::LongPress:
@@ -79,7 +78,6 @@ Event poll() {
       break;
     case cst816s::Gesture::None:
     default:
-      // Finger present without a classified gesture — ignore for structured events.
       break;
   }
 

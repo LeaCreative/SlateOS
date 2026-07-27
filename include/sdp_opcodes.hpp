@@ -136,4 +136,80 @@ constexpr std::uint8_t ERROR  = 4u;
 constexpr std::uint8_t Max    = 4u;
 }  // namespace haptic_pattern
 
+// ── Input channel ops (§4.4) ─────────────────────────────────────────────────
+
+namespace input_op {
+constexpr std::uint8_t TAP          = 0x01u;
+constexpr std::uint8_t LONG_PRESS   = 0x02u;
+constexpr std::uint8_t SWIPE        = 0x03u;
+constexpr std::uint8_t BUTTON       = 0x04u;
+constexpr std::uint8_t SCROLL_POS   = 0x05u;
+constexpr std::uint8_t BACK         = 0x06u;
+constexpr std::uint8_t SESSION_END  = 0x07u;
+constexpr std::uint8_t MULTI_TAP    = 0x08u;
+constexpr std::uint8_t EDGE_SWIPE   = 0x09u;
+constexpr std::uint8_t TOUCH_DOWN   = 0x0Au;
+constexpr std::uint8_t TOUCH_UP     = 0x0Bu;
+// 0x0C–0x1F reserved
+}  // namespace input_op
+
+namespace swipe_dir {
+constexpr std::uint8_t UP    = 0u;
+constexpr std::uint8_t DOWN  = 1u;
+constexpr std::uint8_t LEFT  = 2u;
+constexpr std::uint8_t RIGHT = 3u;
+constexpr std::uint8_t Max   = 3u;
+}  // namespace swipe_dir
+
+namespace edge {
+constexpr std::uint8_t TOP    = 0u;
+constexpr std::uint8_t BOTTOM = 1u;
+constexpr std::uint8_t LEFT   = 2u;
+constexpr std::uint8_t RIGHT  = 3u;
+constexpr std::uint8_t Max    = 3u;
+}  // namespace edge
+
+namespace button_action {
+constexpr std::uint8_t PRESS        = 0u;
+constexpr std::uint8_t LONG_PRESS   = 1u;
+constexpr std::uint8_t DOUBLE_PRESS = 2u;
+constexpr std::uint8_t Max          = 2u;
+}  // namespace button_action
+
+namespace session_end_reason {
+constexpr std::uint8_t USER_BACK      = 0u;
+constexpr std::uint8_t TIMEOUT        = 1u;
+constexpr std::uint8_t LINK_LOST      = 2u;
+constexpr std::uint8_t PHONE_REQUEST  = 3u;
+constexpr std::uint8_t ERROR         = 4u;
+constexpr std::uint8_t Max            = 4u;
+}  // namespace session_end_reason
+
+// ── CONTROL channel ops (§4.6 — firmware-defined wire) ───────────────────────
+
+namespace control_op {
+constexpr std::uint8_t HELLO_OFFER    = 0x01u;  // watch → phone
+constexpr std::uint8_t HELLO_ACCEPT   = 0x02u;  // phone → watch
+constexpr std::uint8_t HELLO_REJECT   = 0x03u;  // phone → watch
+constexpr std::uint8_t HEARTBEAT      = 0x04u;  // phone → watch (keep-alive)
+constexpr std::uint8_t SET_PROFILE    = 0x05u;  // phone → watch (id only)
+constexpr std::uint8_t PROFILE_ACK    = 0x06u;  // watch → phone
+constexpr std::uint8_t SCREEN_PUSH    = 0x07u;  // phone → watch (next DISPLAY pushes)
+constexpr std::uint8_t SCREEN_POP     = 0x08u;  // phone → watch
+constexpr std::uint8_t SCREEN_REPLACE = 0x09u;  // phone → watch (next DISPLAY replaces)
+constexpr std::uint8_t CREDIT         = 0x0Au;  // watch → phone (free DL bytes)
+constexpr std::uint8_t GOODBYE        = 0x0Bu;  // either
+}  // namespace control_op
+
+constexpr std::uint16_t kProtocolVersion = 1u;
+constexpr std::uint8_t  kFwMajor = 0u;
+constexpr std::uint8_t  kFwMinor = 7u;  // M7
+constexpr std::uint8_t  kFwPatch = 0u;
+constexpr std::uint8_t  kOpcodeBitmapBytes = 32u;
+constexpr std::uint8_t  kPhoneIdBytes = 8u;
+constexpr std::uint8_t  kMaxProfileNameLen = 16u;
+constexpr std::uint32_t kHeartbeatPeriodMs = 2000u;
+constexpr std::uint8_t  kHeartbeatStaleMisses = 2u;
+constexpr std::uint8_t  kHeartbeatDropMisses = 5u;
+
 }  // namespace sdp

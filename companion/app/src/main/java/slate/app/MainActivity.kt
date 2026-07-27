@@ -21,6 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
+import slate.app.bench.BenchmarkActivity
 import slate.app.link.AssociationHelper
 import slate.app.link.LinkForegroundService
 import slate.app.link.LinkLog
@@ -112,6 +113,13 @@ class MainActivity : ComponentActivity() {
             }
         })
         root.addView(button("Ping RTT (DIAG ch7)") { gatt.pingRtt() })
+        root.addView(button("Open TestApp (compositor)") {
+            LinkForegroundService.openTestApp(this)
+            statusView.text = "Requested TestApp focus"
+        })
+        root.addView(button("Benchmarks (gates A / B / D)") {
+            startActivity(Intent(this, BenchmarkActivity::class.java))
+        })
         root.addView(button("Disconnect") {
             startService(
                 Intent(this, LinkForegroundService::class.java).apply {

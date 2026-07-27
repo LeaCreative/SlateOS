@@ -116,6 +116,11 @@ def gen_kotlin_wire(wire: dict) -> str:
     block("ButtonAction", wire["button_action"])
     block("SessionEndReason", wire["session_end_reason"])
     block("Edge", wire["edge"])
+    if "control_op" in wire:
+        block("ControlOp", wire["control_op"])
+    if "protocol_version" in wire:
+        lines.append(f"    const val PROTOCOL_VERSION = {wire['protocol_version']}")
+        lines.append("")
 
     lines.append("}")
     return "\n".join(lines) + "\n"

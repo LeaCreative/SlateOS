@@ -8,6 +8,9 @@ void Link::init(bool diag_allowed) {
   reasm_.set_diag_allowed(diag_allowed);
   drops_ = 0u;
   loopbacks_ = 0u;
+  diag_bench_ = nullptr;
+  app_ = nullptr;
+  app_ctx_ = nullptr;
   for (auto& s : tx_seq_) {
     s = 0u;
   }
@@ -18,6 +21,11 @@ void Link::init(bool diag_allowed) {
 void Link::set_tx(TxNotifyFn fn, void* ctx) {
   tx_ = fn;
   tx_ctx_ = ctx;
+}
+
+void Link::set_app_handler(AppMessageFn fn, void* ctx) {
+  app_ = fn;
+  app_ctx_ = ctx;
 }
 
 void Link::set_status(const StatusSnapshot& s) {
@@ -35,6 +43,14 @@ bool Link::tx_emit(const std::uint8_t* pkt, std::size_t len, void* ctx) {
     return false;
   }
   return self->tx_(pkt, len, self->tx_ctx_);
+}
+
+bool Link::reply_diag(const std::uint8_t* msg, std::size_t len) {
+  if (send_message(sdp::frame::kChanDiag, msg, len)) {
+    ++loopbacks_;
+    return true;
+  }
+  return false;
 }
 
 bool Link::send_message(std::uint8_t channel, const std::uint8_t* msg, std::size_t len) {
@@ -65,11 +81,17 @@ void Link::on_rx_write(const std::uint8_t* data, std::size_t len) {
   const std::uint8_t* msg = reasm_.message();
   const std::size_t msg_len = reasm_.message_len();
 
-  // M5: DIAG loopback only. Other channels accepted but not dispatched yet.
   if (ch == sdp::frame::kChanDiag && diag_allowed_) {
-    if (send_message(sdp::frame::kChanDiag, msg, msg_len)) {
+    if (diag_bench_ != nullptr) {
+      (void)diag_bench_->handle(msg, msg_len);
+    } else if (send_message(sdp::frame::kChanDiag, msg, msg_len)) {
       ++loopbacks_;
     }
+    return;
+  }
+
+  if (app_ != nullptr) {
+    app_(ch, msg, msg_len, app_ctx_);
   }
 }
 

@@ -1,6 +1,10 @@
+C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/slate_host_runtime_dlls.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_hit_test.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_sdp_parser.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_sdp_frame.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_ble_link.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_sdp_diag.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_session.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/edit_cache.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/rebuild_cache.dir

@@ -8,6 +8,7 @@ data class HitRect(
     val y: Int,
     val w: Int,
     val h: Int,
+    val flags: Int = 0,
 )
 
 fun hitTest(px: Int, py: Int, rects: List<HitRect>): Int {

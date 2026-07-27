@@ -23,33 +23,27 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import slate.app.MainActivity
-import slate.dsl.displayList
-import slate.wire.Align
-import slate.wire.Colors
-import slate.wire.Font
-import slate.wire.Style
-import slate.wire.pal
-import slate.wire.rgb
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import slate.app.host.CompositorHost
 
 /**
  * Foreground service (`connectedDevice`) that owns the GATT connection and
- * pushes a clock display list once per second while connected.
+ * drives the M8 compositor (ambient clock + app host).
  */
 class LinkForegroundService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var clockJob: Job? = null
     private var rttJob: Job? = null
     private var reconnectJob: Job? = null
 
     private lateinit var client: SlateGattClient
+    private var compositorHost: CompositorHost? = null
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         client = SharedLink.gatt(applicationContext)
+        compositorHost = CompositorHost(client, scope).also { it.start() }
+        SharedLink.compositorHost = compositorHost
         createChannel()
         val notification = buildNotification("Slate link starting…")
         if (Build.VERSION.SDK_INT >= 34) {
@@ -63,7 +57,7 @@ class LinkForegroundService : Service() {
             @Suppress("DEPRECATION")
             startForeground(NOTIF_ID, notification)
         }
-        LinkLog.i("LinkForegroundService onCreate")
+        LinkLog.i("LinkForegroundService onCreate (compositor host)")
         scope.launch {
             client.metrics.collect { m ->
                 val text = if (m.connected) {
@@ -73,7 +67,7 @@ class LinkForegroundService : Service() {
                 }
                 getSystemService(NotificationManager::class.java)
                     .notify(NOTIF_ID, buildNotification(text))
-                if (m.connected) startClock() else stopClock()
+                if (m.connected) startRtt() else stopRtt()
             }
         }
     }
@@ -99,13 +93,20 @@ class LinkForegroundService : Service() {
                 LinkLog.i("presence disappeared")
                 client.close()
             }
+            ACTION_OPEN_TEST_APP -> {
+                scope.launch {
+                    compositorHost?.openTestApp()
+                }
+            }
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
-        stopClock()
+        stopRtt()
         stopReconnect()
+        compositorHost?.stop()
+        SharedLink.compositorHost = null
         client.close()
         scope.cancel()
         instance = null
@@ -151,59 +152,21 @@ class LinkForegroundService : Service() {
         reconnectJob = null
     }
 
-    private fun startClock() {
-        if (clockJob?.isActive == true) return
-        clockJob = scope.launch {
-            val fmt = DateTimeFormatter.ofPattern("HH:mm")
-            while (isActive) {
-                if (client.metrics.value.connected) {
-                    val list = buildClockList(LocalTime.now().format(fmt))
-                    client.pushDisplayList(list)
-                }
-                delay(1_000)
-            }
-        }
+    private fun startRtt() {
+        if (rttJob?.isActive == true) return
         rttJob = scope.launch {
             while (isActive) {
                 delay(5_000)
-                if (client.metrics.value.connected) {
+                if (client.metrics.value.connected && !SharedLink.benchmarkPaused) {
                     client.pingRtt()
                 }
             }
         }
     }
 
-    private fun stopClock() {
-        clockJob?.cancel()
-        clockJob = null
+    private fun stopRtt() {
         rttJob?.cancel()
         rttJob = null
-    }
-
-    private fun buildClockList(timeText: String): ByteArray = displayList {
-        palette(0, Colors.BLACK)
-        palette(1, Colors.WHITE)
-        clear(pal(0))
-        text(
-            font = Font.LARGE,
-            x = 120,
-            y = 100,
-            align = Align.CENTER,
-            color = pal(1),
-            text = timeText.take(5),
-        )
-        element(id = 1, x = 20, y = 180, w = 200, h = 40) {
-            rectRound(20, 180, 200, 40, r = 8, color = rgb(0x4208), style = Style.FILL)
-            text(
-                font = Font.LARGE,
-                x = 120,
-                y = 194,
-                align = Align.CENTER,
-                color = pal(1),
-                text = "OK",
-            )
-        }
-        commit()
     }
 
     private fun createChannel() {
@@ -235,6 +198,7 @@ class LinkForegroundService : Service() {
         const val ACTION_DISCONNECT = "slate.app.DISCONNECT"
         const val ACTION_PRESENCE_APPEARED = "slate.app.PRESENCE_APPEARED"
         const val ACTION_PRESENCE_DISAPPEARED = "slate.app.PRESENCE_DISAPPEARED"
+        const val ACTION_OPEN_TEST_APP = "slate.app.OPEN_TEST_APP"
         const val EXTRA_ADDRESS = "address"
 
         @Volatile
@@ -249,6 +213,14 @@ class LinkForegroundService : Service() {
             }
             context.startForegroundService(i)
         }
+
+        fun openTestApp(context: Context) {
+            context.startService(
+                Intent(context, LinkForegroundService::class.java).apply {
+                    action = ACTION_OPEN_TEST_APP
+                },
+            )
+        }
     }
 }
 
@@ -256,6 +228,13 @@ class LinkForegroundService : Service() {
 object SharedLink {
     @Volatile
     var associatedAddress: String? = null
+
+    /** When true, compositor / RTT skip radio traffic. */
+    @Volatile
+    var benchmarkPaused: Boolean = false
+
+    @Volatile
+    var compositorHost: CompositorHost? = null
 
     @Volatile
     private var clientInstance: SlateGattClient? = null

@@ -10,9 +10,10 @@
 
 namespace input {
 
+// Wire §4.5 swipe_dir: UP=0 DOWN=1 LEFT=2 RIGHT=3
 enum class SwipeDir : std::uint8_t {
-  Down  = 0,
-  Up    = 1,
+  Up    = 0,
+  Down  = 1,
   Left  = 2,
   Right = 3,
 };
@@ -23,6 +24,7 @@ enum class EventType : std::uint8_t {
   LongPress,
   Swipe,
   Button,
+  MultiTap,
 };
 
 struct Event {
@@ -31,7 +33,8 @@ struct Event {
   std::uint16_t y = 0u;
   SwipeDir swipe = SwipeDir::Down;
   button::Action button = button::Action::None;
-  std::uint16_t element_id = kNoHit;  // filled when hit-test table is set
+  std::uint16_t element_id = kNoHit;
+  std::uint8_t multi_count = 0u;
 };
 
 void init();

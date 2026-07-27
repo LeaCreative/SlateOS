@@ -16,6 +16,7 @@ kotlin {
 dependencies {
     implementation(project(":sdp-core"))
     testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 }
 
 tasks.test {

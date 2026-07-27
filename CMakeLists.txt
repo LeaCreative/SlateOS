@@ -55,13 +55,17 @@ add_executable(slate_firmware.elf
   src/cst816s.cpp
   src/button.cpp
   src/input_event.cpp
+  src/input_router.cpp
   src/sdp_validate.cpp
   src/sdp_parser.cpp
   src/sdp_interpreter.cpp
   src/sdp_frame.cpp
+  src/sdp_diag.cpp
+  src/session.cpp
   src/ble_link.cpp
   src/ble_conn.cpp
   src/ble_gatt.cpp
+  src/ble_mbuf_stats.cpp
   src/ble_nimble.cpp
   src/main.cpp
 )

@@ -160,4 +160,20 @@ object SdpWire {
         const val MAX = 3
     }
 
+    object ControlOp {
+        const val HELLO_OFFER = 0x01
+        const val HELLO_ACCEPT = 0x02
+        const val HELLO_REJECT = 0x03
+        const val HEARTBEAT = 0x04
+        const val SET_PROFILE = 0x05
+        const val PROFILE_ACK = 0x06
+        const val SCREEN_PUSH = 0x07
+        const val SCREEN_POP = 0x08
+        const val SCREEN_REPLACE = 0x09
+        const val CREDIT = 0x0A
+        const val GOODBYE = 0x0B
+    }
+
+    const val PROTOCOL_VERSION = 1
+
 }

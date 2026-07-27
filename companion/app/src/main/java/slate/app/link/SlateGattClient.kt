@@ -15,8 +15,11 @@ import android.os.Looper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import slate.diag.SdpDiag
 import slate.frame.SdpFrame
+import slate.frame.SdpReassembler
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -43,6 +46,17 @@ class SlateGattClient(
 
     private var pendingRttNs: AtomicLong = AtomicLong(-1L)
     private var expectedRttEcho: ByteArray? = null
+
+    private val txReasm = SdpReassembler(diagAllowed = true)
+    private val diagListeners = CopyOnWriteArrayList<(ByteArray) -> Unit>()
+
+    fun addDiagListener(listener: (ByteArray) -> Unit) {
+        diagListeners += listener
+    }
+
+    fun removeDiagListener(listener: (ByteArray) -> Unit) {
+        diagListeners -= listener
+    }
 
     private val callback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
@@ -253,16 +267,12 @@ class SlateGattClient(
         return true
     }
 
-    /** DIAG loopback ping for RTT (debug firmware only). */
+    /** DIAG RTT ping (debug firmware). Prefer [BenchmarkRunner] for gate B. */
     fun pingRtt() {
-        val token = System.nanoTime()
-        val payload = ByteArray(8)
-        for (i in 0 until 8) {
-            payload[i] = ((token shr (i * 8)) and 0xFF).toByte()
-        }
-        expectedRttEcho = payload
+        val token = SdpDiag.u64Le(System.nanoTime())
+        expectedRttEcho = token
         pendingRttNs.set(System.nanoTime())
-        sendMessage(SdpFrame.CHAN_DIAG, payload)
+        sendMessage(SdpFrame.CHAN_DIAG, SdpDiag.rttReq(token))
     }
 
     fun pushDisplayList(bytes: ByteArray): Boolean {
@@ -348,24 +358,8 @@ class SlateGattClient(
 
     private fun handleNotify(uuid: String, value: ByteArray) {
         LinkLog.i("notify $uuid len=${value.size}")
-        val echo = expectedRttEcho
-        val started = pendingRttNs.get()
-        if (echo != null && started > 0 && value.size >= echo.size) {
-            // TX delivers framed packets; for single-fragment DIAG the payload follows 2-byte hdr.
-            val payload = if (value.size >= 2 + echo.size) {
-                value.copyOfRange(2, 2 + echo.size)
-            } else {
-                value
-            }
-            if (payload.contentEquals(echo)) {
-                val ms = (System.nanoTime() - started) / 1_000_000.0
-                pendingRttNs.set(-1L)
-                expectedRttEcho = null
-                update { copy(rttMs = ms, notes = "RTT ${"%.1f".format(ms)} ms (DIAG loopback)") }
-            }
-        }
+        // STATUS characteristic (time_mid 0003).
         if (uuid.contains("0003", ignoreCase = true) && value.size >= 12) {
-            // STATUS snapshot from firmware (see ble_gatt encode_status).
             val mtu = (value[0].toInt() and 0xFF) or ((value[1].toInt() and 0xFF) shl 8)
             val iv = (value[8].toInt() and 0xFF) or ((value[9].toInt() and 0xFF) shl 8)
             val intervalMs = if (iv > 0) iv * 1.25 else null
@@ -375,6 +369,56 @@ class SlateGattClient(
                     intervalMs = intervalMs,
                     notes = "STATUS mtu=$mtu interval_units=$iv",
                 )
+            }
+            return
+        }
+
+        // TX characteristic — framed SDP packets.
+        when (txReasm.ingest(value)) {
+            SdpReassembler.Status.NeedMore -> return
+            SdpReassembler.Status.Dropped,
+            SdpReassembler.Status.ChannelReject,
+            -> {
+                LinkLog.w("TX reassembly drop")
+                return
+            }
+            SdpReassembler.Status.Ok -> {
+                val msg = txReasm.message()
+                val ch = txReasm.messageChannel()
+                if (ch == SdpFrame.CHAN_DIAG) {
+                    dispatchDiag(msg)
+                }
+            }
+        }
+    }
+
+    private fun dispatchDiag(msg: ByteArray) {
+        val op = msg.firstOrNull()?.toInt()?.and(0xFF)
+        // Legacy / RTT metrics for the main screen single-ping button.
+        val echo = expectedRttEcho
+        val started = pendingRttNs.get()
+        if (echo != null && started > 0 &&
+            (op == SdpDiag.OP_RTT_RSP || op == SdpDiag.OP_PING_RSP)
+        ) {
+            val token = if (msg.size > 1 + echo.size) {
+                msg.copyOfRange(1, 1 + echo.size)
+            } else if (msg.size >= 1 + echo.size) {
+                msg.copyOfRange(1, 1 + echo.size)
+            } else {
+                ByteArray(0)
+            }
+            if (token.contentEquals(echo)) {
+                val ms = (System.nanoTime() - started) / 1_000_000.0
+                pendingRttNs.set(-1L)
+                expectedRttEcho = null
+                update { copy(rttMs = ms, notes = "RTT ${"%.1f".format(ms)} ms (DIAG)") }
+            }
+        }
+        for (l in diagListeners) {
+            try {
+                l(msg)
+            } catch (t: Throwable) {
+                LinkLog.e("diag listener", t)
             }
         }
     }

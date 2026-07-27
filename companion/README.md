@@ -33,7 +33,12 @@ On the phone:
 3. Link FGS starts (`foregroundServiceType=connectedDevice`), connects GATT, requests MTU 247 / 2M PHY  
 4. Pushes a clock display list once per second (M4 DSL + §4.2 framing on channel 1)
 
-On-screen readout: ATT MTU, PHY, connection interval (from STATUS), RTT (DIAG ch7 loopback).
+On-screen readout: ATT MTU, PHY, connection interval (from STATUS), RTT (DIAG ch7).
+
+**Compositor (M8):** ambient `ClockApp` + `TestApp` via process-boundary-safe host contract —
+see `docs/compositor.md`. Main screen → **Open TestApp**.
+
+**Benchmarks:** main screen → **Benchmarks (gates A / B / D)** — see `docs/benchmark.md`.
 
 Logcat: `adb logcat -s SlateLink`
 

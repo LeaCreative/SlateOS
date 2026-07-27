@@ -105,7 +105,7 @@ struct MetaSink : Sink {
     if ((f.flags & elem_flags::NO_HIT) != 0u) return;
     if (hits == nullptr || hit_count == nullptr) return;
     if (*hit_count >= hit_cap) return;
-    hits[*hit_count] = input::HitRect{f.id, f.x, f.y, f.w, f.h};
+    hits[*hit_count] = input::HitRect{f.id, f.x, f.y, f.w, f.h, f.flags};
     // DISABLED stays in the table for layout; input layer may filter later.
     ++(*hit_count);
   }

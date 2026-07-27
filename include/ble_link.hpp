@@ -1,12 +1,12 @@
 #pragma once
 
+#include "sdp_diag.hpp"
 #include "sdp_frame.hpp"
 
 #include <cstddef>
 #include <cstdint>
 
 // Transport link: GATT RX → frame reassembly → channel demux.
-// Channel 7 (DIAG) loopback in debug builds. No display/input handling yet (M5).
 
 namespace ble {
 
@@ -22,18 +22,26 @@ struct StatusSnapshot {
 
 using TxNotifyFn = bool (*)(const std::uint8_t* data, std::size_t len, void* ctx);
 
+// Called for completed messages on CONTROL / DISPLAY / INPUT / … (not DIAG).
+using AppMessageFn = void (*)(std::uint8_t channel, const std::uint8_t* msg,
+                              std::size_t len, void* ctx);
+
 class Link {
 public:
   void init(bool diag_allowed);
   void set_tx(TxNotifyFn fn, void* ctx);
+  void set_app_handler(AppMessageFn fn, void* ctx);
   void set_status(const StatusSnapshot& s);
   StatusSnapshot status() const { return status_; }
 
-  // GATT RX characteristic write (Write Without Response).
+  void set_diag_bench(sdp::diag::Bench* bench) { diag_bench_ = bench; }
+  sdp::diag::Bench* diag_bench() const { return diag_bench_; }
+
   void on_rx_write(const std::uint8_t* data, std::size_t len);
 
-  // Encode and notify a complete SDP message on `channel`.
   bool send_message(std::uint8_t channel, const std::uint8_t* msg, std::size_t len);
+
+  bool reply_diag(const std::uint8_t* msg, std::size_t len);
 
   std::uint32_t drop_count() const { return drops_; }
   std::uint32_t loopback_count() const { return loopbacks_; }
@@ -44,11 +52,14 @@ private:
   sdp::frame::Reassembler reasm_{};
   TxNotifyFn tx_ = nullptr;
   void* tx_ctx_ = nullptr;
+  AppMessageFn app_ = nullptr;
+  void* app_ctx_ = nullptr;
   std::uint8_t tx_seq_[sdp::frame::kChannelCount] = {};
   StatusSnapshot status_{};
   bool diag_allowed_ = false;
   std::uint32_t drops_ = 0u;
   std::uint32_t loopbacks_ = 0u;
+  sdp::diag::Bench* diag_bench_ = nullptr;
 };
 
 }  // namespace ble

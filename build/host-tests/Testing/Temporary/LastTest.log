@@ -1,114 +1,58 @@
-Start testing: Jul 27 16:02 Mauritius Standard Time
+Start testing: Jul 27 17:54 Mauritius Standard Time
 ----------------------------------------------------------
-1/3 Testing: hit_test
-1/3 Test: hit_test
-Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_hit_test.exe"
+6/6 Testing: session
+6/6 Test: session
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_session.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"hit_test" start time: Jul 27 16:02 Mauritius Standard Time
+"session" start time: Jul 27 17:54 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
-PASS empty list
-PASS inside
-PASS outside
-PASS edge exclusive max
-PASS edge inclusive min
-PASS zero-w skipped
-PASS zero-h skipped
-PASS zero both skipped
-PASS valid after zeros
-PASS overlap centre = topmost
-PASS overlap mid layer
-PASS overlap base only
-PASS zero does not win
-PASS base still visible
-all hit-test checks passed
+PASS clean: Connected
+PASS clean: HELLO_OFFER sent
+PASS clean: Ready
+PASS clean: profile active
+PASS clean: depth 0
+PASS clean: Active
+PASS clean: depth 1
+PASS clean: applied
+PASS nego fail: still Connected
+PASS nego fail: unknown profile
+PASS nego fail: no apply
+PASS loss: Active before
+PASS loss: Disconnected
+PASS loss: depth cleared
+PASS loss: watch face
+PASS same: first not same_phone
+PASS same: Connected again
+PASS same: Ready
+PASS same: same_phone flag
+PASS same: depth fresh
+PASS same: ambient profile
+PASS diff: Ready
+PASS diff: not same phone
+PASS diff: depth 0
+PASS diff: streaming
+PASS diff: no leaked screens
+PASS hb: stale
+PASS hb: Idle
+PASS hb: clear stale
+PASS hb: Active again
+PASS hb: popped to Ready
+PASS hb: depth 0
+PASS hb: SESSION_END sent
+PASS prof: NACK
+PASS prof: still active
+PASS prof: ambient
+PASS offer: non-empty
+PASS offer: op
+PASS offer: profile_count
+all session tests passed
 <end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"hit_test" end time: Jul 27 16:02 Mauritius Standard Time
-"hit_test" time elapsed: 00:00:00
+"session" end time: Jul 27 17:54 Mauritius Standard Time
+"session" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-2/3 Testing: sdp_frame
-2/3 Test: sdp_frame
-Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_sdp_frame.exe"
-Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"sdp_frame" start time: Jul 27 16:02 Mauritius Standard Time
-Output:
-----------------------------------------------------------
-PASS frag single
-PASS one pkt
-PASS seq advanced
-PASS status Ok
-PASS len
-PASS bytes
-PASS frag multi
-PASS >=2 pkts
-PASS first has len
-PASS total len
-PASS reassembled Ok
-PASS reassembled len
-PASS payload match
-PASS frag at 255
-PASS wrapped to 0
-PASS pkt seq byte
-PASS frag wrap multi
-PASS multi pkts
-PASS first seq 254
-PASS second seq 255
-PASS wrap reasm Ok
-PASS need >=2
-PASS first NeedMore
-PASS corrupt seq Dropped
-PASS trunc Dropped
-PASS first no len Dropped
-PASS oversize Dropped
-PASS diag reject
-PASS drop
-PASS resync Ok
-PASS byte
-all framing tests passed
-<end of output>
-Test time =   0.01 sec
-----------------------------------------------------------
-Test Passed.
-"sdp_frame" end time: Jul 27 16:02 Mauritius Standard Time
-"sdp_frame" time elapsed: 00:00:00
-----------------------------------------------------------
-
-3/3 Testing: ble_link
-3/3 Test: ble_link
-Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_ble_link.exe"
-Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"ble_link" start time: Jul 27 16:02 Mauritius Standard Time
-Output:
-----------------------------------------------------------
-PASS loopback count
-PASS tx emitted
-PASS tx Ok
-PASS tx len
-PASS echo match
-PASS no loopback
-PASS drop/reject
-PASS no tx
-PASS mtu_ok
-PASS dle_ok
-PASS phy_ok
-PASS mtu
-PASS mtu not ok
-PASS mtu 23
-PASS mtu lo
-PASS mtu hi
-PASS phy
-PASS flags
-all ble link tests passed
-<end of output>
-Test time =   0.01 sec
-----------------------------------------------------------
-Test Passed.
-"ble_link" end time: Jul 27 16:02 Mauritius Standard Time
-"ble_link" time elapsed: 00:00:00
-----------------------------------------------------------
-
-End testing: Jul 27 16:02 Mauritius Standard Time
+End testing: Jul 27 17:54 Mauritius Standard Time

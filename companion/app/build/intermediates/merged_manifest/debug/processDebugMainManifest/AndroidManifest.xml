@@ -42,7 +42,6 @@
         android:icon="@android:drawable/ic_menu_compass"
         android:label="Slate"
         android:supportsRtl="true"
-        android:testOnly="true"
         android:theme="@android:style/Theme.DeviceDefault.DayNight" >
         <activity
             android:name="slate.app.MainActivity"
@@ -53,6 +52,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="slate.app.bench.BenchmarkActivity"
+            android:exported="false"
+            android:label="Slate benchmarks" />
 
         <service
             android:name="slate.app.link.LinkForegroundService"

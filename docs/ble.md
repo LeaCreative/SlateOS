@@ -28,9 +28,13 @@ Implementation: `include/sdp_frame.hpp`, `src/sdp_frame.cpp`.
 
 Host tests: `tests/host/test_sdp_frame.cpp`.
 
-## Loopback
+## Loopback / DIAG benchmark
 
-`ble::Link` echoes completed DIAG (ch7) messages back on TX. Used by M5 bring-up and later measurement gates.
+`ble::Link` dispatches completed DIAG (ch7) messages to `sdp::diag::Bench` in debug
+builds (`SLATE_BLE_DIAG=1`). Ops cover throughput timing, RTT echo, mbuf high-water,
+and parse+render timing — see `docs/benchmark.md`.
+
+Opaque payloads (no known opcode) still echo for M5 bring-up.
 
 ## Connection negotiation order
 
@@ -73,7 +77,24 @@ Port files live under `src/ble_nimble.cpp` and `config/FreeRTOSConfig.h`. Syscfg
 
 ## Host tests (no hardware)
 
+llvm-mingw EXEs need `libc++.dll` / `libunwind.dll`. Prefer the helper script (sets PATH
+and copies runtimes into the build dir via CMake):
+
 ```powershell
+.\scripts\run_host_tests.cmd
+.\scripts\run_host_tests.cmd session
+```
+
+If you prefer PowerShell and hit an execution-policy error on the `.ps1`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_host_tests.ps1
+```
+
+Or manually:
+
+```powershell
+$env:Path = "<llvm-mingw>\bin;" + $env:Path   # folder that contains libc++.dll
 cmake -S tests/host -B build/host-tests
 cmake --build build/host-tests
 ctest --test-dir build/host-tests -V

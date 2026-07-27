@@ -35,6 +35,12 @@ include CMakeFiles/rules.ninja
 # Logical path to working directory; prefix for absolute paths.
 
 cmake_ninja_workdir = C$:/Users/highj/Documents/Projects/EvoTime/build/host-tests/
+
+#############################################
+# Utility command for slate_host_runtime_dlls
+
+build slate_host_runtime_dlls: phony CMakeFiles/slate_host_runtime_dlls
+
 # =============================================================================
 # Object build statements for EXECUTABLE target test_hit_test
 
@@ -42,7 +48,7 @@ cmake_ninja_workdir = C$:/Users/highj/Documents/Projects/EvoTime/build/host-test
 #############################################
 # Order-only phony target for test_hit_test
 
-build cmake_object_order_depends_target_test_hit_test: phony || .
+build cmake_object_order_depends_target_test_hit_test: phony || slate_host_runtime_dlls
 
 build CMakeFiles/test_hit_test.dir/test_hit_test.cpp.obj: CXX_COMPILER__test_hit_test_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_hit_test.cpp || cmake_object_order_depends_target_test_hit_test
   DEP_FILE = CMakeFiles\test_hit_test.dir\test_hit_test.cpp.obj.d
@@ -60,7 +66,7 @@ build CMakeFiles/test_hit_test.dir/test_hit_test.cpp.obj: CXX_COMPILER__test_hit
 #############################################
 # Link the executable test_hit_test.exe
 
-build test_hit_test.exe: CXX_EXECUTABLE_LINKER__test_hit_test_ CMakeFiles/test_hit_test.dir/test_hit_test.cpp.obj
+build test_hit_test.exe: CXX_EXECUTABLE_LINKER__test_hit_test_ CMakeFiles/test_hit_test.dir/test_hit_test.cpp.obj || slate_host_runtime_dlls
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\test_hit_test.dir
   POST_BUILD = cd .
@@ -71,13 +77,64 @@ build test_hit_test.exe: CXX_EXECUTABLE_LINKER__test_hit_test_ CMakeFiles/test_h
   TARGET_SUPPORT_DIR = CMakeFiles\test_hit_test.dir
 
 # =============================================================================
+# Object build statements for EXECUTABLE target test_sdp_parser
+
+
+#############################################
+# Order-only phony target for test_sdp_parser
+
+build cmake_object_order_depends_target_test_sdp_parser: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_sdp_parser.dir/test_sdp_parser.cpp.obj: CXX_COMPILER__test_sdp_parser_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_sdp_parser.cpp || cmake_object_order_depends_target_test_sdp_parser
+  DEP_FILE = CMakeFiles\test_sdp_parser.dir\test_sdp_parser.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_parser.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
+
+build CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_validate.cpp.obj: CXX_COMPILER__test_sdp_parser_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_validate.cpp || cmake_object_order_depends_target_test_sdp_parser
+  DEP_FILE = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_validate.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
+
+build CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_parser.cpp.obj: CXX_COMPILER__test_sdp_parser_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_parser.cpp || cmake_object_order_depends_target_test_sdp_parser
+  DEP_FILE = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_parser.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_sdp_parser
+
+
+#############################################
+# Link the executable test_sdp_parser.exe
+
+build test_sdp_parser.exe: CXX_EXECUTABLE_LINKER__test_sdp_parser_ CMakeFiles/test_sdp_parser.dir/test_sdp_parser.cpp.obj CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_validate.cpp.obj CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_parser.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_sdp_parser.exe
+  TARGET_IMPLIB = libtest_sdp_parser.dll.a
+  TARGET_PDB = test_sdp_parser.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
+
+# =============================================================================
 # Object build statements for EXECUTABLE target test_sdp_frame
 
 
 #############################################
 # Order-only phony target for test_sdp_frame
 
-build cmake_object_order_depends_target_test_sdp_frame: phony || .
+build cmake_object_order_depends_target_test_sdp_frame: phony || slate_host_runtime_dlls
 
 build CMakeFiles/test_sdp_frame.dir/test_sdp_frame.cpp.obj: CXX_COMPILER__test_sdp_frame_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_sdp_frame.cpp || cmake_object_order_depends_target_test_sdp_frame
   DEP_FILE = CMakeFiles\test_sdp_frame.dir\test_sdp_frame.cpp.obj.d
@@ -103,7 +160,7 @@ build CMakeFiles/test_sdp_frame.dir/C_/Users/highj/Documents/Projects/EvoTime/sr
 #############################################
 # Link the executable test_sdp_frame.exe
 
-build test_sdp_frame.exe: CXX_EXECUTABLE_LINKER__test_sdp_frame_ CMakeFiles/test_sdp_frame.dir/test_sdp_frame.cpp.obj CMakeFiles/test_sdp_frame.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj
+build test_sdp_frame.exe: CXX_EXECUTABLE_LINKER__test_sdp_frame_ CMakeFiles/test_sdp_frame.dir/test_sdp_frame.cpp.obj CMakeFiles/test_sdp_frame.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj || slate_host_runtime_dlls
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\test_sdp_frame.dir
   POST_BUILD = cd .
@@ -120,7 +177,7 @@ build test_sdp_frame.exe: CXX_EXECUTABLE_LINKER__test_sdp_frame_ CMakeFiles/test
 #############################################
 # Order-only phony target for test_ble_link
 
-build cmake_object_order_depends_target_test_ble_link: phony || .
+build cmake_object_order_depends_target_test_ble_link: phony || slate_host_runtime_dlls
 
 build CMakeFiles/test_ble_link.dir/test_ble_link.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_ble_link.cpp || cmake_object_order_depends_target_test_ble_link
   DEP_FILE = CMakeFiles\test_ble_link.dir\test_ble_link.cpp.obj.d
@@ -140,6 +197,14 @@ build CMakeFiles/test_ble_link.dir/rtt_stub.cpp.obj: CXX_COMPILER__test_ble_link
 
 build CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp || cmake_object_order_depends_target_test_ble_link
   DEP_FILE = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_frame.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+build CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_diag.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_diag.cpp || cmake_object_order_depends_target_test_ble_link
+  DEP_FILE = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_diag.cpp.obj.d
   FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
   INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
   OBJECT_DIR = CMakeFiles\test_ble_link.dir
@@ -178,7 +243,7 @@ build CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src
 #############################################
 # Link the executable test_ble_link.exe
 
-build test_ble_link.exe: CXX_EXECUTABLE_LINKER__test_ble_link_ CMakeFiles/test_ble_link.dir/test_ble_link.cpp.obj CMakeFiles/test_ble_link.dir/rtt_stub.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_conn.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_gatt.cpp.obj
+build test_ble_link.exe: CXX_EXECUTABLE_LINKER__test_ble_link_ CMakeFiles/test_ble_link.dir/test_ble_link.cpp.obj CMakeFiles/test_ble_link.dir/rtt_stub.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_diag.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_conn.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_gatt.cpp.obj || slate_host_runtime_dlls
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\test_ble_link.dir
   POST_BUILD = cd .
@@ -187,6 +252,116 @@ build test_ble_link.exe: CXX_EXECUTABLE_LINKER__test_ble_link_ CMakeFiles/test_b
   TARGET_IMPLIB = libtest_ble_link.dll.a
   TARGET_PDB = test_ble_link.exe.dbg
   TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_sdp_diag
+
+
+#############################################
+# Order-only phony target for test_sdp_diag
+
+build cmake_object_order_depends_target_test_sdp_diag: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_sdp_diag.dir/test_sdp_diag.cpp.obj: CXX_COMPILER__test_sdp_diag_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_sdp_diag.cpp || cmake_object_order_depends_target_test_sdp_diag
+  DEP_FILE = CMakeFiles\test_sdp_diag.dir\test_sdp_diag.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_diag.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_diag.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_diag.dir
+
+build CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj: CXX_COMPILER__test_sdp_diag_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp || cmake_object_order_depends_target_test_sdp_diag
+  DEP_FILE = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_frame.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_diag.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_diag.dir
+
+build CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_diag.cpp.obj: CXX_COMPILER__test_sdp_diag_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_diag.cpp || cmake_object_order_depends_target_test_sdp_diag
+  DEP_FILE = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_diag.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_diag.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_diag.dir
+
+build CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp.obj: CXX_COMPILER__test_sdp_diag_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp || cmake_object_order_depends_target_test_sdp_diag
+  DEP_FILE = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src\ble_link.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_diag.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_diag.dir
+
+build CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_mbuf_stats.cpp.obj: CXX_COMPILER__test_sdp_diag_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/ble_mbuf_stats.cpp || cmake_object_order_depends_target_test_sdp_diag
+  DEP_FILE = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src\ble_mbuf_stats.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_sdp_diag.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_diag.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_diag.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_sdp_diag
+
+
+#############################################
+# Link the executable test_sdp_diag.exe
+
+build test_sdp_diag.exe: CXX_EXECUTABLE_LINKER__test_sdp_diag_ CMakeFiles/test_sdp_diag.dir/test_sdp_diag.cpp.obj CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_diag.cpp.obj CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp.obj CMakeFiles/test_sdp_diag.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_mbuf_stats.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_sdp_diag.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_sdp_diag.exe
+  TARGET_IMPLIB = libtest_sdp_diag.dll.a
+  TARGET_PDB = test_sdp_diag.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_diag.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_session
+
+
+#############################################
+# Order-only phony target for test_session
+
+build cmake_object_order_depends_target_test_session: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_session.dir/test_session.cpp.obj: CXX_COMPILER__test_session_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_session.cpp || cmake_object_order_depends_target_test_session
+  DEP_FILE = CMakeFiles\test_session.dir\test_session.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_session.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_session.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_session.dir
+
+build CMakeFiles/test_session.dir/C_/Users/highj/Documents/Projects/EvoTime/src/session.cpp.obj: CXX_COMPILER__test_session_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/session.cpp || cmake_object_order_depends_target_test_session
+  DEP_FILE = CMakeFiles\test_session.dir\C_\Users\highj\Documents\Projects\EvoTime\src\session.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_session.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_session.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_session.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_session
+
+
+#############################################
+# Link the executable test_session.exe
+
+build test_session.exe: CXX_EXECUTABLE_LINKER__test_session_ CMakeFiles/test_session.dir/test_session.cpp.obj CMakeFiles/test_session.dir/C_/Users/highj/Documents/Projects/EvoTime/src/session.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_session.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_session.exe
+  TARGET_IMPLIB = libtest_session.dll.a
+  TARGET_PDB = test_session.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_session.dir
 
 
 #############################################
@@ -224,6 +399,14 @@ build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
 
 build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 
+
+#############################################
+# Custom command for CMakeFiles\slate_host_runtime_dlls
+
+build CMakeFiles/slate_host_runtime_dlls | ${cmake_ninja_workdir}CMakeFiles/slate_host_runtime_dlls: CUSTOM_COMMAND
+  COMMAND = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\highj\Documents\Projects\EvoTime\build\host-tests && "C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different C:/Users/highj/AppData/Local/Microsoft/WinGet/Packages/MartinStorsjo.LLVM-MinGW.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/llvm-mingw-20260616-ucrt-x86_64/bin/libc++.dll C:/Users/highj/Documents/Projects/EvoTime/build/host-tests && "C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different C:/Users/highj/AppData/Local/Microsoft/WinGet/Packages/MartinStorsjo.LLVM-MinGW.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/llvm-mingw-20260616-ucrt-x86_64/bin/libunwind.dll C:/Users/highj/Documents/Projects/EvoTime/build/host-tests && "C:\Program Files\CMake\bin\cmake.exe" -E copy_if_different C:/Users/highj/AppData/Local/Microsoft/WinGet/Packages/MartinStorsjo.LLVM-MinGW.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe/llvm-mingw-20260616-ucrt-x86_64/bin/libwinpthread-1.dll C:/Users/highj/Documents/Projects/EvoTime/build/host-tests"
+  DESC = Copy llvm-mingw runtime DLLs into C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
+
 # =============================================================================
 # Target aliases.
 
@@ -231,7 +414,13 @@ build test_ble_link: phony test_ble_link.exe
 
 build test_hit_test: phony test_hit_test.exe
 
+build test_sdp_diag: phony test_sdp_diag.exe
+
 build test_sdp_frame: phony test_sdp_frame.exe
+
+build test_sdp_parser: phony test_sdp_parser.exe
+
+build test_session: phony test_session.exe
 
 # =============================================================================
 # Folder targets.
@@ -241,7 +430,7 @@ build test_sdp_frame: phony test_sdp_frame.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony test_hit_test.exe test_sdp_frame.exe test_ble_link.exe
+build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_sdp_frame.exe test_ble_link.exe test_sdp_diag.exe test_session.exe
 
 # =============================================================================
 # Built-in targets

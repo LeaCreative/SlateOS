@@ -139,5 +139,19 @@
     "LEFT": 2,
     "RIGHT": 3,
     "MAX": 3
-  }
+  },
+  "control_op": {
+    "HELLO_OFFER": 1,
+    "HELLO_ACCEPT": 2,
+    "HELLO_REJECT": 3,
+    "HEARTBEAT": 4,
+    "SET_PROFILE": 5,
+    "PROFILE_ACK": 6,
+    "SCREEN_PUSH": 7,
+    "SCREEN_POP": 8,
+    "SCREEN_REPLACE": 9,
+    "CREDIT": 10,
+    "GOODBYE": 11
+  },
+  "protocol_version": 1
 }

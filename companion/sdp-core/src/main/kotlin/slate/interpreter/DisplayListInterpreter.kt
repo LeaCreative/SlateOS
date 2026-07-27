@@ -53,7 +53,7 @@ class DisplayListInterpreter {
             val f = stack.removeLast()
             if (f.flags and SdpWire.ElemFlags.NO_HIT != 0) return
             if (hits.size >= SdpWire.MAX_HIT_ELEMS) return
-            hits.add(HitRect(f.id, f.x, f.y, f.w, f.h))
+            hits.add(HitRect(f.id, f.x, f.y, f.w, f.h, f.flags))
         }
     }
 

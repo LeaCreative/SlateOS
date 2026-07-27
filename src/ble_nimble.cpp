@@ -3,6 +3,7 @@
 // include/link path (see docs/ble.md).
 
 #include "ble_gatt.hpp"
+#include "ble_mbuf_stats.hpp"
 #include "slate_uuids.hpp"
 #include "rtt.hpp"
 #include "sdp_frame.hpp"
@@ -39,6 +40,7 @@ bool tx_notify(const std::uint8_t* data, std::size_t len, void* ctx) {
     return false;
   }
   struct os_mbuf* om = ble_hs_mbuf_from_flat(data, static_cast<std::uint16_t>(len));
+  mbuf_stats().note_free(static_cast<std::uint16_t>(os_msys_num_free()));
   if (om == nullptr) {
     return false;
   }
@@ -161,6 +163,7 @@ static int rx_access(std::uint16_t conn, std::uint16_t attr,
   if (rc != 0) {
     return BLE_ATT_ERR_UNLIKELY;
   }
+  mbuf_stats().note_free(static_cast<std::uint16_t>(os_msys_num_free()));
   if (g_gatt) {
     g_gatt->on_rx(buf, len);
   }

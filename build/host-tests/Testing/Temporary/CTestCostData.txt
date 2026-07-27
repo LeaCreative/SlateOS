@@ -1,5 +1,7 @@
-hit_test 4 0.00228358
-sdp_parser 1 0.0586907
-sdp_frame 2 0.0060965
-ble_link 2 0.0054469
+hit_test 9 0.000753756
+sdp_parser 4 0.00173063
+sdp_frame 5 0.00128686
+ble_link 7 0.0010899
+sdp_diag 5 0.00131174
+session 5 0.00153748
 ---

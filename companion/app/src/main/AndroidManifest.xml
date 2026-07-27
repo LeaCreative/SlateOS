@@ -32,6 +32,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".bench.BenchmarkActivity"
+            android:exported="false"
+            android:label="Slate benchmarks" />
+
         <service
             android:name=".link.LinkForegroundService"
             android:exported="false"
