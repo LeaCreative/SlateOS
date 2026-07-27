@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.frame.SdpFrameTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-07-27T12:23:01" hostname="DAN01" time="0.025">
+  <properties/>
+  <testcase name="multiFragmentIncludesLengthOnFirst()" classname="slate.frame.SdpFrameTest" time="0.023"/>
+  <testcase name="singleFragmentRoundTripShape()" classname="slate.frame.SdpFrameTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
