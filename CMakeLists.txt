@@ -53,6 +53,9 @@ add_executable(slate_firmware.elf
   src/cst816s.cpp
   src/button.cpp
   src/input_event.cpp
+  src/sdp_validate.cpp
+  src/sdp_parser.cpp
+  src/sdp_interpreter.cpp
   src/main.cpp
 )
 

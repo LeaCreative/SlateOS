@@ -1,0 +1,7 @@
+# ninja log v7
+25	208	8068457306599646	CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_validate.cpp.obj	88acc83a7a4c06e
+30	213	8068457306640054	CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_parser.cpp.obj	a404ac456e383602
+16	315	8068457306504522	CMakeFiles/test_hit_test.dir/test_hit_test.cpp.obj	3d1ae593b82c4a14
+315	408	8068457309494958	test_hit_test.exe	370cb2886fbfac80
+21	4449	8068457306549461	CMakeFiles/test_sdp_parser.dir/test_sdp_parser.cpp.obj	b3413b274db773c3
+4452	4553	8068457350859621	test_sdp_parser.exe	cfabbea364d49917

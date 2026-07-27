@@ -135,21 +135,43 @@ public:
     // Returns the number of tiles actually transmitted.
     std::uint32_t flush();
 
+    // ── M3 tile-replay API ───────────────────────────────────────────────────
+    // Restrict drawing to one tile row; pixels outside are ignored.
+    // tile_row == kNoTileFilter disables the filter (legacy M1 behaviour).
+    static constexpr std::int32_t kNoTileFilter = -1;
+    void set_tile_filter(std::int32_t tile_row);
+
+    // Clip: half-open [x,x+w)×[y,y+h).  Disabled when w==0.
+    void set_clip(std::uint16_t x, std::uint16_t y,
+                  std::uint16_t w, std::uint16_t h);
+    void clear_clip();
+
+    // Clear the active tile buffer to `colour` (does not transmit).
+    void clear_tile_buffer(std::uint16_t colour);
+
+    // Transmit only the currently filtered tile from buf_[0].
+    // Requires set_tile_filter(t) with t >= 0.
+    void flush_filtered_tile();
+
     const DirtyMap& dirty_map() const { return dirty_; }
 
 private:
     // Draw a single pixel — bounds-checked, marks tile dirty.
     void put_pixel(std::uint16_t x, std::uint16_t y, std::uint16_t colour);
 
+    bool in_clip(std::uint16_t x, std::uint16_t y) const;
+
     // Two tile-sized scratch buffers.
     //   buf_[0]: active render target — put_pixel() writes here.
     //   buf_[1]: staging copy used for transmit snapshots (future async DMA).
-    // NOTE (M1 model): buf_[0] holds only one tile row at a time.  flush()
-    // transmits buf_[0] for every dirty tile, so this is correct only when
-    // all tiles contain identical data (fill_screen) or when the caller re-runs
-    // draw ops between tile flushes.  M3 replaces this with per-tile re-render
-    // from the retained display list.
+    // M3: set_tile_filter(t) then replay retained list; only pixels in tile t
+    // land in buf_[0], then flush_filtered_tile() transmits that row.
     alignas(4) std::uint8_t buf_[2][kTileBytes];
 
     DirtyMap dirty_;
+    std::int32_t tile_filter_ = kNoTileFilter;
+    std::uint16_t clip_x_ = 0u;
+    std::uint16_t clip_y_ = 0u;
+    std::uint16_t clip_w_ = 0u;  // 0 = clip disabled
+    std::uint16_t clip_h_ = 0u;
 };

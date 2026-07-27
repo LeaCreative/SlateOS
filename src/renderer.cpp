@@ -50,11 +50,15 @@ Renderer::Renderer() {
 
 void Renderer::put_pixel(std::uint16_t x, std::uint16_t y, std::uint16_t colour) {
     if (x >= kDisplayWidth || y >= kDisplayHeight) return;
-    const std::uint32_t tile_row   = y / kTileHeight;
+    if (!in_clip(x, y)) return;
+
+    const std::uint32_t tile_row = y / kTileHeight;
+    if (tile_filter_ >= 0 &&
+        static_cast<std::uint32_t>(tile_filter_) != tile_row) {
+        return;
+    }
+
     const std::uint32_t row_in_tile = y % kTileHeight;
-    // Render always into buf_[0]; buf_[1] is the DMA-out staging buffer.
-    // On flush() we render a tile into buf_[0], then memcpy/swap into buf_[1]
-    // for transmission.  (Double-buffer handoff is in flush().)
     const std::uint32_t offset = row_in_tile * kDisplayWidth + x;
     tile_put(buf_[0], offset, colour);
     dirty_.mark_tile(tile_row);
@@ -271,19 +275,8 @@ void Renderer::blit_1bit(std::uint16_t x, std::uint16_t y,
 }
 
 std::uint32_t Renderer::flush() {
-    // M1 rendering model: buf_[0] is the render target.  put_pixel() writes
-    // tile-local pixels into it and marks tiles dirty.  On flush, each dirty
-    // tile transmits the portion of buf_[0] that belongs to it.
-    //
-    // Important: this model requires that all drawing operations for a frame
-    // complete before flush() is called.  The buffer is not partitioned per
-    // tile row — it holds only one tile's worth of data.  Each tile row
-    // is rendered by re-running all draw ops that touch it (i.e. the caller's
-    // draw sequence).  For M1 bring-up we flush once after all draws, so only
-    // the final draw ops are in the buffer for each tile.
-    //
-    // In M3 (display-list interpreter) flush() will re-render each tile row
-    // from the retained display list, which is the proper solution.
+    // Prefer M3 path: caller uses set_tile_filter + flush_filtered_tile per tile.
+    // This legacy flush still transmits buf_[0] for every dirty bit (M1 demos).
 
     std::uint32_t tiles_sent = 0u;
 
@@ -293,11 +286,8 @@ std::uint32_t Renderer::flush() {
         const std::uint16_t ty0 = static_cast<std::uint16_t>(t * kTileHeight);
         const std::uint16_t ty1 = static_cast<std::uint16_t>(ty0 + kTileHeight - 1u);
 
-        // Set the display write window to this tile row.
         st7789::set_window(0u, ty0,
                            static_cast<std::uint16_t>(kDisplayWidth - 1u), ty1);
-
-        // Transmit buf_[0] directly (DMA source is RAM — always valid).
         st7789::write_pixels(buf_[0], kTileBytes);
 
         ++tiles_sent;
@@ -305,4 +295,54 @@ std::uint32_t Renderer::flush() {
 
     dirty_.clear();
     return tiles_sent;
+}
+
+bool Renderer::in_clip(std::uint16_t x, std::uint16_t y) const {
+    if (clip_w_ == 0u) {
+        return true;
+    }
+    return x >= clip_x_ && x < static_cast<std::uint16_t>(clip_x_ + clip_w_) &&
+           y >= clip_y_ && y < static_cast<std::uint16_t>(clip_y_ + clip_h_);
+}
+
+void Renderer::set_tile_filter(std::int32_t tile_row) {
+    tile_filter_ = tile_row;
+}
+
+void Renderer::set_clip(std::uint16_t x, std::uint16_t y,
+                        std::uint16_t w, std::uint16_t h) {
+    clip_x_ = x;
+    clip_y_ = y;
+    clip_w_ = w;
+    clip_h_ = h;
+}
+
+void Renderer::clear_clip() {
+    clip_w_ = 0u;
+    clip_h_ = 0u;
+}
+
+void Renderer::clear_tile_buffer(std::uint16_t colour) {
+    const std::uint8_t hi = static_cast<std::uint8_t>(colour >> 8u);
+    const std::uint8_t lo = static_cast<std::uint8_t>(colour);
+    for (std::uint32_t i = 0u; i < kTileBytes / 2u; ++i) {
+        buf_[0][i * 2u] = hi;
+        buf_[0][i * 2u + 1u] = lo;
+    }
+}
+
+void Renderer::flush_filtered_tile() {
+    if (tile_filter_ < 0) {
+        return;
+    }
+    const std::uint32_t t = static_cast<std::uint32_t>(tile_filter_);
+    if (t >= kTileCount) {
+        return;
+    }
+    const std::uint16_t ty0 = static_cast<std::uint16_t>(t * kTileHeight);
+    const std::uint16_t ty1 = static_cast<std::uint16_t>(ty0 + kTileHeight - 1u);
+    st7789::set_window(0u, ty0,
+                       static_cast<std::uint16_t>(kDisplayWidth - 1u), ty1);
+    st7789::write_pixels(buf_[0], kTileBytes);
+    dirty_.clear();
 }

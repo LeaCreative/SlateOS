@@ -1,0 +1,72 @@
+Start testing: Jul 27 12:55 Mauritius Standard Time
+----------------------------------------------------------
+1/2 Testing: hit_test
+1/2 Test: hit_test
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_hit_test.exe"
+Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
+"hit_test" start time: Jul 27 12:55 Mauritius Standard Time
+Output:
+----------------------------------------------------------
+PASS empty list
+PASS inside
+PASS outside
+PASS edge exclusive max
+PASS edge inclusive min
+PASS zero-w skipped
+PASS zero-h skipped
+PASS zero both skipped
+PASS valid after zeros
+PASS overlap centre = topmost
+PASS overlap mid layer
+PASS overlap base only
+PASS zero does not win
+PASS base still visible
+all hit-test checks passed
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"hit_test" end time: Jul 27 12:55 Mauritius Standard Time
+"hit_test" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/2 Testing: sdp_parser
+2/2 Test: sdp_parser
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_sdp_parser.exe"
+Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
+"sdp_parser" start time: Jul 27 12:55 Mauritius Standard Time
+Output:
+----------------------------------------------------------
+PASS CLEAR+COMMIT
+PASS saw commit
+PASS SET_PALETTE+RECT
+PASS shapes+clip
+PASS TEXT+TEXT_BOX
+PASS ICON+IMAGE
+PASS progress+elem+scroll
+PASS patch+haptic+bl+retain
+PASS retain ttl
+PASS EXT skip unknown
+PASS trunc COLOR
+PASS coord 240
+PASS STYLE mode 3
+PASS COLOR tag 0x11
+PASS bad align
+PASS oversized string
+PASS 513 ops
+PASS >4KB
+PASS EXT past EOF
+PASS END without BEGIN
+PASS unset palette
+PASS bad font id
+PASS COMMIT with open elem
+all sdp parser checks passed
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"sdp_parser" end time: Jul 27 12:55 Mauritius Standard Time
+"sdp_parser" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jul 27 12:55 Mauritius Standard Time

@@ -29,6 +29,9 @@ FreeRTOS + NimBLE + LittleFS + MCUBoot. C++17. No LVGL — custom tile renderer.
   and must reject-and-resync rather than fault.
 - Base opcodes 0x01-0x61 and 0xF0-0xF1 are FROZEN. New primitives go in the
   length-prefixed extension range 0xE0-0xEF so old firmware can skip them.
+- SDP wire constants (opcodes, COLOR/STYLE, enums, flags) live in **one** file:
+  `include/sdp_opcodes.hpp`. Normative spec is slate-implementation-roadmap.md §4.
+  Do not duplicate those values elsewhere.
 
 ## Architecture
 Thin client. The phone pushes display lists; the watch renders and returns element-level
