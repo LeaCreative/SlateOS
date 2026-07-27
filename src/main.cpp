@@ -1,15 +1,22 @@
+#include "alarm_sched.hpp"
 #include "backlight.hpp"
+#include "battery_hw.hpp"
 #include "ble_conn.hpp"
 #include "ble_gatt.hpp"
 #include "ble_link.hpp"
 #include "ble_mbuf_stats.hpp"
+#include "bma42x.hpp"
 #include "board.hpp"
 #include "button.hpp"
 #include "cst816s.hpp"
 #include "input_event.hpp"
 #include "input_router.hpp"
+#include "local_core.hpp"
 #include "nrf52832_regs.hpp"
+#include "persist.hpp"
+#include "persist_nvmc.hpp"
 #include "renderer.hpp"
+#include "rtc_hw.hpp"
 #include "rtt.hpp"
 #include "sdp_diag.hpp"
 #include "sdp_interpreter.hpp"
@@ -19,6 +26,7 @@
 #include "st7789.hpp"
 #include "slate_uuids.hpp"
 #include "twi.hpp"
+#include "wall_clock.hpp"
 
 #include <cstdint>
 
@@ -31,15 +39,6 @@ static void timer1_init() {
   nrf::reg<std::uint32_t>(nrf::timer1::TASKS_START) = 1u;
 }
 
-static const std::uint8_t kListWatchFace[] = {
-    sdp::op::CLEAR, 0x00, 0x00, 0x00,
-    sdp::op::SET_PALETTE, 0x00, 0xFF, 0xFF,
-    sdp::op::SET_PALETTE, 0x01, 0xE0, 0x07,
-    sdp::op::TEXT, 0x00, 120, 100, 0x01,
-    sdp::align::CENTER, 5, 'S', 'l', 'a', 't', 'e',
-    sdp::op::COMMIT, 0x00,
-};
-
 static Renderer g_renderer;
 static sdp::Interpreter g_interp;
 static ble::Link g_link;
@@ -47,7 +46,9 @@ static ble::GattServer g_gatt;
 static sdp::diag::Bench g_diag;
 static slate::session::Manager g_session;
 static slate::InputRouter g_input;
-static bool g_stale_overlay = false;
+static slate::bma::Driver g_bma;
+static slate::core::Core g_core;
+static bool g_local_owns_screen = true;
 
 static std::uint32_t now_ms() { return board::micros() / 1000u; }
 
@@ -63,17 +64,16 @@ static slate::session::ApplyListResult apply_list(const std::uint8_t* data,
   if (s.status != sdp::Status::Ok) {
     return slate::session::ApplyListResult::Reject;
   }
+  g_local_owns_screen = false;
   g_input.set_hits(g_interp.hit_rects(), g_interp.hit_count());
   return slate::session::ApplyListResult::Ok;
 }
 
 static void show_watch_face(bool stale, void*) {
-  g_stale_overlay = stale;
-  (void)g_interp.push_list(kListWatchFace, sizeof(kListWatchFace));
-  g_input.set_hits(g_interp.hit_rects(), g_interp.hit_count());
-  if (stale) {
-    rtt::log(rtt::Level::Warn, "session stale overlay");
-  }
+  g_core.set_remote_stale(stale);
+  g_local_owns_screen = true;
+  g_core.local_state().screen = slate::local::Screen::Face;
+  g_core.show_current();
 }
 
 static void apply_profile(const slate::profile::Desc& desc, void*) {
@@ -81,7 +81,6 @@ static void apply_profile(const slate::profile::Desc& desc, void*) {
   rtt::write("profile ");
   rtt::write(desc.name);
   rtt::write_line("");
-  // Conn-interval renegotiation is applied by the NimBLE path when linked.
   (void)ble::interval_for(
       desc.id == slate::profile::kIdAmbient     ? ble::SessionProfile::Ambient
       : desc.id == slate::profile::kIdStreaming ? ble::SessionProfile::Streaming
@@ -133,19 +132,59 @@ static void do_haptic(std::uint8_t pattern, void*) {
   board::pulse_motor(ms);
 }
 
+static void core_push_list(const std::uint8_t* data, std::size_t len, void*) {
+  (void)g_interp.push_list(data, len);
+  g_input.set_hits(g_interp.hit_rects(), g_interp.hit_count());
+}
+
+static void core_backlight(std::uint8_t pct, void*) { backlight::set(pct); }
+
+static bool bma_write(std::uint8_t reg, const std::uint8_t* data, std::size_t len,
+                      void*) {
+  std::uint8_t buf[16];
+  if (len + 1u > sizeof(buf)) {
+    return false;
+  }
+  buf[0] = reg;
+  for (std::size_t i = 0u; i < len; ++i) {
+    buf[i + 1u] = data[i];
+  }
+  return twi::write(slate::bma::kI2cAddr, buf, len + 1u) == twi::Status::Ok;
+}
+
+static bool bma_read(std::uint8_t reg, std::uint8_t* data, std::size_t len,
+                     void*) {
+  return twi::write_read(slate::bma::kI2cAddr, &reg, 1u, data, len) ==
+         twi::Status::Ok;
+}
+
+static void bma_delay(std::uint32_t ms, void*) { board::busy_wait_ms(ms); }
+
+static std::uint64_t clock_ticks(void*) { return slate::rtc_hw::ticks(); }
+
 static void on_app_message(std::uint8_t channel, const std::uint8_t* msg,
                            std::size_t len, void*) {
   const std::uint32_t t = now_ms();
   if (channel == sdp::frame::kChanControl) {
     g_session.on_control(msg, len, t);
+    // Optional TIME sync on CONTROL: op 0x20, unix u32 LE (host/tests / pre-CTS).
+    if (len >= 5u && msg[0] == 0x20u) {
+      const std::uint32_t epoch = static_cast<std::uint32_t>(msg[1]) |
+                                  (static_cast<std::uint32_t>(msg[2]) << 8) |
+                                  (static_cast<std::uint32_t>(msg[3]) << 16) |
+                                  (static_cast<std::uint32_t>(msg[4]) << 24);
+      g_core.apply_cts_time(epoch);
+    }
   } else if (channel == sdp::frame::kChanDisplay) {
     g_session.on_display(msg, len, t);
+  } else if (channel == sdp::frame::kChanSystem) {
+    g_core.on_system_message(msg, len);
   }
 }
 
 extern "C" int main() {
   rtt::init();
-  rtt::log(rtt::Level::Info, "Slate M7 — input + session");
+  rtt::log(rtt::Level::Info, "Slate M10 — resilient local core");
   rtt::log(rtt::Level::Info, slate::uuid::kBaseString);
   timer1_init();
 
@@ -158,8 +197,47 @@ extern "C" int main() {
   button::init();
   input::init();
 
+  slate::rtc_hw::init();
+  slate::persist_nvmc::init();
+  slate::persist::Hooks ph;
+  ph.read = &slate::persist_nvmc::read_slot;
+  ph.write = &slate::persist_nvmc::write_slot;
+  slate::persist::init(ph);
+
+  slate::clock::Hooks ch;
+  ch.ticks = &clock_ticks;
+  slate::clock::init(ch);
+
+  slate::battery_hw::init();
+
+  slate::bma::Bus bus;
+  bus.write_reg = &bma_write;
+  bus.read_reg = &bma_read;
+  bus.delay_ms = &bma_delay;
+  g_bma.init(bus);
+  if (g_bma.chip() == slate::bma::Chip::BMA421) {
+    rtt::log(rtt::Level::Info, "BMA421");
+  } else if (g_bma.chip() == slate::bma::Chip::BMA425) {
+    rtt::log(rtt::Level::Info, "BMA425");
+  } else {
+    rtt::log(rtt::Level::Warn, "BMA unknown / missing");
+  }
+
   g_interp.init(&g_renderer);
-  (void)g_interp.push_list(kListWatchFace, sizeof(kListWatchFace));
+
+  slate::core::Hooks ckh;
+  ckh.push_list = &core_push_list;
+  ckh.haptic = &do_haptic;
+  ckh.backlight = &core_backlight;
+  g_core.init(ckh, &g_bma);
+
+  {
+    const auto b = g_core.budgets();
+    rtt::write("budget local ");
+    // Digit-only RTT: report used/budget roughly via logs.
+    rtt::log(rtt::Level::Info, "local-screen-state / notif-store sized (see docs)");
+    (void)b;
+  }
 
 #if defined(SLATE_BLE_DIAG) && (SLATE_BLE_DIAG == 1)
   const bool diag = true;
@@ -198,23 +276,31 @@ extern "C" int main() {
   g_gatt.init(&g_link, caps);
   ble::start_stack(&g_gatt, ble::SessionProfile::Active);
 
-  // Treat stack start as link-up for stub builds; NimBLE path should call
-  // on_link_up / on_link_down from GAP events when SLATE_HAS_NIMBLE=1.
   g_session.on_link_up(now_ms());
+  g_core.on_link_up();
 
-  rtt::log(rtt::Level::Info, "M7 ready");
+  rtt::log(rtt::Level::Info, "M10 ready");
   std::uint32_t last_tick = now_ms();
   while (true) {
     const input::Event ev = input::poll();
     if (ev.type != input::EventType::None) {
-      g_input.on_event(ev);
+      if (g_local_owns_screen || g_session.remote_depth() == 0u) {
+        if (ev.type == input::EventType::Button) {
+          g_core.on_button_press();
+        } else {
+          g_input.on_event(ev);
+        }
+      } else {
+        g_input.on_event(ev);
+      }
     }
     const std::uint32_t t = now_ms();
     if (t - last_tick >= 200u) {
       g_session.tick(t);
+      g_core.set_remote_stale(g_session.stale());
+      g_core.tick(t);
       last_tick = t;
     }
     board::busy_wait_ms(5u);
-    (void)g_stale_overlay;
   }
 }

@@ -203,7 +203,7 @@ constexpr std::uint8_t GOODBYE        = 0x0Bu;  // either
 
 constexpr std::uint16_t kProtocolVersion = 1u;
 constexpr std::uint8_t  kFwMajor = 0u;
-constexpr std::uint8_t  kFwMinor = 7u;  // M7
+constexpr std::uint8_t  kFwMinor = 10u;  // M10 resilient core
 constexpr std::uint8_t  kFwPatch = 0u;
 constexpr std::uint8_t  kOpcodeBitmapBytes = 32u;
 constexpr std::uint8_t  kPhoneIdBytes = 8u;

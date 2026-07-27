@@ -29,6 +29,8 @@ Adding a profile is a firmware change. Choosing among existing profiles is not.
 
 Heartbeat: **2 misses → stale overlay**; **5 misses → pop remote stack**, `SESSION_END(TIMEOUT)`, watch face.
 
+Local screens / offline behaviour after pop: [resilient-core.md](resilient-core.md) (M10).
+
 ## States
 
 `DISCONNECTED → CONNECTED → READY ⇄ ACTIVE ⇄ IDLE`

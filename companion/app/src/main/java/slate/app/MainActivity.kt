@@ -27,11 +27,14 @@ import slate.app.link.LinkForegroundService
 import slate.app.link.LinkLog
 import slate.app.link.LinkMetrics
 import slate.app.link.SharedLink
+import slate.app.notif.NotifPrefs
+import slate.app.notif.SlateNotificationListener
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var metricsView: TextView
     private lateinit var statusView: TextView
+    private lateinit var nlsStatus: TextView
     private val association by lazy { AssociationHelper(this) }
     private val gatt by lazy { SharedLink.gatt(applicationContext) }
 
@@ -72,11 +75,10 @@ class MainActivity : ComponentActivity() {
             setPadding(pad)
         }
 
-        root.addView(text("Slate companion (M6)", 22f, true))
+        root.addView(text("Slate companion (M9)", 22f, true))
         root.addView(
             text(
-                "CDM watch profile (API 33+) · connectedDevice FGS · raw BluetoothGatt · " +
-                    "M4 DSL clock @ 1 Hz · §4.2 framing",
+                "CDM · FGS · compositor · notifications bridge · §4.2 framing",
                 14f,
                 false,
             ),
@@ -84,9 +86,20 @@ class MainActivity : ComponentActivity() {
 
         metricsView = text("…", 15f, false).also { root.addView(it) }
         statusView = text("", 13f, false).also { root.addView(it) }
+        root.addView(
+            text(
+                "NLS: " + if (SlateNotificationListener.isEnabled(this)) "enabled" else "disabled — open settings",
+                13f,
+                false,
+            ).also { nlsStatus = it },
+        )
 
         root.addView(button("1. Grant permissions") {
             permissionLauncher.launch(requiredPermissions())
+        })
+        root.addView(button("1b. Notification access (system settings)") {
+            SlateNotificationListener.openListenerSettings(this)
+            statusView.text = "Enable “Slate notifications” in the list, then return"
         })
         root.addView(button("2. Associate watch (CDM)") {
             if (!hasPermissions()) {
@@ -113,9 +126,24 @@ class MainActivity : ComponentActivity() {
             }
         })
         root.addView(button("Ping RTT (DIAG ch7)") { gatt.pingRtt() })
-        root.addView(button("Open TestApp (compositor)") {
+        root.addView(button("Open TestApp") {
             LinkForegroundService.openTestApp(this)
             statusView.text = "Requested TestApp focus"
+        })
+        root.addView(button("Open Notifications") {
+            LinkForegroundService.openNotifications(this)
+            statusView.text = "Requested Notifications focus"
+        })
+        root.addView(button("Interrupt filter: allow this phone's SMS pkgs") {
+            val prefs = NotifPrefs(this)
+            prefs.interruptFilterEnabled = true
+            prefs.allowInterrupt("com.google.android.apps.messaging")
+            prefs.allowInterrupt("com.android.mms")
+            statusView.text = "Interrupt allowlist: messaging (filter ON)"
+        })
+        root.addView(button("Interrupt filter: allow all HIGH+") {
+            NotifPrefs(this).interruptFilterEnabled = false
+            statusView.text = "Interrupt filter OFF — any HIGH+ may steal focus"
         })
         root.addView(button("Benchmarks (gates A / B / D)") {
             startActivity(Intent(this, BenchmarkActivity::class.java))
@@ -135,6 +163,18 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 gatt.metrics.collect { renderMetrics(it) }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::nlsStatus.isInitialized) {
+            nlsStatus.text =
+                "NLS: " + if (SlateNotificationListener.isEnabled(this)) {
+                    "enabled"
+                } else {
+                    "disabled — open settings"
+                }
         }
     }
 

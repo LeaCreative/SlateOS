@@ -4,4 +4,5 @@ sdp_frame 5 0.00128686
 ble_link 7 0.0010899
 sdp_diag 5 0.00131174
 session 5 0.00153748
+local_core 2 0.0145968
 ---

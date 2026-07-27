@@ -64,7 +64,7 @@
 35-->[androidx.core:core:1.15.0] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\13f7cf6f3d35d4312bf447a55e4f0b83\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
 36
 37    <application
-37-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:19:5-53:19
+37-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:19:5-63:19
 38        android:allowBackup="false"
 38-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:20:9-36
 39        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
@@ -114,74 +114,91 @@
 63            android:foregroundServiceType="connectedDevice" />
 63-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:43:13-60
 64        <service
-64-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:45:9-52:19
-65            android:name="slate.app.link.SlateCompanionDeviceService"
-65-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:46:13-61
+64-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:45:9-53:19
+65            android:name="slate.app.notif.SlateNotificationListener"
+65-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:46:13-60
 66            android:exported="true"
 66-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:47:13-36
-67            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE" >
-67-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:48:13-82
-68            <intent-filter>
-68-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:49:13-51:29
-69                <action android:name="android.companion.CompanionDeviceService" />
-69-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:50:17-83
-69-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:50:25-80
-70            </intent-filter>
-71        </service>
-72
-73        <provider
-73-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:24:9-32:20
-74            android:name="androidx.startup.InitializationProvider"
-74-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:25:13-67
-75            android:authorities="slate.app.debug.androidx-startup"
-75-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:26:13-68
-76            android:exported="false" >
-76-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:27:13-37
-77            <meta-data
-77-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
-78                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-78-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
-79                android:value="androidx.startup" />
-79-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
-80        </provider>
+67            android:label="Slate notifications"
+67-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:48:13-48
+68            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+68-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:49:13-87
+69            <intent-filter>
+69-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:50:13-52:29
+70                <action android:name="android.service.notification.NotificationListenerService" />
+70-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:51:17-99
+70-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:51:25-96
+71            </intent-filter>
+72        </service>
+73        <service
+73-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:55:9-62:19
+74            android:name="slate.app.link.SlateCompanionDeviceService"
+74-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:56:13-61
+75            android:exported="true"
+75-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:57:13-36
+76            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE" >
+76-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:58:13-82
+77            <intent-filter>
+77-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:59:13-61:29
+78                <action android:name="android.companion.CompanionDeviceService" />
+78-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:60:17-83
+78-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:60:25-80
+79            </intent-filter>
+80        </service>
 81
-82        <receiver
-82-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
-83            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-83-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
-84            android:directBootAware="false"
-84-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
-85            android:enabled="true"
-85-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
-86            android:exported="true"
-86-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
-87            android:permission="android.permission.DUMP" >
-87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
-88            <intent-filter>
-88-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
-89                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
-89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
-90            </intent-filter>
-91            <intent-filter>
-91-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
-92                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
-92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
-93            </intent-filter>
-94            <intent-filter>
-94-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
-95                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
-95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
-96            </intent-filter>
+82        <provider
+82-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:24:9-32:20
+83            android:name="androidx.startup.InitializationProvider"
+83-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:25:13-67
+84            android:authorities="slate.app.debug.androidx-startup"
+84-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:26:13-68
+85            android:exported="false" >
+85-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:27:13-37
+86            <meta-data
+86-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+87                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+87-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+88                android:value="androidx.startup" />
+88-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+89        </provider>
+90
+91        <receiver
+91-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+92            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+93            android:directBootAware="false"
+93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+94            android:enabled="true"
+94-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+95            android:exported="true"
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+96            android:permission="android.permission.DUMP" >
+96-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
 97            <intent-filter>
-97-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
-98                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
-98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+97-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+98                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
 99            </intent-filter>
-100        </receiver>
-101    </application>
-102
-103</manifest>
+100            <intent-filter>
+100-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+101                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+102            </intent-filter>
+103            <intent-filter>
+103-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+104                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+105            </intent-filter>
+106            <intent-filter>
+106-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+107                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+107-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+107-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\AppData\Local\Temp\cursor-sandbox-cache\d8a7b7ac7d9e2866fa9be87ec85cf819\gradle\caches\8.10.2\transforms\6a2d119e4aa9161d6b68817f6c8a0195\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+108            </intent-filter>
+109        </receiver>
+110    </application>
+111
+112</manifest>

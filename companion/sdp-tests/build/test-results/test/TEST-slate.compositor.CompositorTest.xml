@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.compositor.CompositorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-07-27T14:01:54" hostname="DAN01" time="0.075">
+<testsuite name="slate.compositor.CompositorTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-07-27T17:11:23" hostname="DAN01" time="0.086">
   <properties/>
-  <testcase name="lowerPriorityCannotSteal()" classname="slate.compositor.CompositorTest" time="0.049"/>
-  <testcase name="higherPriorityStealsAndBlursDisplaced()" classname="slate.compositor.CompositorTest" time="0.002"/>
-  <testcase name="ambientQuotaOnePerMinute()" classname="slate.compositor.CompositorTest" time="0.003"/>
+  <testcase name="lowerPriorityCannotSteal()" classname="slate.compositor.CompositorTest" time="0.058"/>
+  <testcase name="higherPriorityStealsAndBlursDisplaced()" classname="slate.compositor.CompositorTest" time="0.001"/>
+  <testcase name="ambientQuotaOnePerMinute()" classname="slate.compositor.CompositorTest" time="0.002"/>
   <testcase name="peerEqualPriorityDeniedUnlessUserNavigation()" classname="slate.compositor.CompositorTest" time="0.001"/>
   <testcase name="creditBlocksOversizedPush()" classname="slate.compositor.CompositorTest" time="0.001"/>
   <testcase name="focusRulesHelpers()" classname="slate.compositor.CompositorTest" time="0.0"/>
-  <testcase name="protocolGateShowsUpdateScreen()" classname="slate.compositor.CompositorTest" time="0.015"/>
-  <testcase name="inputFallbackBackPopsStack()" classname="slate.compositor.CompositorTest" time="0.001"/>
+  <testcase name="protocolGateShowsUpdateScreen()" classname="slate.compositor.CompositorTest" time="0.016"/>
+  <testcase name="inputFallbackBackPopsStack()" classname="slate.compositor.CompositorTest" time="0.002"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

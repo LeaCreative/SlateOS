@@ -5,6 +5,7 @@ C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_sdp_f
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_ble_link.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_sdp_diag.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_session.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_local_core.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/edit_cache.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/rebuild_cache.dir

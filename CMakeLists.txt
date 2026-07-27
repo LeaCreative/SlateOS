@@ -30,6 +30,9 @@ if(BOOTLOADER_PRESENT)
   set(SLATE_FLASH_ORIGIN 0x00008000)
   math(EXPR SLATE_FLASH_LENGTH "0x80000 - 0x8000" OUTPUT_FORMAT HEXADECIMAL)
 endif()
+# Reserve last 4 KB of the chip for NVMC persist (clock / alarms / settings).
+math(EXPR SLATE_FLASH_LENGTH "${SLATE_FLASH_LENGTH} - 0x1000" OUTPUT_FORMAT HEXADECIMAL)
+set(SLATE_PERSIST_FLASH_ADDR 0x0007F000)
 
 set(SLATE_RAM_ORIGIN 0x20000000)
 set(SLATE_RAM_LENGTH 0x00010000)
@@ -62,6 +65,17 @@ add_executable(slate_firmware.elf
   src/sdp_frame.cpp
   src/sdp_diag.cpp
   src/session.cpp
+  src/persist.cpp
+  src/persist_nvmc.cpp
+  src/wall_clock.cpp
+  src/rtc_hw.cpp
+  src/notif_store.cpp
+  src/alarm_sched.cpp
+  src/bma42x.cpp
+  src/battery.cpp
+  src/battery_hw.cpp
+  src/local_ui.cpp
+  src/local_core.cpp
   src/ble_link.cpp
   src/ble_conn.cpp
   src/ble_gatt.cpp
@@ -77,6 +91,7 @@ target_include_directories(slate_firmware.elf PRIVATE
 
 target_compile_definitions(slate_firmware.elf PRIVATE
   NRF52832_XXAA=1
+  SLATE_PERSIST_FLASH_ADDR=${SLATE_PERSIST_FLASH_ADDR}
   $<$<BOOL:${SLATE_ENABLE_RTT}>:SLATE_ENABLE_RTT=1>
   $<$<BOOL:${SLATE_HAS_NIMBLE}>:SLATE_HAS_NIMBLE=1>
   $<$<NOT:$<BOOL:${SLATE_HAS_NIMBLE}>>:SLATE_HAS_NIMBLE=0>

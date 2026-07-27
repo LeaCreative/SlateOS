@@ -16,6 +16,7 @@ import slate.host.UpdateWatchScreen
 class Compositor(
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val pushToWatch: suspend (bytes: ByteArray) -> Boolean,
+    private val onAdapterCommand: (HostOutbound.AdapterCommand) -> Unit = {},
 ) {
     data class StackEntry(
         val appId: String,
@@ -154,7 +155,12 @@ class Compositor(
         }
     }
 
-    suspend fun onInput(input: HostInbound.Input) {
+    suspend fun dispatchSystemEvent(appId: String, source: String, jsonPayload: String) {
+        val reg = apps[appId] ?: return
+        applyOutbound(reg, reg.endpoint.dispatch(HostInbound.SystemEvent(source, jsonPayload)))
+    }
+
+    suspend fun dispatchInput(input: HostInbound.Input) {
         val focusId = focusedAppId ?: return
         val reg = apps[focusId] ?: return
         val out = reg.endpoint.dispatch(input)
@@ -227,6 +233,7 @@ class Compositor(
                 }
                 HostOutbound.RelinquishFocus -> relinquishFocus(reg.endpoint.manifest.id)
                 is HostOutbound.Log -> Unit
+                is HostOutbound.AdapterCommand -> onAdapterCommand(m)
                 HostOutbound.InputHandled, HostOutbound.InputUnhandled -> Unit
             }
         }

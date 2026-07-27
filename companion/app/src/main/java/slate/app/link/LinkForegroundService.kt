@@ -42,7 +42,11 @@ class LinkForegroundService : Service() {
         super.onCreate()
         instance = this
         client = SharedLink.gatt(applicationContext)
-        compositorHost = CompositorHost(client, scope).also { it.start() }
+        compositorHost = CompositorHost(
+            client,
+            scope,
+            slate.app.notif.NotifPrefs(applicationContext),
+        ).also { it.start() }
         SharedLink.compositorHost = compositorHost
         createChannel()
         val notification = buildNotification("Slate link starting…")
@@ -96,6 +100,11 @@ class LinkForegroundService : Service() {
             ACTION_OPEN_TEST_APP -> {
                 scope.launch {
                     compositorHost?.openTestApp()
+                }
+            }
+            ACTION_OPEN_NOTIFICATIONS -> {
+                scope.launch {
+                    compositorHost?.openNotifications()
                 }
             }
         }
@@ -199,6 +208,7 @@ class LinkForegroundService : Service() {
         const val ACTION_PRESENCE_APPEARED = "slate.app.PRESENCE_APPEARED"
         const val ACTION_PRESENCE_DISAPPEARED = "slate.app.PRESENCE_DISAPPEARED"
         const val ACTION_OPEN_TEST_APP = "slate.app.OPEN_TEST_APP"
+        const val ACTION_OPEN_NOTIFICATIONS = "slate.app.OPEN_NOTIFICATIONS"
         const val EXTRA_ADDRESS = "address"
 
         @Volatile
@@ -218,6 +228,14 @@ class LinkForegroundService : Service() {
             context.startService(
                 Intent(context, LinkForegroundService::class.java).apply {
                     action = ACTION_OPEN_TEST_APP
+                },
+            )
+        }
+
+        fun openNotifications(context: Context) {
+            context.startService(
+                Intent(context, LinkForegroundService::class.java).apply {
+                    action = ACTION_OPEN_NOTIFICATIONS
                 },
             )
         }

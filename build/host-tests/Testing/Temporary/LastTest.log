@@ -1,58 +1,46 @@
-Start testing: Jul 27 17:54 Mauritius Standard Time
+Start testing: Jul 27 21:28 Mauritius Standard Time
 ----------------------------------------------------------
-6/6 Testing: session
-6/6 Test: session
-Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_session.exe"
+7/7 Testing: local_core
+7/7 Test: local_core
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_local_core.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"session" start time: Jul 27 17:54 Mauritius Standard Time
+"local_core" start time: Jul 27 21:28 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
-PASS clean: Connected
-PASS clean: HELLO_OFFER sent
-PASS clean: Ready
-PASS clean: profile active
-PASS clean: depth 0
-PASS clean: Active
-PASS clean: depth 1
-PASS clean: applied
-PASS nego fail: still Connected
-PASS nego fail: unknown profile
-PASS nego fail: no apply
-PASS loss: Active before
-PASS loss: Disconnected
-PASS loss: depth cleared
-PASS loss: watch face
-PASS same: first not same_phone
-PASS same: Connected again
-PASS same: Ready
-PASS same: same_phone flag
-PASS same: depth fresh
-PASS same: ambient profile
-PASS diff: Ready
-PASS diff: not same phone
-PASS diff: depth 0
-PASS diff: streaming
-PASS diff: no leaked screens
-PASS hb: stale
-PASS hb: Idle
-PASS hb: clear stale
-PASS hb: Active again
-PASS hb: popped to Ready
-PASS hb: depth 0
-PASS hb: SESSION_END sent
-PASS prof: NACK
-PASS prof: still active
-PASS prof: ambient
-PASS offer: non-empty
-PASS offer: op
-PASS offer: profile_count
-all session tests passed
+ok   local State <= 3KB
+ok   local block == 3KB
+ok   notif store <= 4KB
+  local State=60 block=3072 budget=3072
+  notif Store=2564 budget=4096
+ok   synced
+ok   unix at sync
+ok   unix +1000
+ok   drift updated
+ok   persist reload synced
+ok   persist drift kept
+ok   upsert
+ok   count 1
+ok   title
+ok   when
+ok   stale
+ok   remove
+ok   empty
+ok   add alarm
+ok   alarm fires
+ok   alarm once/day
+ok   timer
+ok   timer not yet
+ok   timer fires
+ok   face list
+ok   alert screen
+ok   haptic on alert
+all local-core tests passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.03 sec
 ----------------------------------------------------------
 Test Passed.
-"session" end time: Jul 27 17:54 Mauritius Standard Time
-"session" time elapsed: 00:00:00
+"local_core" end time: Jul 27 21:28 Mauritius Standard Time
+"local_core" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Jul 27 17:54 Mauritius Standard Time
+End testing: Jul 27 21:28 Mauritius Standard Time

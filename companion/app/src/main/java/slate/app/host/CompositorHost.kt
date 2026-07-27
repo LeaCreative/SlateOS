@@ -5,22 +5,32 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import slate.app.apps.ClockApp
+import slate.app.apps.NotificationsApp
 import slate.app.apps.TestApp
 import slate.app.link.LinkLog
 import slate.app.link.SharedLink
 import slate.app.link.SlateGattClient
+import slate.app.notif.NotifChange
+import slate.app.notif.NotifPrefs
+import slate.app.notif.NotifStore
+import slate.app.notif.toJsonArray
 import slate.compositor.Compositor
 import slate.compositor.FocusReason
 import slate.compositor.StackOp
+import slate.frame.SdpFrame
+import slate.host.HostOutbound
 import slate.host.PriorityClass
+import slate.notif.SystemNotifCodec
 
 /**
- * Binds [Compositor] to the GATT link inside the FGS.
+ * Binds [Compositor] to the GATT link and notification bridge inside the FGS.
  */
 class CompositorHost(
     private val gatt: SlateGattClient,
     private val scope: CoroutineScope,
+    private val notifPrefs: NotifPrefs,
 ) {
     val compositor = Compositor(
         nowMs = { System.currentTimeMillis() },
@@ -28,21 +38,23 @@ class CompositorHost(
             if (SharedLink.benchmarkPaused) return@Compositor false
             gatt.pushDisplayList(bytes)
         },
+        onAdapterCommand = { cmd -> handleAdapter(cmd) },
     )
 
     private var tickJob: Job? = null
+    private var notifJob: Job? = null
     private val clock = ClockApp()
     private val test = TestApp()
+    private val notifications = NotificationsApp()
 
     fun start() {
         compositor.register(clock)
         compositor.register(test)
+        compositor.register(notifications)
         scope.launch {
             gatt.metrics.collect { m ->
                 compositor.linkConnected = m.connected
                 if (m.connected) {
-                    // Until HELLO_OFFER/ACCEPT is parsed on the phone, assume protocol 1
-                    // and a full DL buffer (matches firmware kMaxListBytes).
                     if (compositor.watchProtocolVersion < 1) {
                         compositor.watchProtocolVersion = 1
                     }
@@ -51,6 +63,7 @@ class CompositorHost(
                     }
                     ensureAmbient()
                     startTicker()
+                    startNotifBridge()
                 } else {
                     stopTicker()
                 }
@@ -60,6 +73,8 @@ class CompositorHost(
 
     fun stop() {
         stopTicker()
+        notifJob?.cancel()
+        notifJob = null
     }
 
     fun setWatchProtocolVersion(version: Int) {
@@ -77,6 +92,115 @@ class CompositorHost(
             FocusReason.UserNavigation,
             StackOp.Push,
         )
+    }
+
+    suspend fun openNotifications() {
+        pushNotifSnapshotToApp()
+        compositor.requestFocus(
+            notifications.manifest.id,
+            PriorityClass.NORMAL,
+            FocusReason.UserNavigation,
+            StackOp.Push,
+        )
+    }
+
+    private fun startNotifBridge() {
+        if (notifJob?.isActive == true) return
+        notifJob = scope.launch {
+            // Initial sync
+            syncAllToSystemChannel()
+            pushNotifSnapshotToApp()
+            NotifStore.changes.collect { change ->
+                when (change) {
+                    is NotifChange.Upserted -> {
+                        val n = change.item
+                        gatt.sendMessage(
+                            SdpFrame.CHAN_SYSTEM,
+                            SystemNotifCodec.encodeUpsert(
+                                key = n.key,
+                                category = n.icon.category.atlasId,
+                                monogram = n.icon.monogram,
+                                title = n.title,
+                                text = n.text,
+                                whenEpochSec = n.whenMs / 1000L,
+                                ongoing = n.ongoing,
+                                clearable = n.clearable,
+                            ),
+                        )
+                        pushNotifSnapshotToApp()
+                        maybeInterrupt(n.packageName, n.importance)
+                    }
+                    is NotifChange.Removed -> {
+                        gatt.sendMessage(
+                            SdpFrame.CHAN_SYSTEM,
+                            SystemNotifCodec.encodeRemove(change.key),
+                        )
+                        pushNotifSnapshotToApp()
+                    }
+                    NotifChange.Cleared -> {
+                        gatt.sendMessage(SdpFrame.CHAN_SYSTEM, SystemNotifCodec.encodeClearAll())
+                        pushNotifSnapshotToApp()
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun maybeInterrupt(packageName: String, importance: Int) {
+        if (!notifPrefs.mayInterrupt(packageName, importance)) return
+        if (!compositor.linkConnected) return
+        val deny = compositor.requestFocus(
+            notifications.manifest.id,
+            PriorityClass.INTERRUPT,
+            FocusReason.SystemRaise,
+            StackOp.Push,
+        )
+        if (deny != null) {
+            LinkLog.i("notif interrupt denied: $deny")
+        }
+    }
+
+    private suspend fun pushNotifSnapshotToApp() {
+        val json = JSONObject()
+            .put("items", NotifStore.snapshot.value.toJsonArray())
+            .toString()
+        compositor.dispatchSystemEvent(NotificationsApp.ID, NotificationsApp.SOURCE, json)
+    }
+
+    private fun syncAllToSystemChannel() {
+        for (n in NotifStore.snapshot.value) {
+            gatt.sendMessage(
+                SdpFrame.CHAN_SYSTEM,
+                SystemNotifCodec.encodeUpsert(
+                    key = n.key,
+                    category = n.icon.category.atlasId,
+                    monogram = n.icon.monogram,
+                    title = n.title,
+                    text = n.text,
+                    whenEpochSec = n.whenMs / 1000L,
+                    ongoing = n.ongoing,
+                    clearable = n.clearable,
+                ),
+            )
+        }
+    }
+
+    private fun handleAdapter(cmd: HostOutbound.AdapterCommand) {
+        if (cmd.adapter != "notifications") return
+        when (cmd.command) {
+            "action" -> {
+                try {
+                    val o = JSONObject(cmd.payloadJson)
+                    val key = o.getString("key")
+                    val actionId = o.getString("actionId")
+                    if (!NotifStore.invokeAction(key, actionId)) {
+                        LinkLog.w("notif action missed $key/$actionId")
+                    }
+                } catch (t: Throwable) {
+                    LinkLog.e("notif adapter", t)
+                }
+            }
+        }
     }
 
     private suspend fun ensureAmbient() {

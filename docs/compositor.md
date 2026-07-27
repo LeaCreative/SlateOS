@@ -16,7 +16,8 @@ Rules:
 
 ### Kotlin reference
 
-`KotlinSlateApp` adapts hooks → messages. `ClockApp` / `TestApp` subclass it.
+`KotlinSlateApp` adapts hooks → messages. `ClockApp` / `TestApp` /
+`NotificationsApp` subclass it. See [notifications.md](notifications.md) for M9.
 
 ### JS (future)
 

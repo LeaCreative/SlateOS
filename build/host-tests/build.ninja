@@ -363,6 +363,105 @@ build test_session.exe: CXX_EXECUTABLE_LINKER__test_session_ CMakeFiles/test_ses
   TARGET_PDB = test_session.exe.dbg
   TARGET_SUPPORT_DIR = CMakeFiles\test_session.dir
 
+# =============================================================================
+# Object build statements for EXECUTABLE target test_local_core
+
+
+#############################################
+# Order-only phony target for test_local_core
+
+build cmake_object_order_depends_target_test_local_core: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_local_core.dir/test_local_core.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_local_core.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\test_local_core.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/persist.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/persist.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\persist.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/wall_clock.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/wall_clock.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\wall_clock.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/notif_store.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/notif_store.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\notif_store.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/alarm_sched.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/alarm_sched.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\alarm_sched.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/battery.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/battery.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\battery.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_ui.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/local_ui.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\local_ui.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_core.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/local_core.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\local_core.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\bma42x.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_local_core
+
+
+#############################################
+# Link the executable test_local_core.exe
+
+build test_local_core.exe: CXX_EXECUTABLE_LINKER__test_local_core_ CMakeFiles/test_local_core.dir/test_local_core.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/persist.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/wall_clock.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/notif_store.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/alarm_sched.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/battery.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_ui.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_core.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_local_core.exe
+  TARGET_IMPLIB = libtest_local_core.dll.a
+  TARGET_PDB = test_local_core.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
 
 #############################################
 # Utility command for test
@@ -414,6 +513,8 @@ build test_ble_link: phony test_ble_link.exe
 
 build test_hit_test: phony test_hit_test.exe
 
+build test_local_core: phony test_local_core.exe
+
 build test_sdp_diag: phony test_sdp_diag.exe
 
 build test_sdp_frame: phony test_sdp_frame.exe
@@ -430,7 +531,7 @@ build test_session: phony test_session.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_sdp_frame.exe test_ble_link.exe test_sdp_diag.exe test_session.exe
+build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_sdp_frame.exe test_ble_link.exe test_sdp_diag.exe test_session.exe test_local_core.exe
 
 # =============================================================================
 # Built-in targets

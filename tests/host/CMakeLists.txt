@@ -112,3 +112,18 @@ add_executable(test_session
 target_include_directories(test_session PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_session PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_session session)
+
+add_executable(test_local_core
+  test_local_core.cpp
+  "${SLATE_ROOT}/src/persist.cpp"
+  "${SLATE_ROOT}/src/wall_clock.cpp"
+  "${SLATE_ROOT}/src/notif_store.cpp"
+  "${SLATE_ROOT}/src/alarm_sched.cpp"
+  "${SLATE_ROOT}/src/battery.cpp"
+  "${SLATE_ROOT}/src/local_ui.cpp"
+  "${SLATE_ROOT}/src/local_core.cpp"
+  "${SLATE_ROOT}/src/bma42x.cpp"
+)
+target_include_directories(test_local_core PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_local_core PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_local_core local_core)

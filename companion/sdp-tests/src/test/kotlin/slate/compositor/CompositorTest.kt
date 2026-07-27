@@ -174,7 +174,7 @@ class CompositorTest {
         c.register(normal)
         c.requestFocus("a", PriorityClass.AMBIENT, FocusReason.UserNavigation)
         c.requestFocus("n", PriorityClass.NORMAL, FocusReason.UserNavigation)
-        c.onInput(HostInbound.Input(op = slate.generated.SdpWire.InputOp.BACK))
+        c.dispatchInput(HostInbound.Input(op = slate.generated.SdpWire.InputOp.BACK))
         assertEquals("a", c.focusedAppId)
         assertEquals(2, ambient.focusCount) // initial + restored
     }

@@ -68,6 +68,16 @@ sealed class HostOutbound {
     data object InputUnhandled : HostOutbound()
 
     data class Log(val level: String, val message: String) : HostOutbound()
+
+    /**
+     * Host-side adapter command (notifications dismiss, media skip, …).
+     * JSON payload — process-boundary safe for a future JS isolate.
+     */
+    data class AdapterCommand(
+        val adapter: String,
+        val command: String,
+        val payloadJson: String = "{}",
+    ) : HostOutbound()
 }
 
 /**
