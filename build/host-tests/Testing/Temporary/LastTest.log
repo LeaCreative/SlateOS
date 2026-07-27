@@ -1,10 +1,10 @@
-Start testing: Jul 27 12:55 Mauritius Standard Time
+Start testing: Jul 27 16:02 Mauritius Standard Time
 ----------------------------------------------------------
-1/2 Testing: hit_test
-1/2 Test: hit_test
+1/3 Testing: hit_test
+1/3 Test: hit_test
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_hit_test.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"hit_test" start time: Jul 27 12:55 Mauritius Standard Time
+"hit_test" start time: Jul 27 16:02 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS empty list
@@ -23,50 +23,92 @@ PASS zero does not win
 PASS base still visible
 all hit-test checks passed
 <end of output>
-Test time =   0.05 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"hit_test" end time: Jul 27 12:55 Mauritius Standard Time
+"hit_test" end time: Jul 27 16:02 Mauritius Standard Time
 "hit_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-2/2 Testing: sdp_parser
-2/2 Test: sdp_parser
-Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_sdp_parser.exe"
+2/3 Testing: sdp_frame
+2/3 Test: sdp_frame
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_sdp_frame.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"sdp_parser" start time: Jul 27 12:55 Mauritius Standard Time
+"sdp_frame" start time: Jul 27 16:02 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
-PASS CLEAR+COMMIT
-PASS saw commit
-PASS SET_PALETTE+RECT
-PASS shapes+clip
-PASS TEXT+TEXT_BOX
-PASS ICON+IMAGE
-PASS progress+elem+scroll
-PASS patch+haptic+bl+retain
-PASS retain ttl
-PASS EXT skip unknown
-PASS trunc COLOR
-PASS coord 240
-PASS STYLE mode 3
-PASS COLOR tag 0x11
-PASS bad align
-PASS oversized string
-PASS 513 ops
-PASS >4KB
-PASS EXT past EOF
-PASS END without BEGIN
-PASS unset palette
-PASS bad font id
-PASS COMMIT with open elem
-all sdp parser checks passed
+PASS frag single
+PASS one pkt
+PASS seq advanced
+PASS status Ok
+PASS len
+PASS bytes
+PASS frag multi
+PASS >=2 pkts
+PASS first has len
+PASS total len
+PASS reassembled Ok
+PASS reassembled len
+PASS payload match
+PASS frag at 255
+PASS wrapped to 0
+PASS pkt seq byte
+PASS frag wrap multi
+PASS multi pkts
+PASS first seq 254
+PASS second seq 255
+PASS wrap reasm Ok
+PASS need >=2
+PASS first NeedMore
+PASS corrupt seq Dropped
+PASS trunc Dropped
+PASS first no len Dropped
+PASS oversize Dropped
+PASS diag reject
+PASS drop
+PASS resync Ok
+PASS byte
+all framing tests passed
 <end of output>
-Test time =   0.06 sec
+Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"sdp_parser" end time: Jul 27 12:55 Mauritius Standard Time
-"sdp_parser" time elapsed: 00:00:00
+"sdp_frame" end time: Jul 27 16:02 Mauritius Standard Time
+"sdp_frame" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Jul 27 12:55 Mauritius Standard Time
+3/3 Testing: ble_link
+3/3 Test: ble_link
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_ble_link.exe"
+Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
+"ble_link" start time: Jul 27 16:02 Mauritius Standard Time
+Output:
+----------------------------------------------------------
+PASS loopback count
+PASS tx emitted
+PASS tx Ok
+PASS tx len
+PASS echo match
+PASS no loopback
+PASS drop/reject
+PASS no tx
+PASS mtu_ok
+PASS dle_ok
+PASS phy_ok
+PASS mtu
+PASS mtu not ok
+PASS mtu 23
+PASS mtu lo
+PASS mtu hi
+PASS phy
+PASS flags
+all ble link tests passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"ble_link" end time: Jul 27 16:02 Mauritius Standard Time
+"ble_link" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Jul 27 16:02 Mauritius Standard Time

@@ -30,3 +30,23 @@ add_executable(test_sdp_parser
 target_include_directories(test_sdp_parser PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_sdp_parser PRIVATE -Wall -Wextra -Wpedantic)
 add_test(NAME sdp_parser COMMAND test_sdp_parser)
+
+add_executable(test_sdp_frame
+  test_sdp_frame.cpp
+  "${SLATE_ROOT}/src/sdp_frame.cpp"
+)
+target_include_directories(test_sdp_frame PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_sdp_frame PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME sdp_frame COMMAND test_sdp_frame)
+
+add_executable(test_ble_link
+  test_ble_link.cpp
+  rtt_stub.cpp
+  "${SLATE_ROOT}/src/sdp_frame.cpp"
+  "${SLATE_ROOT}/src/ble_link.cpp"
+  "${SLATE_ROOT}/src/ble_conn.cpp"
+  "${SLATE_ROOT}/src/ble_gatt.cpp"
+)
+target_include_directories(test_ble_link PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_ble_link PRIVATE -Wall -Wextra -Wpedantic)
+add_test(NAME ble_link COMMAND test_ble_link)

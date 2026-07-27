@@ -4,6 +4,8 @@ project(slate_firmware LANGUAGES C CXX ASM)
 
 option(BOOTLOADER_PRESENT "Link application above a 32KB bootloader" OFF)
 option(SLATE_ENABLE_RTT "Enable SEGGER RTT logging" ON)
+option(SLATE_HAS_NIMBLE "Link Apache NimBLE + FreeRTOS BLE stack" OFF)
+option(SLATE_BLE_TRANSPORT "Build SDP framing + BLE link (M5)" ON)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -56,18 +58,28 @@ add_executable(slate_firmware.elf
   src/sdp_validate.cpp
   src/sdp_parser.cpp
   src/sdp_interpreter.cpp
+  src/sdp_frame.cpp
+  src/ble_link.cpp
+  src/ble_conn.cpp
+  src/ble_gatt.cpp
+  src/ble_nimble.cpp
   src/main.cpp
 )
 
 target_include_directories(slate_firmware.elf PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/config"
 )
 
 target_compile_definitions(slate_firmware.elf PRIVATE
   NRF52832_XXAA=1
   $<$<BOOL:${SLATE_ENABLE_RTT}>:SLATE_ENABLE_RTT=1>
+  $<$<BOOL:${SLATE_HAS_NIMBLE}>:SLATE_HAS_NIMBLE=1>
+  $<$<NOT:$<BOOL:${SLATE_HAS_NIMBLE}>>:SLATE_HAS_NIMBLE=0>
   $<$<CONFIG:Debug>:SLATE_LOG_LEVEL=4>
   $<$<CONFIG:Release>:SLATE_LOG_LEVEL=2>
+  $<$<CONFIG:Debug>:SLATE_BLE_DIAG=1>
+  $<$<CONFIG:Release>:SLATE_BLE_DIAG=0>
 )
 
 target_compile_options(slate_firmware.elf PRIVATE

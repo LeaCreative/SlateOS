@@ -1,4 +1,6 @@
 #include "backlight.hpp"
+#include "ble_gatt.hpp"
+#include "ble_link.hpp"
 #include "board.hpp"
 #include "nrf52832_regs.hpp"
 #include "renderer.hpp"
@@ -7,6 +9,7 @@
 #include "sdp_opcodes.hpp"
 #include "spi_bus.hpp"
 #include "st7789.hpp"
+#include "slate_uuids.hpp"
 
 #include <cstdint>
 
@@ -34,71 +37,28 @@ static void log_stats(const char* name, const sdp::PushStats& s) {
   rtt::write_line("");
 }
 
-// Helpers to pack demo lists at compile time via byte arrays.
-
-// Clock face: dark clear, palette, time digits, progress arc, commit.
 static const std::uint8_t kListClock[] = {
-    sdp::op::CLEAR, 0x00, 0x00, 0x00,           // black
-    sdp::op::SET_PALETTE, 0x00, 0xFF, 0xFF,     // pal0 = white
-    sdp::op::SET_PALETTE, 0x01, 0xE0, 0x07,     // pal1 = green
-    // TEXT "1234" at centre-ish
-    sdp::op::TEXT, 0x00, 88, 100, 0x01,         // font0, x,y, pal0
-    sdp::align::CENTER, 4, '1', '2', ':', '4',
-    // PROGRESS_ARC
-    sdp::op::PROGRESS_ARC, 120, 120, 50, 40,
-    0x02,                                       // fg pal1
-    0x00, 0x08, 0x08,                           // bg literal dark
-    3,                                          // width
-    sdp::op::COMMIT, 0x00,
-};
-
-// Notification: header bar, body text box, action button elem, commit.
-static const std::uint8_t kListNotification[] = {
-    sdp::op::CLEAR, 0x00, 0x10, 0x00,           // dark blue-ish
-    sdp::op::SET_PALETTE, 0x00, 0xFF, 0xFF,
-    sdp::op::SET_PALETTE, 0x01, 0x00, 0xF8,     // red
-    sdp::op::RECT, 0, 0, 240, 36, 0x00, 0x08, 0x08, 0x00,  // header fill dark
-    sdp::op::TEXT, 0x00, 8, 12, 0x01, sdp::align::LEFT, 3, 'M', 's', 'g',
-    sdp::op::TEXT_BOX, 0x00, 8, 50, 220, 80, 0x01, sdp::align::LEFT,
-    sdp::text_box_flags::WRAP, 5, 'H', 'e', 'l', 'l', 'o',
-    sdp::op::BEGIN_ELEM,
-    0x01, 0x00,                                 // id=1 LE
-    20, 180, 200, 40,
-    sdp::elem_flags::HAPTIC,
-    sdp::op::RECT, 20, 180, 200, 40, 0x02, 0x00,  // pal1 fill
-    sdp::op::TEXT, 0x00, 100, 194, 0x01, sdp::align::CENTER, 2, 'O', 'K',
-    sdp::op::END_ELEM,
-    sdp::op::COMMIT, 0x00,
-};
-
-// Navigation: map stub polyline, instruction text, scroll region, commit.
-static const std::uint8_t kListNavigation[] = {
     sdp::op::CLEAR, 0x00, 0x00, 0x00,
-    sdp::op::SET_PALETTE, 0x00, 0xE0, 0x07,     // green
-    sdp::op::SET_PALETTE, 0x01, 0xFF, 0xFF,
-    // Header in screen coordinates (before scroll region).
-    sdp::op::TEXT, 0x00, 20, 10, 0x02, sdp::align::LEFT, 4, 'T', 'u', 'r', 'n',
-    sdp::op::SCROLL_REGION, 40, 160,
-    0x2C, 0x01,                                 // content_h = 300 LE
-    // Content-local Y inside the scroll viewport.
-    sdp::op::POLYLINE, 4, 0x01, 2,
-    20, 40, 80, 80, 140, 50, 200, 110,
-    sdp::op::CLIP_CLEAR,                        // leave scroll content mode
-    // Soft button in screen coordinates.
-    sdp::op::BEGIN_ELEM,
-    0x02, 0x00,
-    10, 200, 100, 30, 0x00,
-    sdp::op::RECT, 10, 200, 100, 30, 0x00, 0x18, 0x18, 0x00,
-    sdp::op::END_ELEM,
+    sdp::op::SET_PALETTE, 0x00, 0xFF, 0xFF,
+    sdp::op::SET_PALETTE, 0x01, 0xE0, 0x07,
+    sdp::op::TEXT, 0x00, 88, 100, 0x01,
+    sdp::align::CENTER, 4, '1', '2', ':', '4',
+    sdp::op::PROGRESS_ARC, 120, 120, 50, 40,
+    0x02,
+    0x00, 0x08, 0x08,
+    3,
     sdp::op::COMMIT, 0x00,
 };
 
 static Renderer g_renderer;
 static sdp::Interpreter g_interp;
+static ble::Link g_link;
+static ble::GattServer g_gatt;
 
 extern "C" int main() {
   rtt::init();
-  rtt::log(rtt::Level::Info, "Slate M3 boot — SDP display-list interpreter");
+  rtt::log(rtt::Level::Info, "Slate M5 boot — BLE transport + SDP framing");
+  rtt::log(rtt::Level::Info, slate::uuid::kBaseString);
   timer1_init();
 
   for (int i = 0; i < 2; ++i) {
@@ -112,26 +72,23 @@ extern "C" int main() {
   backlight::set(55u);
 
   g_interp.init(&g_renderer);
-
   {
-    const sdp::PushStats s =
-        g_interp.push_list(kListClock, sizeof(kListClock));
+    const sdp::PushStats s = g_interp.push_list(kListClock, sizeof(kListClock));
     log_stats("clock", s);
-    board::busy_wait_ms(800u);
-  }
-  {
-    const sdp::PushStats s =
-        g_interp.push_list(kListNotification, sizeof(kListNotification));
-    log_stats("notification", s);
-    board::busy_wait_ms(800u);
-  }
-  {
-    const sdp::PushStats s =
-        g_interp.push_list(kListNavigation, sizeof(kListNavigation));
-    log_stats("navigation", s);
   }
 
-  rtt::log(rtt::Level::Info, "M3 demo complete — heartbeat");
+#if defined(SLATE_BLE_DIAG) && (SLATE_BLE_DIAG == 1)
+  const bool diag = true;
+#else
+  const bool diag = false;
+#endif
+
+  g_link.init(diag);
+  ble::GattCaps caps;
+  g_gatt.init(&g_link, caps);
+  ble::start_stack(&g_gatt, ble::SessionProfile::Active);
+
+  rtt::log(rtt::Level::Info, "M5 transport ready — heartbeat");
   while (true) {
     board::busy_wait_ms(1000u);
     rtt::log(rtt::Level::Debug, "heartbeat");

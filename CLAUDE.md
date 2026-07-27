@@ -42,6 +42,8 @@ with no phone. Protocol in slate-implementation-roadmap.md (§4).
 - Drivers are C++ classes, no dynamic allocation after init.
 - All tasks document their stack size; check high-water marks in debug builds.
 - Anything BLE-facing gets a host-side unit test that runs on desktop.
+- SDP framing (§4.2) lives in `sdp_frame.hpp` / `sdp_frame.cpp`; BLE link/GATT in
+  `ble_*.hpp`. UUID base and mbuf math: `docs/ble.md`.
 
 # Project: Slate companion — Android bridge, script host and app repository client
 

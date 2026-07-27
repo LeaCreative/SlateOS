@@ -50,8 +50,6 @@ build CMakeFiles/test_hit_test.dir/test_hit_test.cpp.obj: CXX_COMPILER__test_hit
   INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
   OBJECT_DIR = CMakeFiles\test_hit_test.dir
   OBJECT_FILE_DIR = CMakeFiles\test_hit_test.dir
-  TARGET_COMPILE_PDB = CMakeFiles\test_hit_test.dir\
-  TARGET_PDB = test_hit_test.pdb
   TARGET_SUPPORT_DIR = CMakeFiles\test_hit_test.dir
 
 
@@ -67,69 +65,128 @@ build test_hit_test.exe: CXX_EXECUTABLE_LINKER__test_hit_test_ CMakeFiles/test_h
   OBJECT_DIR = CMakeFiles\test_hit_test.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
-  TARGET_COMPILE_PDB = CMakeFiles\test_hit_test.dir\
   TARGET_FILE = test_hit_test.exe
   TARGET_IMPLIB = libtest_hit_test.dll.a
-  TARGET_PDB = test_hit_test.pdb
+  TARGET_PDB = test_hit_test.exe.dbg
   TARGET_SUPPORT_DIR = CMakeFiles\test_hit_test.dir
 
 # =============================================================================
-# Object build statements for EXECUTABLE target test_sdp_parser
+# Object build statements for EXECUTABLE target test_sdp_frame
 
 
 #############################################
-# Order-only phony target for test_sdp_parser
+# Order-only phony target for test_sdp_frame
 
-build cmake_object_order_depends_target_test_sdp_parser: phony || .
+build cmake_object_order_depends_target_test_sdp_frame: phony || .
 
-build CMakeFiles/test_sdp_parser.dir/test_sdp_parser.cpp.obj: CXX_COMPILER__test_sdp_parser_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_sdp_parser.cpp || cmake_object_order_depends_target_test_sdp_parser
-  DEP_FILE = CMakeFiles\test_sdp_parser.dir\test_sdp_parser.cpp.obj.d
+build CMakeFiles/test_sdp_frame.dir/test_sdp_frame.cpp.obj: CXX_COMPILER__test_sdp_frame_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_sdp_frame.cpp || cmake_object_order_depends_target_test_sdp_frame
+  DEP_FILE = CMakeFiles\test_sdp_frame.dir\test_sdp_frame.cpp.obj.d
   FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
   INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
-  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
-  OBJECT_FILE_DIR = CMakeFiles\test_sdp_parser.dir
-  TARGET_COMPILE_PDB = CMakeFiles\test_sdp_parser.dir\
-  TARGET_PDB = test_sdp_parser.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
+  OBJECT_DIR = CMakeFiles\test_sdp_frame.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_frame.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_frame.dir
 
-build CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_validate.cpp.obj: CXX_COMPILER__test_sdp_parser_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_validate.cpp || cmake_object_order_depends_target_test_sdp_parser
-  DEP_FILE = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_validate.cpp.obj.d
+build CMakeFiles/test_sdp_frame.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj: CXX_COMPILER__test_sdp_frame_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp || cmake_object_order_depends_target_test_sdp_frame
+  DEP_FILE = CMakeFiles\test_sdp_frame.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_frame.cpp.obj.d
   FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
   INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
-  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
-  OBJECT_FILE_DIR = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src
-  TARGET_COMPILE_PDB = CMakeFiles\test_sdp_parser.dir\
-  TARGET_PDB = test_sdp_parser.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
-
-build CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_parser.cpp.obj: CXX_COMPILER__test_sdp_parser_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_parser.cpp || cmake_object_order_depends_target_test_sdp_parser
-  DEP_FILE = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_parser.cpp.obj.d
-  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
-  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
-  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
-  OBJECT_FILE_DIR = CMakeFiles\test_sdp_parser.dir\C_\Users\highj\Documents\Projects\EvoTime\src
-  TARGET_COMPILE_PDB = CMakeFiles\test_sdp_parser.dir\
-  TARGET_PDB = test_sdp_parser.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
+  OBJECT_DIR = CMakeFiles\test_sdp_frame.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_sdp_frame.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_frame.dir
 
 
 # =============================================================================
-# Link build statements for EXECUTABLE target test_sdp_parser
+# Link build statements for EXECUTABLE target test_sdp_frame
 
 
 #############################################
-# Link the executable test_sdp_parser.exe
+# Link the executable test_sdp_frame.exe
 
-build test_sdp_parser.exe: CXX_EXECUTABLE_LINKER__test_sdp_parser_ CMakeFiles/test_sdp_parser.dir/test_sdp_parser.cpp.obj CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_validate.cpp.obj CMakeFiles/test_sdp_parser.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_parser.cpp.obj
+build test_sdp_frame.exe: CXX_EXECUTABLE_LINKER__test_sdp_frame_ CMakeFiles/test_sdp_frame.dir/test_sdp_frame.cpp.obj CMakeFiles/test_sdp_frame.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
-  OBJECT_DIR = CMakeFiles\test_sdp_parser.dir
+  OBJECT_DIR = CMakeFiles\test_sdp_frame.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
-  TARGET_COMPILE_PDB = CMakeFiles\test_sdp_parser.dir\
-  TARGET_FILE = test_sdp_parser.exe
-  TARGET_IMPLIB = libtest_sdp_parser.dll.a
-  TARGET_PDB = test_sdp_parser.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
+  TARGET_FILE = test_sdp_frame.exe
+  TARGET_IMPLIB = libtest_sdp_frame.dll.a
+  TARGET_PDB = test_sdp_frame.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_frame.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_ble_link
+
+
+#############################################
+# Order-only phony target for test_ble_link
+
+build cmake_object_order_depends_target_test_ble_link: phony || .
+
+build CMakeFiles/test_ble_link.dir/test_ble_link.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_ble_link.cpp || cmake_object_order_depends_target_test_ble_link
+  DEP_FILE = CMakeFiles\test_ble_link.dir\test_ble_link.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_ble_link.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+build CMakeFiles/test_ble_link.dir/rtt_stub.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/rtt_stub.cpp || cmake_object_order_depends_target_test_ble_link
+  DEP_FILE = CMakeFiles\test_ble_link.dir\rtt_stub.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_ble_link.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+build CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp || cmake_object_order_depends_target_test_ble_link
+  DEP_FILE = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src\sdp_frame.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+build CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp || cmake_object_order_depends_target_test_ble_link
+  DEP_FILE = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src\ble_link.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+build CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_conn.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/ble_conn.cpp || cmake_object_order_depends_target_test_ble_link
+  DEP_FILE = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src\ble_conn.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+build CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_gatt.cpp.obj: CXX_COMPILER__test_ble_link_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/ble_gatt.cpp || cmake_object_order_depends_target_test_ble_link
+  DEP_FILE = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src\ble_gatt.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_ble_link.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_ble_link
+
+
+#############################################
+# Link the executable test_ble_link.exe
+
+build test_ble_link.exe: CXX_EXECUTABLE_LINKER__test_ble_link_ CMakeFiles/test_ble_link.dir/test_ble_link.cpp.obj CMakeFiles/test_ble_link.dir/rtt_stub.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/sdp_frame.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_link.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_conn.cpp.obj CMakeFiles/test_ble_link.dir/C_/Users/highj/Documents/Projects/EvoTime/src/ble_gatt.cpp.obj
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_ble_link.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_ble_link.exe
+  TARGET_IMPLIB = libtest_ble_link.dll.a
+  TARGET_PDB = test_ble_link.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_ble_link.dir
 
 
 #############################################
@@ -170,9 +227,11 @@ build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 # =============================================================================
 # Target aliases.
 
+build test_ble_link: phony test_ble_link.exe
+
 build test_hit_test: phony test_hit_test.exe
 
-build test_sdp_parser: phony test_sdp_parser.exe
+build test_sdp_frame: phony test_sdp_frame.exe
 
 # =============================================================================
 # Folder targets.
@@ -182,7 +241,7 @@ build test_sdp_parser: phony test_sdp_parser.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony test_hit_test.exe test_sdp_parser.exe
+build all: phony test_hit_test.exe test_sdp_frame.exe test_ble_link.exe
 
 # =============================================================================
 # Built-in targets
@@ -191,14 +250,14 @@ build all: phony test_hit_test.exe test_sdp_parser.exe
 #############################################
 # Re-run CMake if any of its inputs changed.
 
-build build.ninja C$:/Users/highj/Documents/Projects/EvoTime/build/host-tests/cmake_install.cmake C$:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CTestTestfile.cmake: RERUN_CMAKE | C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXCompiler.cmake.in C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXCompilerABI.cpp C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCompilerIdDetection.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerSupport.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineRCCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineSystem.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeNinjaFindMake.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeParseImplicitIncludeInfo.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeParseImplicitLinkInfo.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeParseLibraryArchitecture.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeRCCompiler.cmake.in C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeRCInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystem.cmake.in C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeTestCompilerCommon.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeTestRCCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/ADSP-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/ARMCC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/ARMClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/AppleClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Borland-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-CXX-CXXImportStd.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-DetermineCompilerInternal.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-FindBinUtils.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Cray-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/CrayClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Diab-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Embarcadero-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Fujitsu-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GHS-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/HP-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IAR-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Intel-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/MSVC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/NVHPC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/NVIDIA-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/OrangeC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/PGI-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/PathScale-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/PellesC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Renesas-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/SCO-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/TI-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/TIClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Tasking-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Watcom-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/XL-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCXXLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCommonLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeDetermineLinkerId.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeInspectCXXLinker.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/FeatureTesting.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Determine-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/WindowsPaths.cmake C$:/Users/highj/Documents/Projects/EvoTime/tests/host/CMakeLists.txt CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeRCCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake
+build build.ninja C$:/Users/highj/Documents/Projects/EvoTime/build/host-tests/cmake_install.cmake C$:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CTestTestfile.cmake: RERUN_CMAKE | C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeRCInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCXXLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCommonLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/WindowsPaths.cmake C$:/Users/highj/Documents/Projects/EvoTime/tests/host/CMakeLists.txt CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeRCCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake
   pool = console
 
 
 #############################################
 # A missing CMake input file is not an error.
 
-build C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXCompiler.cmake.in C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXCompilerABI.cpp C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCompilerIdDetection.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCXXCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerABI.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerId.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineCompilerSupport.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineRCCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeDetermineSystem.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeFindBinUtils.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeNinjaFindMake.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeParseImplicitIncludeInfo.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeParseImplicitLinkInfo.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeParseLibraryArchitecture.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeRCCompiler.cmake.in C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeRCInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystem.cmake.in C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeTestCXXCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeTestCompilerCommon.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeTestRCCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/ADSP-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/ARMCC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/ARMClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/AppleClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Borland-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-CXX-CXXImportStd.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-DetermineCompilerInternal.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-FindBinUtils.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Cray-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/CrayClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Diab-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Embarcadero-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Fujitsu-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GHS-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/HP-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IAR-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Intel-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/MSVC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/NVHPC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/NVIDIA-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/OrangeC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/PGI-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/PathScale-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/PellesC-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Renesas-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/SCO-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/TI-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/TIClang-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Tasking-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Watcom-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/XL-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCXXLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCommonLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeDetermineLinkerId.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeInspectCXXLinker.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/FeatureTesting.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Determine-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/WindowsPaths.cmake C$:/Users/highj/Documents/Projects/EvoTime/tests/host/CMakeLists.txt CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeRCCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake: phony
+build C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCXXInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeCommonLanguageInclude.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeGenericSystem.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeInitializeConfigs.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeLanguageInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeRCInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/CMakeSystemSpecificInitialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/CMakeCommonCompilerMacros.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Compiler/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCXXLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Internal/CMakeCommonLinkerInformation.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Linker/LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Linker/Windows-LLD.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang-CXX.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Clang.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU-CXX-ABI.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-GNU.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-Initialize.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows-windres.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/Windows.cmake C$:/Program$ Files/CMake/share/cmake-4.4/Modules/Platform/WindowsPaths.cmake C$:/Users/highj/Documents/Projects/EvoTime/tests/host/CMakeLists.txt CMakeCache.txt CMakeFiles/4.4.0/CMakeCXXCompiler.cmake CMakeFiles/4.4.0/CMakeRCCompiler.cmake CMakeFiles/4.4.0/CMakeSystem.cmake: phony
 
 
 #############################################

@@ -1,0 +1,21 @@
+{
+  "id": 0,
+  "name": "builtin_3x5",
+  "cell_width": 3,
+  "cell_height": 5,
+  "advance": 4,
+  "first_codepoint": 48,
+  "glyph_count": 10,
+  "glyphs": [
+    {"codepoint": 48, "rows": [7, 5, 5, 5, 7]},
+    {"codepoint": 49, "rows": [2, 2, 2, 2, 2]},
+    {"codepoint": 50, "rows": [7, 1, 7, 4, 7]},
+    {"codepoint": 51, "rows": [7, 1, 7, 1, 7]},
+    {"codepoint": 52, "rows": [5, 5, 7, 1, 1]},
+    {"codepoint": 53, "rows": [7, 4, 7, 1, 7]},
+    {"codepoint": 54, "rows": [7, 4, 7, 5, 7]},
+    {"codepoint": 55, "rows": [7, 1, 1, 1, 1]},
+    {"codepoint": 56, "rows": [7, 5, 7, 5, 7]},
+    {"codepoint": 57, "rows": [7, 5, 7, 1, 7]}
+  ]
+}

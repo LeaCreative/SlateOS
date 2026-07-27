@@ -1,0 +1,143 @@
+{
+  "display_size": 240,
+  "max_list_bytes": 4096,
+  "max_ops": 512,
+  "palette_size": 16,
+  "max_elem_depth": 8,
+  "max_hit_elems": 32,
+  "max_font_id": 0,
+  "max_atlas_id": 0,
+  "max_asset_id": 0,
+  "max_icon_id": 0,
+  "max_image_id": 0,
+  "op": {
+    "CLEAR": 1,
+    "SET_PALETTE": 2,
+    "RECT": 3,
+    "RECT_ROUND": 4,
+    "LINE": 5,
+    "CIRCLE": 6,
+    "ARC": 7,
+    "POLYLINE": 8,
+    "CLIP_RECT": 9,
+    "CLIP_CLEAR": 10,
+    "TEXT": 16,
+    "TEXT_BOX": 17,
+    "ICON": 18,
+    "IMAGE": 19,
+    "PROGRESS_BAR": 32,
+    "PROGRESS_ARC": 33,
+    "BEGIN_ELEM": 48,
+    "END_ELEM": 49,
+    "SCROLL_REGION": 64,
+    "PATCH": 80,
+    "PATCH_REF": 81,
+    "HAPTIC": 96,
+    "BACKLIGHT": 97,
+    "EXT_MIN": 224,
+    "EXT_MAX": 239,
+    "COMMIT": 240,
+    "RETAIN": 241
+  },
+  "color_tag": {
+    "LITERAL_RGB565": 0,
+    "PALETTE_MIN": 1,
+    "PALETTE_MAX": 16
+  },
+  "style": {
+    "MODE_FILL": 0,
+    "MODE_STROKE": 1,
+    "MODE_FILL_STROKE": 2,
+    "MODE_RESERVED": 3,
+    "MODE_MASK": 3,
+    "WIDTH_SHIFT": 2,
+    "WIDTH_MASK": 15,
+    "RESERVED_MASK": 192
+  },
+  "elem_flags": {
+    "EMIT_TOUCH": 1,
+    "NO_HIT": 2,
+    "HAPTIC": 4,
+    "FOCUSABLE": 8,
+    "DISABLED": 16,
+    "ALLOWED": 31
+  },
+  "text_box_flags": {
+    "WRAP": 1,
+    "ELLIPSIS_END": 2,
+    "VCENTER": 4,
+    "ALLOWED": 7
+  },
+  "commit_flags": {
+    "FADE": 1,
+    "NO_CLEAR": 2,
+    "ALLOWED": 3
+  },
+  "align": {
+    "LEFT": 0,
+    "CENTER": 1,
+    "RIGHT": 2,
+    "MAX": 2
+  },
+  "patch_format": {
+    "RGB565": 0,
+    "RGB332": 1,
+    "PAL4": 2,
+    "MONO1": 3,
+    "MAX": 3
+  },
+  "patch_encoding": {
+    "RAW": 0,
+    "RLE": 1,
+    "MAX": 1
+  },
+  "haptic_pattern": {
+    "TICK": 0,
+    "SHORT": 1,
+    "DOUBLE": 2,
+    "LONG": 3,
+    "ERROR": 4,
+    "MAX": 4
+  },
+  "swipe_dir": {
+    "UP": 0,
+    "DOWN": 1,
+    "LEFT": 2,
+    "RIGHT": 3,
+    "MAX": 3
+  },
+  "input_op": {
+    "TAP": 1,
+    "LONG_PRESS": 2,
+    "SWIPE": 3,
+    "BUTTON": 4,
+    "SCROLL_POS": 5,
+    "BACK": 6,
+    "SESSION_END": 7,
+    "MULTI_TAP": 8,
+    "EDGE_SWIPE": 9,
+    "TOUCH_DOWN": 10,
+    "TOUCH_UP": 11
+  },
+  "button_action": {
+    "PRESS": 0,
+    "LONG_PRESS": 1,
+    "DOUBLE_PRESS": 2,
+    "MAX": 2
+  },
+  "session_end_reason": {
+    "USER_BACK": 0,
+    "TIMEOUT": 1,
+    "LINK_LOST": 2,
+    "PHONE_REQUEST": 3,
+    "ERROR": 4,
+    "MAX": 4
+  },
+  "edge": {
+    "TOP": 0,
+    "BOTTOM": 1,
+    "LEFT": 2,
+    "RIGHT": 3,
+    "MAX": 3
+  }
+}

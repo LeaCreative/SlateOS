@@ -2,6 +2,7 @@
 
 #include "backlight.hpp"
 #include "board.hpp"
+#include "font_builtin.hpp"
 #include "input_event.hpp"
 
 #include <cstring>
@@ -9,26 +10,20 @@
 namespace sdp {
 namespace {
 
-// Built-in 3×5 digits/letters for TEXT (font 0) — ASCII subset.
-constexpr std::uint8_t kGlyph3x5[10][5] = {
-    {0x7, 0x5, 0x5, 0x5, 0x7}, {0x2, 0x2, 0x2, 0x2, 0x2},
-    {0x7, 0x1, 0x7, 0x4, 0x7}, {0x7, 0x1, 0x7, 0x1, 0x7},
-    {0x5, 0x5, 0x7, 0x1, 0x1}, {0x7, 0x4, 0x7, 0x1, 0x7},
-    {0x7, 0x4, 0x7, 0x5, 0x7}, {0x7, 0x1, 0x1, 0x1, 0x1},
-    {0x7, 0x5, 0x7, 0x5, 0x7}, {0x7, 0x5, 0x7, 0x1, 0x7},
-};
-
 void draw_char(Renderer* r, std::uint16_t x, std::uint16_t y, char c,
                std::uint16_t color) {
-  if (c < '0' || c > '9') {
-    // Non-digit: small block placeholder.
-    r->fill_rect(x, y, 3u, 5u, color);
+  using namespace font::builtin3x5;
+  const int cp = static_cast<int>(c);
+  if (cp < static_cast<int>(kFirstCodepoint) ||
+      cp >= static_cast<int>(kFirstCodepoint + kGlyphCount)) {
+    // Unknown glyph: 3×5 block placeholder (matches emulator).
+    r->fill_rect(x, y, kCellWidth, kCellHeight, color);
     return;
   }
-  const std::uint8_t* g = kGlyph3x5[c - '0'];
-  for (std::uint16_t row = 0u; row < 5u; ++row) {
-    for (std::uint16_t col = 0u; col < 3u; ++col) {
-      if (g[row] & (1u << (2u - col))) {
+  const std::uint8_t* g = kRows[static_cast<std::uint8_t>(cp - kFirstCodepoint)];
+  for (std::uint16_t row = 0u; row < kCellHeight; ++row) {
+    for (std::uint16_t col = 0u; col < kCellWidth; ++col) {
+      if (g[row] & (1u << (kCellWidth - 1u - col))) {
         r->fill_rect(static_cast<std::uint16_t>(x + col),
                      static_cast<std::uint16_t>(y + row), 1u, 1u, color);
       }
@@ -40,7 +35,7 @@ void draw_text_run(Renderer* r, std::uint8_t x, std::uint8_t y,
                    std::uint16_t color, std::uint8_t al, std::uint8_t len,
                    const std::uint8_t* utf8) {
   const std::uint16_t pixel_w =
-      static_cast<std::uint16_t>(len) * 4u;  // 3px + 1 gap
+      static_cast<std::uint16_t>(len) * font::builtin3x5::kAdvance;
   std::uint16_t start_x = x;
   if (al == align::CENTER && pixel_w / 2u < x) {
     start_x = static_cast<std::uint16_t>(x - pixel_w / 2u);
@@ -51,8 +46,8 @@ void draw_text_run(Renderer* r, std::uint8_t x, std::uint8_t y,
   }
   for (std::uint8_t i = 0u; i < len; ++i) {
     draw_char(r,
-              static_cast<std::uint16_t>(start_x + i * 4u), y,
-              static_cast<char>(utf8[i]), color);
+              static_cast<std::uint16_t>(start_x + i * font::builtin3x5::kAdvance),
+              y, static_cast<char>(utf8[i]), color);
   }
 }
 
