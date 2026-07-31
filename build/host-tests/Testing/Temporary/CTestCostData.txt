@@ -1,9 +1,17 @@
-hit_test 9 0.000753756
-sdp_parser 4 0.00173063
-sdp_frame 5 0.00128686
-ble_link 7 0.0010899
-sdp_diag 5 0.00131174
-session 5 0.00153748
-local_core 2 0.0145968
-assets 2 0.00721605
+hit_test 34 0.000307065
+sdp_parser 28 0.000804693
+sdp_frame 30 0.000363577
+ble_link 33 0.000309358
+sdp_diag 30 0.000356647
+session 31 0.000351394
+local_core 28 0.000359575
+assets 27 0.000403548
+ota_xfer 28 0.000539239
+wdt_hold 11 0.000879845
+wdt_app_pet 9 0.000996433
+spi_timeout 8 0.00112956
+ble_gap_adv_policy 7 0.00135484
+local_ui 7 0.00138349
+battery 8 0.00134636
+ble_app_inbox 7 0.00147649
 ---

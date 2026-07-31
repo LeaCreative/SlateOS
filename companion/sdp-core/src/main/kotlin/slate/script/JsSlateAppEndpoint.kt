@@ -29,6 +29,7 @@ class JsSlateAppEndpoint(
     private val governor: Governor = Governor(),
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     hostHeldPermissions: Set<ScriptPermission> = ScriptPermission.entries.toSet(),
+    sourceCeiling: Set<ScriptPermission> = ScriptPermission.entries.toSet(),
     private val onTimerSet: (id: String, intervalMs: Long) -> Unit = { _, _ -> },
     private val onTimerClear: (id: String) -> Unit = { _ -> },
 ) : SlateAppEndpoint, AutoCloseable {
@@ -37,11 +38,18 @@ class JsSlateAppEndpoint(
 
     val gov: Governor get() = governor
 
+    /** Permissions actually granted after host ∩ ceiling ∩ manifest. */
+    val grantedPermissions: Set<ScriptPermission> =
+        scriptManifest.permissions
+            .intersect(hostHeldPermissions)
+            .intersect(sourceCeiling)
+
     private val store = LinkedHashMap<String, String>()
     private val bindings = BindingSurface(
-        script = scriptManifest,
+        script = scriptManifest.copy(permissions = grantedPermissions),
         governor = governor,
         hostHeld = hostHeldPermissions,
+        sourceCeiling = sourceCeiling,
         store = store,
         nowMs = nowMs,
         onTimerSet = onTimerSet,
@@ -157,6 +165,7 @@ class JsSlateAppEndpoint(
                 scriptManifest = script,
                 engine = engine,
                 hostHeldPermissions = hostHeld,
+                sourceCeiling = hostHeld,
                 onTimerSet = onTimerSet,
                 onTimerClear = onTimerClear,
             )

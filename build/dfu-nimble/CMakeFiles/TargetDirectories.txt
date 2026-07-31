@@ -1,0 +1,4 @@
+C:/Users/highj/Documents/Projects/EvoTime/build/dfu-nimble/CMakeFiles/slate_firmware.elf.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/dfu-nimble/CMakeFiles/slate_dfu.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/dfu-nimble/CMakeFiles/edit_cache.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/dfu-nimble/CMakeFiles/rebuild_cache.dir

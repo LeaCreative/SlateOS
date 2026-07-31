@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "slate.app-mergeDebugResources-45:/values-v30/values-v30.xml",
+            "outputFile": "slate.app-mergeDebugResources-51:/values-v30/values-v30.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\d8a7b7ac7d9e2866fa9be87ec85cf819\\gradle\\caches\\8.14.5\\transforms\\de66cc1f9e213a45b56e70b4869e71b2\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\de66cc1f9e213a45b56e70b4869e71b2\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

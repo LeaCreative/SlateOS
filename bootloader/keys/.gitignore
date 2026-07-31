@@ -1,0 +1,6 @@
+# Firmware signing secrets — never commit private keys
+**/slate_priv.pem
+**/*_priv.pem
+**/slate-signed.bin
+**/slate-dfu.zip
+build/

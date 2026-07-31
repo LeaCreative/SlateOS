@@ -1,2 +1,5 @@
 R_DEF: Internal format may change without notice
 local
+bool companion_presence_service_enabled
+xml data_extraction_rules
+xml full_backup_rules

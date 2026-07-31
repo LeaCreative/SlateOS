@@ -1,6 +1,7 @@
 #include "alarm_sched.hpp"
 #include "asset_xfer.hpp"
 #include "backlight.hpp"
+#include "battery.hpp"
 #include "battery_hw.hpp"
 #include "ble_conn.hpp"
 #include "ble_gatt.hpp"
@@ -8,6 +9,8 @@
 #include "ble_mbuf_stats.hpp"
 #include "bma42x.hpp"
 #include "board.hpp"
+#include "boot_diag.hpp"
+#include "boot_util.hpp"
 #include "button.hpp"
 #include "cst816s.hpp"
 #include "input_event.hpp"
@@ -15,8 +18,11 @@
 #include "lfs_fs.hpp"
 #include "local_core.hpp"
 #include "nrf52832_regs.hpp"
+#include "ota_slot.hpp"
+#include "ota_xfer.hpp"
 #include "persist.hpp"
 #include "persist_nvmc.hpp"
+#include "power.hpp"
 #include "renderer.hpp"
 #include "rtc_hw.hpp"
 #include "rtt.hpp"
@@ -28,19 +34,18 @@
 #include "st7789.hpp"
 #include "slate_uuids.hpp"
 #include "twi.hpp"
+#include "mono_time.hpp"
 #include "wall_clock.hpp"
+#include "wdt.hpp"
 #include "xt25.hpp"
+#include "freertos_smoke.hpp"
 
 #include <cstdint>
 
-static void timer1_init() {
-  nrf::reg<std::uint32_t>(nrf::timer1::TASKS_STOP) = 1u;
-  nrf::reg<std::uint32_t>(nrf::timer1::TASKS_CLEAR) = 1u;
-  nrf::reg<std::uint32_t>(nrf::timer1::MODE) = nrf::timer1::MODE_TIMER;
-  nrf::reg<std::uint32_t>(nrf::timer1::BITMODE) = nrf::timer1::BITMODE_32;
-  nrf::reg<std::uint32_t>(nrf::timer1::PRESCALER) = 4u;
-  nrf::reg<std::uint32_t>(nrf::timer1::TASKS_START) = 1u;
-}
+#if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
+#include "FreeRTOS.h"
+#include "task.h"
+#endif
 
 static Renderer g_renderer;
 static sdp::Interpreter g_interp;
@@ -52,6 +57,7 @@ static slate::InputRouter g_input;
 static slate::bma::Driver g_bma;
 static slate::core::Core g_core;
 static slate::asset::Receiver g_asset;
+static slate::ota::Receiver g_ota;
 static bool g_local_owns_screen = true;
 
 static constexpr char kStagingPath[] = "/assets/.staging";
@@ -119,7 +125,39 @@ static bool asset_send(const std::uint8_t* msg, std::size_t len, void* ctx) {
                                                     len);
 }
 
-static std::uint32_t now_ms() { return board::micros() / 1000u; }
+static bool ota_erase(void*) { return slate::ota_slot::erase_all(); }
+static bool ota_write(std::uint32_t off, const std::uint8_t* d, std::size_t n,
+                      void*) {
+  return slate::ota_slot::write(off, d, n);
+}
+static std::uint8_t ota_batt(void*) { return slate::battery::percent(); }
+static bool ota_chg(void*) { return slate::battery::charging(); }
+static bool ota_commit(std::uint32_t, const std::uint8_t*, void*) {
+  // Mark pending for InfiniTime MCUBoot, then reboot to swap.
+  if (!slate::ota_slot::write_infinitime_pending_magic()) {
+    return false;
+  }
+  slate::ota_slot::request_reboot();
+  return true;
+}
+static bool ota_send(const std::uint8_t* msg, std::size_t len, void* ctx) {
+  return static_cast<ble::Link*>(ctx)->send_message(sdp::frame::kChanOta, msg,
+                                                    len);
+}
+
+static std::uint32_t now_ms();
+
+static void on_ble_session_up(void*) {
+  g_session.on_link_up(now_ms());
+  g_core.on_link_up();
+}
+
+static void on_ble_session_down(void*) {
+  g_session.on_link_down(now_ms());
+  g_core.on_link_down();
+}
+
+static std::uint32_t now_ms() { return slate::time::mono_ms(); }
 
 static bool link_send(std::uint8_t channel, const std::uint8_t* msg,
                       std::size_t len, void* ctx) {
@@ -146,14 +184,14 @@ static void show_watch_face(bool stale, void*) {
 }
 
 static void apply_profile(const slate::profile::Desc& desc, void*) {
-  backlight::set(desc.backlight);
+  slate::power::apply_profile(desc);
   rtt::write("profile ");
   rtt::write(desc.name);
   rtt::write_line("");
-  (void)ble::interval_for(
-      desc.id == slate::profile::kIdAmbient     ? ble::SessionProfile::Ambient
-      : desc.id == slate::profile::kIdStreaming ? ble::SessionProfile::Streaming
-                                                : ble::SessionProfile::Active);
+}
+
+static bool request_interval(std::uint16_t units, void*) {
+  return ble::request_conn_interval(units);
 }
 
 static void session_log(const char* msg, void*) {
@@ -231,18 +269,36 @@ static void bma_delay(std::uint32_t ms, void*) { board::busy_wait_ms(ms); }
 
 static std::uint64_t clock_ticks(void*) { return slate::rtc_hw::ticks(); }
 
+static void send_confirm_status() {
+  std::uint8_t buf[6];
+  buf[0] = sdp::control_op::CONFIRM_STATUS;
+  const bool needs = slate::boot::needs_confirm();
+  buf[1] = needs ? 1u : 0u;
+  const std::uint32_t rem =
+      slate::boot::dwell_remaining_ms(ble::central_connected(), now_ms());
+  buf[2] = static_cast<std::uint8_t>(rem & 0xFFu);
+  buf[3] = static_cast<std::uint8_t>((rem >> 8) & 0xFFu);
+  buf[4] = static_cast<std::uint8_t>((rem >> 16) & 0xFFu);
+  buf[5] = static_cast<std::uint8_t>((rem >> 24) & 0xFFu);
+  (void)g_link.send_message(sdp::frame::kChanControl, buf, sizeof(buf));
+}
+
 static void on_app_message(std::uint8_t channel, const std::uint8_t* msg,
                            std::size_t len, void*) {
   const std::uint32_t t = now_ms();
   if (channel == sdp::frame::kChanControl) {
     g_session.on_control(msg, len, t);
-    // Optional TIME sync on CONTROL: op 0x20, unix u32 LE (host/tests / pre-CTS).
-    if (len >= 5u && msg[0] == 0x20u) {
+    // Optional TIME sync on CONTROL (control_op::TIME_SYNC + unix u32 LE).
+    if (len >= 5u && msg[0] == sdp::control_op::TIME_SYNC) {
       const std::uint32_t epoch = static_cast<std::uint32_t>(msg[1]) |
                                   (static_cast<std::uint32_t>(msg[2]) << 8) |
                                   (static_cast<std::uint32_t>(msg[3]) << 16) |
                                   (static_cast<std::uint32_t>(msg[4]) << 24);
       g_core.apply_cts_time(epoch);
+    }
+    // Trial/confirm status query (0xE0 CONTROL extension; old FW ignores).
+    if (len >= 1u && msg[0] == sdp::control_op::CONFIRM_STATUS_REQUEST) {
+      send_confirm_status();
     }
   } else if (channel == sdp::frame::kChanDisplay) {
     g_session.on_display(msg, len, t);
@@ -253,14 +309,175 @@ static void on_app_message(std::uint8_t channel, const std::uint8_t* msg,
     g_asset.set_yield_busy(g_session.remote_depth() > 0u &&
                            !g_local_owns_screen);
     g_asset.on_message(msg, len);
+  } else if (channel == sdp::frame::kChanOta) {
+    g_ota.on_message(msg, len);
   }
 }
 
+// Liveness beat: app_loop increments every iteration; tick hook only measures
+// stalls into g_max_stall_ms for diag_stall_ms. It must NOT pet the WDT —
+// InfiniTime feeds the dog from SystemTask only, so a wedged main task reboots.
+volatile std::uint32_t g_app_beat = 0u;
+volatile std::uint32_t g_max_stall_ms = 0u;
+
+static void app_loop() {
+  rtt::log(rtt::Level::Info, "M15 ready (await BLE for IMAGE_OK confirm)");
+  bool trial = g_core.local_state().trial_image != 0u;
+  std::uint32_t last_tick = now_ms();
+  std::uint32_t last_batt = now_ms();
+  bool smoke_logged = false;
+  std::uint32_t iters = 0u;
+  std::uint32_t paints = 0u;
+  while (true) {
+    ++iters;
+    ++g_app_beat;
+    // InfiniTime SystemTask cadence: pet only from the app task (~20 ms / ~200 ms
+    // ambient). Worst-case stall inside one iteration must stay << bootloader
+    // WDT (~7 s). Bound long flash work with pets in ota_slot::erase_all /
+    // xt25::wait_ready — do not rely on tick/idle hooks (they deliberately do
+    // not pet, so a wedged app starves the dog like InfiniTime).
+    slate::wdt::pet_service();
+
+    // N-1 / I-10 stage 1: link→app handoff. Drain GATT-reassembled SDP here so
+    // session + interpreter + SPI never run on the NimBLE host task. CREDIT is
+    // emitted from session::on_display after this deferred apply.
+    while (g_link.drain_app_messages()) {
+    }
+    if (!smoke_logged && freertos_smoke::finished()) {
+      smoke_logged = true;
+      if (freertos_smoke::result() == freertos_smoke::Result::Pass) {
+        rtt::log(rtt::Level::Info, "M5a smoke PASS (STATUS[11]=1)");
+      } else {
+        rtt::log(rtt::Level::Error, "M5a smoke FAIL (STATUS[11]=2)");
+      }
+    }
+    const input::Event ev = input::poll();
+    if (ev.type != input::EventType::None) {
+      if (g_local_owns_screen || g_session.remote_depth() == 0u) {
+        if (ev.type == input::EventType::Button) {
+          g_core.on_button_press();
+        } else {
+          g_input.on_event(ev);
+        }
+      } else {
+        g_input.on_event(ev);
+      }
+    }
+    const std::uint32_t t = now_ms();
+    if (trial && slate::boot::tick_confirm(ble::central_connected(), t)) {
+      trial = false;
+      g_core.local_state().trial_image = 0u;
+      g_core.show_current();
+      rtt::log(rtt::Level::Info, "boot: image confirmed (link held)");
+      send_confirm_status();
+    }
+    if (t - last_tick >= 200u) {
+      g_session.tick(t);
+      g_core.set_remote_stale(g_session.stale());
+      g_core.tick(t);
+      last_tick = t;
+    }
+#if !defined(SLATE_DIAG_OVERLAY) || (SLATE_DIAG_OVERLAY == 1)
+    // Repaint every 16 loop iterations (~0.3 s with the 20 ms delay). A 2048
+    // threshold needed ~40 s for the first update and the bootloader WDT kills
+    // the watch at ~7 s, so paints stayed at 0 even while the loop was alive.
+    if ((iters & 0xFu) == 0u) {
+      auto& st = g_core.local_state();
+      st.diag_uptime_s = t / 1000u;
+      st.diag_paints = ++paints;
+      st.diag_button = board::button_raw() ? 1u : 0u;
+      st.diag_stall_ms = g_max_stall_ms;
+      ble::bringup_snapshot(&st.diag_ble_state, &st.diag_ble_rc);
+      g_core.show_current();
+    }
+#endif
+    if (t - last_batt >= 10000u) {
+      // ADC refresh lives in Core::poll_battery (charge edge + 10 s). BAS only.
+      if (slate::battery::percent_valid()) {
+        ble::update_battery_level(slate::battery::percent());
+      }
+      last_batt = t;
+    }
+    const bool ambient =
+        g_local_owns_screen && g_session.remote_depth() == 0u &&
+        g_session.profile_id() == slate::profile::kIdAmbient;
+    if (ambient && slate::power::current() != slate::power::State::Ambient) {
+      slate::power::enter(slate::power::State::Ambient);
+    }
+#if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
+    // Wake from Link::set_app_wake short-circuits this wait when a message lands.
+    (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(ambient ? 200u : 20u));
+#else
+    slate::power::sleep_ms(ambient ? 200u : 20u);
+#endif
+  }
+}
+
+#if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
+static TaskHandle_t g_app_task = nullptr;
+
+static void app_wake_from_link(void*) {
+  if (g_app_task != nullptr) {
+    (void)xTaskNotifyGive(g_app_task);
+  }
+}
+
+static void app_task(void*) { app_loop(); }
+
+// Idle must not pet — a blocked app task would leave idle running and keep the
+// bootloader WDT fed forever (unlike InfiniTime SystemTask-only reload).
+extern "C" void vApplicationIdleHook(void) {}
+
+namespace {
+std::uint32_t g_beat_seen = 0u;
+std::uint32_t g_beat_stall_ticks = 0u;
+}  // namespace
+
+extern "C" void vApplicationTickHook(void) {
+  // Telemetry only. WDT pets live in app_loop (and POST_SLEEP for future
+  // tickless). Button-hold withhold remains inside wdt::pet() for those paths.
+  if (g_app_beat != g_beat_seen) {
+    g_beat_seen = g_app_beat;
+    g_beat_stall_ticks = 0u;
+    return;
+  }
+  ++g_beat_stall_ticks;
+  const std::uint32_t ms = g_beat_stall_ticks * 1000u / configTICK_RATE_HZ;
+  if (ms > g_max_stall_ms) {
+    g_max_stall_ms = ms;
+  }
+}
+
+// Fatal hooks paint a diagnostic colour (see boot_diag.hpp) before releasing the
+// WDT, so a sealed watch reports the cause instead of silently reverting.
+extern "C" void vApplicationMallocFailedHook(void) {
+  rtt::log(rtt::Level::Error, "FreeRTOS malloc failed");
+  boot_diag::fatal_paint_and_hang(boot_diag::kRed);
+}
+
+extern "C" void vApplicationStackOverflowHook(TaskHandle_t, char*) {
+  rtt::log(rtt::Level::Error, "FreeRTOS stack overflow");
+  boot_diag::fatal_paint_and_hang(boot_diag::kOrange);
+}
+
+extern "C" void vAssertCalled(const char* file, int line) {
+  // Cyan plus FNV-1a(basename) and line, so a sealed watch names the assert site.
+  boot_diag::assert_paint_and_hang_at(file, line);
+}
+#endif
+
 extern "C" int main() {
+  // Before anything else can trigger a reset of its own: RESETREAS accumulates
+  // until cleared, so latching it first is the only way to attribute the reset
+  // that actually just happened.
+  board::capture_reset_reason();
+  // Before any WDT pet: InfiniTime leaves enable high; pet() withholds while held.
+  board::button_hw_init();
   rtt::init();
-  rtt::log(rtt::Level::Info, "Slate M11 — assets + LittleFS");
+  slate::wdt::pet();
+  rtt::log(rtt::Level::Info, "Slate M15 — OTA / MCUBoot");
   rtt::log(rtt::Level::Info, slate::uuid::kBaseString);
-  timer1_init();
+  slate::power::disable_debug_assist();
 
   spi::init();
   st7789::init();
@@ -271,7 +488,12 @@ extern "C" int main() {
   button::init();
   input::init();
 
+  slate::power::Hooks phooks;
+  phooks.request_conn_interval = &request_interval;
+  slate::power::init(phooks);
+
   slate::xt25::init();
+  slate::wdt::pet();
   if (slate::fs::mount()) {
     rtt::log(rtt::Level::Info, "LittleFS mounted");
     slate::fs::sleep_flash();
@@ -311,7 +533,15 @@ extern "C" int main() {
   ckh.push_list = &core_push_list;
   ckh.haptic = &do_haptic;
   ckh.backlight = &core_backlight;
+  ckh.sample_battery = [](void*) { slate::battery_hw::sample_now(); };
   g_core.init(ckh, &g_bma);
+  // init() memsets the state block and paints from it, so these have to be set
+  // afterwards — and then repainted explicitly. Without the repaint the amber
+  // trial marker stayed invisible on any watch that reset before the app task
+  // first ran, which is exactly the case being debugged.
+  g_core.local_state().trial_image = slate::boot::needs_confirm() ? 1u : 0u;
+  g_core.local_state().diag_reset_reason = board::reset_reason();
+  g_core.show_current();
 
   slate::asset::Hooks ah;
   ah.write_staging = &asset_write_staging;
@@ -321,10 +551,23 @@ extern "C" int main() {
   ah.ctx = &g_link;
   g_asset.init(ah);
 
+  slate::ota_slot::init();
+  slate::ota::Hooks oh;
+  oh.erase_slot = &ota_erase;
+  oh.write_slot = &ota_write;
+  oh.battery_percent = &ota_batt;
+  oh.charging = &ota_chg;
+  oh.commit_ok = &ota_commit;
+  oh.send = &ota_send;
+  oh.ctx = &g_link;
+  g_ota.init(oh);
+
+  ble::set_session_up_hook(&on_ble_session_up, nullptr);
+  ble::set_session_down_hook(&on_ble_session_down, nullptr);
+
   {
     const auto b = g_core.budgets();
     rtt::write("budget local ");
-    // Digit-only RTT: report used/budget roughly via logs.
     rtt::log(rtt::Level::Info, "local-screen-state / notif-store sized (see docs)");
     (void)b;
   }
@@ -336,6 +579,7 @@ extern "C" int main() {
 #endif
 
   g_link.init(diag);
+  slate::wdt::pet();
   g_link.set_app_handler(&on_app_message, nullptr);
 
   slate::session::Hooks sh;
@@ -364,33 +608,32 @@ extern "C" int main() {
 
   ble::GattCaps caps;
   g_gatt.init(&g_link, caps);
-  ble::start_stack(&g_gatt, ble::SessionProfile::Active);
 
-  g_session.on_link_up(now_ms());
-  g_core.on_link_up();
-
-  rtt::log(rtt::Level::Info, "M10 ready");
-  std::uint32_t last_tick = now_ms();
-  while (true) {
-    const input::Event ev = input::poll();
-    if (ev.type != input::EventType::None) {
-      if (g_local_owns_screen || g_session.remote_depth() == 0u) {
-        if (ev.type == input::EventType::Button) {
-          g_core.on_button_press();
-        } else {
-          g_input.on_event(ev);
-        }
-      } else {
-        g_input.on_event(ev);
-      }
-    }
-    const std::uint32_t t = now_ms();
-    if (t - last_tick >= 200u) {
-      g_session.tick(t);
-      g_core.set_remote_stale(g_session.stale());
-      g_core.tick(t);
-      last_tick = t;
-    }
-    board::busy_wait_ms(5u);
+#if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
+  // App task owns UI/WDT; NimBLE creates LL+host tasks inside start_stack.
+  // M5a smoke is Debug-only — Release must keep peak heap for ll+ble+app.
+#if defined(SLATE_BLE_DIAG) && (SLATE_BLE_DIAG == 1)
+  freertos_smoke::create_tasks();
+#endif
+  // 768 words (3 KiB): leaves FreeRTOS heap for NimBLE event queues. 1024-word
+  // app + 14 KiB heap exhausted xQueueCreate → NULL → queue.c configASSERT.
+  if (xTaskCreate(app_task, "app", 768, nullptr, tskIDLE_PRIORITY + 2,
+                  &g_app_task) != pdPASS) {
+    // Heap exhausted before the scheduler even starts — same cause as a
+    // malloc-failed hook, so use the same colour. Never pet forever here.
+    rtt::log(rtt::Level::Error, "app task create failed");
+    boot_diag::fatal_paint_and_hang(boot_diag::kRed);
   }
+  g_link.set_app_wake(&app_wake_from_link, nullptr);
+  ble::start_stack(&g_gatt, ble::SessionProfile::Active);
+  slate::wdt::pet();
+  vTaskStartScheduler();
+  rtt::log(rtt::Level::Error, "scheduler returned");
+  boot_diag::fatal_paint_and_hang(boot_diag::kRed);
+#else
+  ble::start_stack(&g_gatt, ble::SessionProfile::Active);
+  slate::wdt::pet();
+  app_loop();
+#endif
+  return 0;
 }

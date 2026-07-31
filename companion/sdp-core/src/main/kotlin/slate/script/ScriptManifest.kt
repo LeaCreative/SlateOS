@@ -11,6 +11,13 @@ enum class ScriptPermission(val id: String) {
     Media("media"),
     Location("location"),
     HealthRead("health.read"),
+    /** Turn-by-turn nav adapter (OsmAnd / generic). */
+    Navigation("navigation"),
+    /**
+     * Camera preview/capture. Host-side CameraX only — frames do not enter
+     * the script isolate (see docs/flagship-apps.md).
+     */
+    Camera("camera"),
     ;
 
     companion object {

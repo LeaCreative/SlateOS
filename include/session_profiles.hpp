@@ -23,7 +23,7 @@ constexpr std::uint8_t kIdActive    = 1u;
 constexpr std::uint8_t kIdStreaming = 2u;
 
 constexpr Desc kCatalog[] = {
-    {kIdAmbient,   "ambient",   25u, 80u},   // 100 ms
+    {kIdAmbient,   "ambient",   0u,  400u},  // backlight off; 500 ms interval (§8)
     {kIdActive,    "active",    55u, 24u},   // 30 ms
     {kIdStreaming, "streaming", 70u, 12u},   // 15 ms
 };

@@ -28,6 +28,12 @@ tasks.processResources {
     from("$rootDir/examples/timer") {
         into("slate/subapps/timer")
     }
+    from("$rootDir/examples/navigation") {
+        into("slate/subapps/navigation")
+    }
+    from("$rootDir/examples/camera") {
+        into("slate/subapps/camera")
+    }
 }
 
 tasks.test {

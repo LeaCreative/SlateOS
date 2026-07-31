@@ -12,12 +12,23 @@
   0x05 single-tap, 0x0B double-tap, 0x0C long-press.
 - Accel: BMA421 (pre-Jul-2021) or BMA425 (after), I2C 0x18, IRQ=P0.08. Detect at runtime.
 - HR: HRS3300, I2C. Enabled at power-on — write 0x00 to PDRIVER (0x0C) to sleep it.
-- Button: drive P0.15 high to read P0.13; costs 34uA if left high — strobe it.
+- Button: P0.15 enable + P0.13 sense (active-high, pulldown). Match InfiniTime: leave
+  enable high (~34 µA). Do not invent a strobe-only scheme that breaks WDT-hold reset.
 - Battery: ADC AIN7 (P0.31). mV = adc * 2000 / 1241. Charge indicator P0.12 (low = charging).
 - NFC unavailable: P0.10 is the touch reset, so UICR NFCPINS must select GPIO.
 
 ## Stack
 FreeRTOS + NimBLE + LittleFS + MCUBoot. C++17. No LVGL — custom tile renderer.
+
+**Task topology (current):** one FreeRTOS **app** task (former main loop: UI, WDT,
+session/core tick, SDP drain) plus NimBLE **ll** / **ble** host tasks and the
+FreeRTOS timer daemon. GATT RX only reassembles + publishes into `ble::AppInbox`
+(zero-copy: the inbox borrows the reassembler buffer; ingest is gated while a
+message is pending, CREDIT withheld until apply);
+the app task drains (`Link::drain_app_messages`) and owns interpreter/renderer —
+InfiniTime-style link→app handoff (N-1 / I-10 stage 1). Full roadmap §3.1
+`display` / `link` / `sensors` / `system` split remains **deferred**. M5a
+scheduler proof is `freertos_smoke` (2-task + queue, then self-delete).
 
 ## Hard constraints
 - RAM: total static + heap under 54KB, >=6KB slack. CI enforces.
@@ -37,6 +48,20 @@ FreeRTOS + NimBLE + LittleFS + MCUBoot. C++17. No LVGL — custom tile renderer.
 Thin client. The phone pushes display lists; the watch renders and returns element-level
 input events. A resilient local core (watch face, steps, alarms, retained screens) works
 with no phone. Protocol in slate-implementation-roadmap.md (§4).
+
+## InfiniTime parity (low-level) vs Slate (high-level)
+**Mirror InfiniTime** for boot, MCUBoot/DFU, flash map, WDT/button reset, BLE radio
+bring-up, and other sealed-watch recovery paths
+(https://github.com/InfiniTimeOrg/InfiniTime). Prefer their proven behaviour over
+Slate-invented alternatives when both solve the same hardware problem.
+
+**Differ on purpose** only above that: SDP display lists, local UI tiles, companion
+JS apps telling the watch what to draw, and phone-side bridge/host/client logic.
+
+Concrete example: WDT reload is withheld while the side button is held (same as
+InfiniTime `SystemTask`), and the FreeRTOS **tick/idle hooks do not pet at all** —
+only the app task loop (plus bounded flash helpers and future tickless
+`POST_SLEEP`). A wedged app starves the bootloader dog within ~7 s.
 
 ## Conventions
 - Drivers are C++ classes, no dynamic allocation after init.

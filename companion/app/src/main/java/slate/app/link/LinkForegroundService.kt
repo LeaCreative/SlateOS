@@ -1,5 +1,6 @@
 package slate.app.link
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,11 +10,13 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,9 +25,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import slate.app.MainActivity
 import slate.app.host.CompositorHost
 import slate.app.repo.RepoUpdateScheduler
+import slate.frame.SdpFrame
+import slate.session.ConfirmStatus
 
 /**
  * Foreground service (`connectedDevice`) that owns the GATT connection and
@@ -34,6 +42,7 @@ class LinkForegroundService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var rttJob: Job? = null
+    private var heartbeatJob: Job? = null
     private var reconnectJob: Job? = null
 
     private lateinit var client: SlateGattClient
@@ -50,20 +59,25 @@ class LinkForegroundService : Service() {
             scope,
             slate.app.notif.NotifPrefs(applicationContext),
         ).also { it.start() }
-        SharedLink.compositorHost = compositorHost
         repoScheduler = RepoUpdateScheduler(applicationContext, scope).also { it.start() }
         createChannel()
         val notification = buildNotification("Slate link starting…")
-        if (Build.VERSION.SDK_INT >= 34) {
-            ServiceCompat.startForeground(
-                this,
-                NOTIF_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            startForeground(NOTIF_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                ServiceCompat.startForeground(
+                    this,
+                    NOTIF_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                startForeground(NOTIF_ID, notification)
+            }
+        } catch (t: SecurityException) {
+            LinkLog.e("Missing Bluetooth permission for connectedDevice FGS", t)
+            stopSelf()
+            return
         }
         LinkLog.i("LinkForegroundService onCreate (compositor host)")
         scope.launch {
@@ -75,31 +89,62 @@ class LinkForegroundService : Service() {
                 }
                 getSystemService(NotificationManager::class.java)
                     .notify(NOTIF_ID, buildNotification(text))
-                if (m.connected) startRtt() else stopRtt()
+                if (m.connected) {
+                    startRtt()
+                    startHeartbeat()
+                } else {
+                    stopRtt()
+                    stopHeartbeat()
+                }
             }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent == null) {
+            AssociationHelper(applicationContext).lastAssociatedAddress()?.let {
+                LinkLog.i("sticky service restart — reconnect $it")
+                connectAddress(it)
+            }
+            return START_STICKY
+        }
         when (intent?.action) {
             ACTION_CONNECT -> {
                 val addr = intent.getStringExtra(EXTRA_ADDRESS)
                 if (addr != null) connectAddress(addr)
             }
             ACTION_DISCONNECT -> {
-                client.close()
+                compositorHost?.sendGoodbye()
                 stopReconnect()
+                client.close()
+                stopSelf()
             }
             ACTION_PRESENCE_APPEARED -> {
                 val addr = intent.getStringExtra(EXTRA_ADDRESS) ?: SharedLink.associatedAddress
                 if (addr != null) {
-                    LinkLog.i("presence appeared — reconnect $addr")
-                    connectAddress(addr)
+                    val preferred =
+                        AssociationHelper(applicationContext).lastAssociatedAddress()
+                    if (preferred == null || preferred.equals(addr, ignoreCase = true)) {
+                        LinkLog.i("presence appeared — reconnect $addr")
+                        connectAddress(addr)
+                    } else {
+                        LinkLog.i("ignoring presence for non-selected association $addr")
+                    }
                 }
             }
             ACTION_PRESENCE_DISAPPEARED -> {
-                LinkLog.i("presence disappeared")
+                val gone = intent.getStringExtra(EXTRA_ADDRESS)
+                val active = SharedLink.associatedAddress
+                if (gone != null && active != null &&
+                    !gone.equals(active, ignoreCase = true)
+                ) {
+                    LinkLog.i("ignoring disappearance for non-selected association $gone")
+                    return START_STICKY
+                }
+                LinkLog.i("presence disappeared ${gone ?: ""}")
+                stopReconnect()
                 client.close()
+                stopSelf()
             }
             ACTION_OPEN_TEST_APP -> {
                 scope.launch {
@@ -116,17 +161,28 @@ class LinkForegroundService : Service() {
                     compositorHost?.openTimer()
                 }
             }
+            ACTION_OPEN_NAVIGATION -> {
+                scope.launch {
+                    compositorHost?.openNavigation()
+                }
+            }
+            ACTION_OPEN_CAMERA -> {
+                scope.launch {
+                    compositorHost?.openCamera()
+                }
+            }
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
         stopRtt()
+        stopHeartbeat()
         stopReconnect()
         repoScheduler?.stop()
         repoScheduler = null
+        compositorHost?.sendGoodbye()
         compositorHost?.stop()
-        SharedLink.compositorHost = null
         client.close()
         scope.cancel()
         instance = null
@@ -135,8 +191,27 @@ class LinkForegroundService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    private fun connectAddress(address: String) {
-        SharedLink.associatedAddress = address
+    fun watchProtocolVersion(): Int =
+        compositorHost?.compositor?.watchProtocolVersion ?: 1
+
+    private fun connectAddress(rawAddress: String) {
+        // Presence callbacks and intent extras can carry CDM's lowercase form,
+        // which getRemoteDevice() rejects outright.
+        val address = BtAddress.normalize(rawAddress)
+        if (address == null) {
+            LinkLog.w("refusing to connect to malformed address '$rawAddress'")
+            return
+        }
+        val held = LinkContention.remediationIfHeldByOther(
+            applicationContext,
+            address,
+            weAreConnected = client.metrics.value.connected,
+        )
+        if (held != null) {
+            LinkLog.w(held)
+            SharedLink.lastContentionMessage = held
+        }
+        AssociationHelper(applicationContext).rememberAddress(address)
         val adapter = getSystemService(BluetoothManager::class.java)?.adapter
         if (adapter == null || !adapter.isEnabled) {
             LinkLog.w("Bluetooth adapter unavailable")
@@ -155,13 +230,31 @@ class LinkForegroundService : Service() {
     private fun scheduleReconnectWatchdog(address: String) {
         stopReconnect()
         reconnectJob = scope.launch {
+            var delayMs = 5_000L
             while (isActive) {
-                delay(5_000)
+                delay(delayMs)
                 if (!client.metrics.value.connected) {
-                    LinkLog.i("reconnect watchdog — retry $address")
+                    LinkLog.i("reconnect watchdog — retry $address after ${delayMs}ms")
+                    val bonded = LinkContention.isBonded(applicationContext, address)
+                    // After the first failed retry, treat bonded+no-link as a
+                    // foreign-central hint (I-16); first pass stays GATT-only.
+                    val verdict = LinkContention.checkWithSignals(
+                        applicationContext,
+                        address,
+                        weAreConnected = false,
+                        advertisingSeen = null,
+                        connectFailedWhileBonded = bonded && delayMs > 5_000L,
+                    )
+                    if (verdict.blocked) {
+                        LinkLog.w(LinkContention.formatMessage(applicationContext, verdict))
+                    }
                     val adapter = getSystemService(BluetoothManager::class.java)?.adapter
                     val device = adapter?.getRemoteDevice(address) ?: continue
                     client.connect(device)
+                    delayMs = (delayMs * 2).coerceAtMost(60_000L)
+                } else {
+                    SharedLink.lastContentionMessage = null
+                    delayMs = 5_000L
                 }
             }
         }
@@ -187,6 +280,23 @@ class LinkForegroundService : Service() {
     private fun stopRtt() {
         rttJob?.cancel()
         rttJob = null
+    }
+
+    private fun startHeartbeat() {
+        if (heartbeatJob?.isActive == true) return
+        heartbeatJob = scope.launch {
+            while (isActive) {
+                delay(HEARTBEAT_MS)
+                if (!client.metrics.value.connected || SharedLink.benchmarkPaused) continue
+                val hb = compositorHost?.sessionHeartbeat() ?: continue
+                client.sendMessage(SdpFrame.CHAN_CONTROL, hb)
+            }
+        }
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
     }
 
     private fun createChannel() {
@@ -221,20 +331,41 @@ class LinkForegroundService : Service() {
         const val ACTION_OPEN_TEST_APP = "slate.app.OPEN_TEST_APP"
         const val ACTION_OPEN_NOTIFICATIONS = "slate.app.OPEN_NOTIFICATIONS"
         const val ACTION_OPEN_TIMER = "slate.app.OPEN_TIMER"
+        const val ACTION_OPEN_NAVIGATION = "slate.app.OPEN_NAVIGATION"
+        const val ACTION_OPEN_CAMERA = "slate.app.OPEN_CAMERA"
         const val EXTRA_ADDRESS = "address"
 
         @Volatile
         var instance: LinkForegroundService? = null
             private set
 
-        fun start(context: Context, address: String? = null) {
+        private const val HEARTBEAT_MS = 2_000L
+
+        fun start(context: Context, address: String? = null): Boolean {
+            if (!hasBluetoothPermission(context)) {
+                LinkLog.w("Not starting link service: Bluetooth permission missing")
+                return false
+            }
             val i = Intent(context, LinkForegroundService::class.java)
             if (address != null) {
                 i.action = ACTION_CONNECT
                 i.putExtra(EXTRA_ADDRESS, address)
             }
-            context.startForegroundService(i)
+            return try {
+                context.startForegroundService(i)
+                true
+            } catch (t: RuntimeException) {
+                LinkLog.e("Unable to start link foreground service", t)
+                false
+            }
         }
+
+        private fun hasBluetoothPermission(context: Context): Boolean =
+            Build.VERSION.SDK_INT < 31 ||
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                ) == PackageManager.PERMISSION_GRANTED
 
         fun openTestApp(context: Context) {
             context.startService(
@@ -259,6 +390,22 @@ class LinkForegroundService : Service() {
                 },
             )
         }
+
+        fun openNavigation(context: Context) {
+            context.startService(
+                Intent(context, LinkForegroundService::class.java).apply {
+                    action = ACTION_OPEN_NAVIGATION
+                },
+            )
+        }
+
+        fun openCamera(context: Context) {
+            context.startService(
+                Intent(context, LinkForegroundService::class.java).apply {
+                    action = ACTION_OPEN_CAMERA
+                },
+            )
+        }
     }
 }
 
@@ -271,8 +418,20 @@ object SharedLink {
     @Volatile
     var benchmarkPaused: Boolean = false
 
+    /** Last CONTROL 0xE1 snapshot from the watch (trial / IMAGE_OK). */
     @Volatile
-    var compositorHost: CompositorHost? = null
+    var lastConfirmStatus: ConfirmStatus.Snapshot? = null
+
+    /** Set when another app appears to own the GATT slot. */
+    @Volatile
+    var lastContentionMessage: String? = null
+
+    private val _confirmUi = MutableStateFlow<CompositorHost.ConfirmUi>(CompositorHost.ConfirmUi.Idle)
+    val confirmUi: StateFlow<CompositorHost.ConfirmUi> = _confirmUi.asStateFlow()
+
+    fun publishConfirmUi(ui: CompositorHost.ConfirmUi) {
+        _confirmUi.value = ui
+    }
 
     @Volatile
     private var clientInstance: SlateGattClient? = null

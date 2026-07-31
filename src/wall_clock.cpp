@@ -12,7 +12,11 @@ Hooks g_hooks{};
 PersistBlob g_blob{};
 bool g_synced = false;
 
-constexpr std::uint64_t kTicksPerSec = 32768u;
+#if defined(SLATE_FREERTOS_RTC_TICK) && (SLATE_FREERTOS_RTC_TICK == 1)
+constexpr std::uint64_t kTicksPerSec = 1024u;  // RTC1 PRESCALER=31
+#else
+constexpr std::uint64_t kTicksPerSec = 32768u;  // RTC1 PRESCALER=0
+#endif
 
 std::uint32_t crc32(const std::uint8_t* p, std::size_t n) {
   std::uint32_t c = 0xFFFFFFFFu;

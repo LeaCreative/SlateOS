@@ -67,6 +67,15 @@ struct Sink {
                     const std::uint8_t* utf8) {
     (void)font; (void)x; (void)y; (void)color; (void)align; (void)len; (void)utf8;
   }
+  // Defaults to native-size text so sinks that predate TEXT_SCALED still draw
+  // something legible rather than nothing.
+  virtual void text_scaled(std::uint8_t font, std::uint8_t x, std::uint8_t y,
+                           std::uint16_t color, std::uint8_t align,
+                           std::uint8_t scale, std::uint8_t len,
+                           const std::uint8_t* utf8) {
+    (void)scale;
+    text(font, x, y, color, align, len, utf8);
+  }
   virtual void text_box(std::uint8_t font, std::uint8_t x, std::uint8_t y,
                         std::uint8_t w, std::uint8_t h, std::uint16_t color,
                         std::uint8_t align, std::uint8_t flags, std::uint8_t len,

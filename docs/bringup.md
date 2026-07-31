@@ -10,8 +10,11 @@
 cmake -S . -B build/debug -G Ninja `
   -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-arm-none-eabi.cmake `
   -DCMAKE_BUILD_TYPE=Debug `
-  -DBOOTLOADER_PRESENT=OFF
+  -DBOOTLOADER_PRESENT=ON
 ```
+
+Default is `BOOTLOADER_PRESENT=ON` (app at `0x8020` after MCUBoot’s 32-byte header; InfiniTime primary slot).
+Use `-DBOOTLOADER_PRESENT=OFF` only for bare SWD bring-up without a bootloader.
 
 ## Build
 ```powershell
@@ -26,11 +29,11 @@ Outputs:
 
 ## Bootloader Option
 - `BOOTLOADER_PRESENT=OFF`:
-  - Flash origin = `0x00000000`
-  - Use this for early standalone bring-up.
-- `BOOTLOADER_PRESENT=ON`:
-  - Flash origin = `0x00008000`
-  - Use this when MCUBoot occupies the first 32 KB.
+  - Flash origin = `0x00000000`, full chip minus persist
+  - Early standalone bring-up only
+- `BOOTLOADER_PRESENT=ON` (default):
+  - Flash origin = `0x00008020` (slot `0x8000` + 32B MCUBoot header), length = `0x73FE0`
+  - Requires InfiniTime MCUBoot in the first 32 KiB — see `docs/ota.md` / `docs/flash-sealed.md`
 
 ## Memory Layout
 - `.text` / `.rodata` live in flash.
@@ -64,3 +67,17 @@ Level meanings:
 - `2` warn
 - `3` info
 - `4` debug
+
+## Watchdog (sealed / MCUBoot)
+
+InfiniTime MCUBoot arms the NRF WDT (~7 s) before jumping to the app. Slate
+feeds it like InfiniTime’s `SystemTask`:
+
+- **Pet from the app task** (`pet_service` once per `app_loop` iteration).
+- **Do not pet from tick or idle hooks** — a wedged app must starve the dog.
+- **Withhold** reload while the side button is held (`wdt::pet()`).
+- Long secondary-slot erases also pet inside `ota_slot` / `xt25`.
+- Future tickless: `configPOST_SLEEP_PROCESSING` → `slate_wdt_pet` (sleeps ≤ 1 s).
+
+Policy table: `docs/infinitime-parity.md`. Recovery if a bad image pets forever:
+`docs/recovery-sealed.md`.

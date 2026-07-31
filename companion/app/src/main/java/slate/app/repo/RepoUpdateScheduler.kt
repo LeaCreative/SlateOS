@@ -8,7 +8,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import slate.app.link.SharedLink
+import slate.app.link.LinkForegroundService
 
 /**
  * Periodic index checks (§6.6). Respects metered settings via [RepoManager].
@@ -59,7 +59,7 @@ class RepoUpdateScheduler(
             store = store,
             hostVersion = hostVer,
             watchProtocol = {
-                SharedLink.compositorHost?.compositor?.watchProtocolVersion ?: 1
+                LinkForegroundService.instance?.watchProtocolVersion() ?: 1
             },
         )
         manager.refreshIndexes(force = false)

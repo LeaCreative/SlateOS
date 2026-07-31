@@ -180,14 +180,17 @@ void test_render_and_mbuf() {
 }
 
 void test_mbuf_tracker() {
+  // peak_used is measured against the configured pool, so drive the samples
+  // from SLATE_MSYS_1_BLOCK_COUNT rather than pinning it to one pool size.
+  constexpr unsigned kCount = SLATE_MSYS_1_BLOCK_COUNT;
   ble::MbufStatsTracker t;
   t.reset();
-  t.note_free(8);
-  t.note_free(5);
-  t.note_free(6);
+  t.note_free(static_cast<std::uint16_t>(kCount));
+  t.note_free(static_cast<std::uint16_t>(kCount - 3u));
+  t.note_free(static_cast<std::uint16_t>(kCount - 1u));
   auto r = t.report();
-  expect_eq("peak used", r.peak_used, 3u);  // 8-5
-  expect_eq("free now", r.free_now, 6u);
+  expect_eq("peak used", r.peak_used, 3u);
+  expect_eq("free now", r.free_now, kCount - 1u);
 }
 
 }  // namespace

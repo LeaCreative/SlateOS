@@ -30,7 +30,7 @@ void set_window(std::uint16_t x0, std::uint16_t y0,
 
 // Write `pixel_count` RGB565 pixels (big-endian) from `data` to the display.
 // Window must have been set with set_window() first.
-// Acquires and releases the SPI bus internally.
-void write_pixels(const std::uint8_t* data, std::uint32_t byte_count);
+// Acquires and releases the SPI bus internally. false on SPI timeout.
+bool write_pixels(const std::uint8_t* data, std::uint32_t byte_count);
 
 }  // namespace st7789

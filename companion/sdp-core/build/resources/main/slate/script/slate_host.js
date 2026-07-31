@@ -96,5 +96,45 @@
         payload: JSON.stringify({ key: String(k), value: String(v) }) };
     }
   };
+  /** Navigation — host adapter; maneuvers arrive as onEvent('nav', …). */
+  slate.nav = {
+    subscribe: function () {
+      return { type: 'adapter', adapter: 'nav', command: 'subscribe', payload: '{}' };
+    },
+    unsubscribe: function () {
+      return { type: 'adapter', adapter: 'nav', command: 'unsubscribe', payload: '{}' };
+    },
+    /** Demo/test: ask host to inject a synthetic maneuver (official builds only). */
+    demo: function (kind) {
+      return { type: 'adapter', adapter: 'nav', command: 'demo',
+        payload: JSON.stringify({ kind: String(kind || 'left') }) };
+    }
+  };
+  /**
+   * Camera — thin controller API. Preview pixels never enter the isolate;
+   * the host pushes PATCH display lists (privileged streaming path).
+   */
+  slate.camera = {
+    start: function (opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'camera', command: 'start',
+        payload: JSON.stringify({
+          slot: opts.slot | 0,
+          x: opts.x | 0,
+          y: opts.y | 0,
+          w: (opts.w == null ? 60 : opts.w) | 0,
+          h: (opts.h == null ? 60 : opts.h) | 0
+        }) };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'camera', command: 'stop', payload: '{}' };
+    },
+    capture: function () {
+      return { type: 'adapter', adapter: 'camera', command: 'capture', payload: '{}' };
+    }
+  };
+  // Patch format constants for script-built patches (rare; host owns camera frames).
+  slate.PATCH_RGB332 = 1;
+  slate.PATCH_RAW = 0;
   global.slate = slate;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

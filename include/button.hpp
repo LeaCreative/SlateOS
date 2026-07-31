@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-// Side button: enable P0.15, sense P0.13 (active-low when enabled).
-// Leaving P0.15 high costs ~34 µA — strobe it for every sample.
+// Side button: InfiniTime-style — enable P0.15 left high, sense P0.13
+// (active-high, pulldown). Pressed = HIGH.
 
 namespace button {
 

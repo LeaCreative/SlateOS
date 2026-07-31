@@ -47,28 +47,42 @@ std::size_t Manager::encode_hello_offer(std::uint8_t* out, std::size_t cap,
   if (out == nullptr) {
     return 0u;
   }
-  std::uint8_t tmp[160];
+  // Every write is capacity-checked (N-6): overflow flips `ok` and the whole
+  // encode returns 0, like the local-UI writer W — never a silent truncation
+  // or an unbounded write past tmp.
+  std::uint8_t tmp[kHelloOfferBufBytes];
   std::size_t n = 0u;
+  bool ok = true;
   auto push = [&](std::uint8_t b) {
-    if (n < sizeof(tmp)) tmp[n++] = b;
+    if (n < sizeof(tmp)) {
+      tmp[n++] = b;
+    } else {
+      ok = false;
+    }
+  };
+  auto push_u16 = [&](std::uint16_t v) {
+    push(static_cast<std::uint8_t>(v & 0xFFu));
+    push(static_cast<std::uint8_t>((v >> 8) & 0xFFu));
+  };
+  auto push_bytes = [&](const std::uint8_t* p, std::size_t len) {
+    for (std::size_t i = 0u; i < len; ++i) {
+      push(p[i]);
+    }
   };
 
   push(sdp::control_op::HELLO_OFFER);
   push(sdp::kFwMajor);
   push(sdp::kFwMinor);
   push(sdp::kFwPatch);
-  put_u16(tmp + n, sdp::kProtocolVersion);
-  n += 2u;
-  put_u16(tmp + n, static_cast<std::uint16_t>(sdp::kDisplaySize));
-  n += 2u;
-  put_u16(tmp + n, static_cast<std::uint16_t>(sdp::kDisplaySize));
-  n += 2u;
+  push_u16(sdp::kProtocolVersion);
+  push_u16(static_cast<std::uint16_t>(sdp::kDisplaySize));
+  push_u16(static_cast<std::uint16_t>(sdp::kDisplaySize));
 
-  fill_opcode_bitmap(tmp + n);
-  n += sdp::kOpcodeBitmapBytes;
+  std::uint8_t bitmap[sdp::kOpcodeBitmapBytes];
+  fill_opcode_bitmap(bitmap);
+  push_bytes(bitmap, sizeof(bitmap));
 
-  put_u16(tmp + n, static_cast<std::uint16_t>(sdp::kMaxListBytes));
-  n += 2u;
+  push_u16(static_cast<std::uint16_t>(sdp::kMaxListBytes));
 
   push(profile::kCatalogCount);
   for (std::uint8_t i = 0u; i < profile::kCatalogCount; ++i) {
@@ -83,14 +97,13 @@ std::size_t Manager::encode_hello_offer(std::uint8_t* out, std::size_t cap,
       push(static_cast<std::uint8_t>(d.name[c]));
     }
     push(d.backlight);
-    put_u16(tmp + n, d.interval_units);
-    n += 2u;
+    push_u16(d.interval_units);
   }
 
   push(0u);  // asset_pack_count — none until M11
   push(diag_available ? 0x01u : 0x00u);
 
-  if (n > cap) {
+  if (!ok || n > cap) {
     return 0u;
   }
   std::memcpy(out, tmp, n);
@@ -161,7 +174,7 @@ void Manager::send_hello_offer() {
   if (hooks_.send == nullptr) {
     return;
   }
-  std::uint8_t buf[160];
+  std::uint8_t buf[kHelloOfferBufBytes];
   const std::size_t n = encode_hello_offer(buf, sizeof(buf), diag_available_);
   if (n > 0u) {
     (void)hooks_.send(sdp::frame::kChanControl, buf, n, hooks_.ctx);
@@ -422,6 +435,7 @@ void Manager::on_display(const std::uint8_t* msg, std::size_t len,
   stale_ = false;
   last_hb_ms_ = now_ms;
   set_state(State::Active);
+  // CREDIT after deferred apply (app task). Host never credits on enqueue.
   send_credit();
 }
 
@@ -430,6 +444,9 @@ void Manager::tick(std::uint32_t now_ms) {
       state_ != State::Idle) {
     return;
   }
+  // Unsigned elapsed: correct across u32 wrap when now_ms wraps at 2^32
+  // (slate::time::mono_ms). Do not feed micros()/1000 here — that wrapped near
+  // 4.29e6 ms and made (500 - 4294000) look like a multi-day stall.
   const std::uint32_t elapsed = now_ms - last_hb_ms_;
   const std::uint32_t misses = elapsed / sdp::kHeartbeatPeriodMs;
   if (misses >= sdp::kHeartbeatDropMisses) {

@@ -82,6 +82,12 @@ bool fragment_message(
     void* ctx);
 
 // Per-channel reassembly. On Dropped, the channel state is reset (resync).
+//
+// Single-in-flight (§4.2): all channels share one message buffer, so a
+// multi-fragment message owns reassembly from FIRST until LAST. A FIRST on
+// any other channel while one is in flight aborts the in-flight message
+// (reject-and-resync, counted in preempt_drop_count()) and resyncs to the
+// new message. Encoders must emit each message's fragments contiguously.
 class Reassembler {
 public:
   void reset();
@@ -97,6 +103,9 @@ public:
   std::size_t message_len() const { return msg_len_; }
   std::uint8_t message_channel() const { return msg_channel_; }
 
+  // In-flight messages abandoned because a FIRST arrived on another channel.
+  std::uint32_t preempt_drop_count() const { return preempt_drops_; }
+
 private:
   struct ChanState {
     bool active = false;
@@ -110,6 +119,7 @@ private:
   std::uint8_t buf_[kMaxMessageBytes] = {};
   std::size_t msg_len_ = 0u;
   std::uint8_t msg_channel_ = 0u;
+  std::uint32_t preempt_drops_ = 0u;
   bool diag_allowed_ = true;  // debug default; release sets false
 };
 

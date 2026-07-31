@@ -1,25 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation" />
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="31" />
     <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE" />
+    <!-- Required for AssociationRequest.DEVICE_PROFILE_WATCH (API 31+); missing → SecurityException on associate(). -->
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_PROFILE_WATCH" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true" />
+    <!-- Required for CompanionDeviceManager.associate(); missing → IllegalStateException. -->
+    <uses-feature
+        android:name="android.software.companion_device_setup"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/full_backup_rules"
         android:icon="@android:drawable/ic_menu_compass"
         android:label="Slate"
         android:supportsRtl="true"
@@ -33,6 +50,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ota.SealedDfuProbeActivity"
+            android:exported="false"
+            android:label="Install firmware (sealed)" />
+
+        <activity
+            android:name=".ota.SlateOtaActivity"
+            android:exported="false"
+            android:label="Update Slate firmware" />
 
         <activity
             android:name=".bench.BenchmarkActivity"
@@ -49,8 +76,23 @@
             android:exported="false"
             android:label="Sub-app repository" />
 
+        <activity
+            android:name=".link.TroubleshootingActivity"
+            android:exported="false"
+            android:label="Troubleshooting" />
+
         <service
             android:name=".link.LinkForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <service
+            android:name=".ota.SealedDfuService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
+        <service
+            android:name=".ota.SlateOtaService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
@@ -66,11 +108,23 @@
 
         <service
             android:name=".link.SlateCompanionDeviceService"
+            android:enabled="@bool/companion_presence_service_enabled"
             android:exported="true"
-            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE">
+            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE"
+            tools:targetApi="31">
             <intent-filter>
                 <action android:name="android.companion.CompanionDeviceService" />
             </intent-filter>
         </service>
+
+        <receiver
+            android:name=".link.CompanionStartupReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

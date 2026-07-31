@@ -1,5 +1,6 @@
 #include "lfs_fs.hpp"
 
+#include "flash_map.hpp"
 #include "xt25.hpp"
 
 #include "lfs.h"
@@ -18,21 +19,34 @@ bool g_mounted = false;
 alignas(4) std::uint8_t g_read_buf[256];
 alignas(4) std::uint8_t g_prog_buf[256];
 alignas(4) std::uint8_t g_lookahead[64];
+// Per-file cache (LFS_NO_MALLOC → must use lfs_file_opencfg, not lfs_file_open).
+alignas(4) std::uint8_t g_file_buf[256];
+
+int open_file(lfs_file_t* file, const char* path, int flags) {
+  lfs_file_config fcfg{};
+  fcfg.buffer = g_file_buf;
+  return lfs_file_opencfg(&g_lfs, file, path, flags, &fcfg);
+}
+
+std::uint32_t block_addr(lfs_block_t block, lfs_off_t off = 0) {
+  return flash_map::kLfsOffset +
+         static_cast<std::uint32_t>(block) * xt25::kSectorSize +
+         static_cast<std::uint32_t>(off);
+}
 
 int bd_read(const struct lfs_config* c, lfs_block_t block, lfs_off_t off,
             void* buffer, lfs_size_t size) {
   (void)c;
-  const std::uint32_t addr =
-      static_cast<std::uint32_t>(block) * xt25::kSectorSize + off;
-  return xt25::read(addr, static_cast<std::uint8_t*>(buffer), size) ? 0
-                                                                    : LFS_ERR_IO;
+  return xt25::read(block_addr(block, off), static_cast<std::uint8_t*>(buffer),
+                    size)
+             ? 0
+             : LFS_ERR_IO;
 }
 
 int bd_prog(const struct lfs_config* c, lfs_block_t block, lfs_off_t off,
             const void* buffer, lfs_size_t size) {
   (void)c;
-  const std::uint32_t addr =
-      static_cast<std::uint32_t>(block) * xt25::kSectorSize + off;
+  const std::uint32_t addr = block_addr(block, off);
   const auto* p = static_cast<const std::uint8_t*>(buffer);
   std::size_t left = size;
   std::uint32_t a = addr;
@@ -51,8 +65,7 @@ int bd_prog(const struct lfs_config* c, lfs_block_t block, lfs_off_t off,
 
 int bd_erase(const struct lfs_config* c, lfs_block_t block) {
   (void)c;
-  const std::uint32_t addr = static_cast<std::uint32_t>(block) * xt25::kSectorSize;
-  return xt25::erase_sector(addr) ? 0 : LFS_ERR_IO;
+  return xt25::erase_sector(block_addr(block)) ? 0 : LFS_ERR_IO;
 }
 
 int bd_sync(const struct lfs_config* c) {
@@ -69,7 +82,8 @@ void fill_config() {
   g_cfg.read_size = 16;
   g_cfg.prog_size = 16;
   g_cfg.block_size = xt25::kSectorSize;
-  g_cfg.block_count = xt25::kCapacityBytes / xt25::kSectorSize;
+  // LittleFS starts at InfiniTime-compatible offset (after secondary @0x40000).
+  g_cfg.block_count = flash_map::kLfsSize / xt25::kSectorSize;
   g_cfg.cache_size = 256;
   g_cfg.lookahead_size = 64;
   g_cfg.block_cycles = 500;
@@ -132,7 +146,7 @@ std::size_t read_file(const char* path, std::uint32_t offset, std::uint8_t* dst,
   }
   xt25::wake();
   lfs_file_t file;
-  if (lfs_file_open(&g_lfs, &file, path, LFS_O_RDONLY) != 0) {
+  if (open_file(&file, path, LFS_O_RDONLY) != 0) {
     return 0u;
   }
   if (lfs_file_seek(&g_lfs, &file, static_cast<lfs_soff_t>(offset), LFS_SEEK_SET) <
@@ -152,7 +166,7 @@ std::size_t write_file_replace(const char* path, const std::uint8_t* src,
   }
   xt25::wake();
   lfs_file_t file;
-  if (lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) !=
+  if (open_file(&file, path, LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) !=
       0) {
     return 0u;
   }
@@ -168,7 +182,7 @@ bool write_file_at(const char* path, std::uint32_t offset, const std::uint8_t* s
   }
   xt25::wake();
   lfs_file_t file;
-  if (lfs_file_open(&g_lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT) != 0) {
+  if (open_file(&file, path, LFS_O_WRONLY | LFS_O_CREAT) != 0) {
     return false;
   }
   if (lfs_file_seek(&g_lfs, &file, static_cast<lfs_soff_t>(offset), LFS_SEEK_SET) <

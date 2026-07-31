@@ -82,30 +82,34 @@ void init() {
 }
 
 void set(std::uint32_t percent) {
-    percent = std::min(percent, 100u);
+    percent = std::min(percent, static_cast<std::uint32_t>(100));
 
-    // Map 0-100% to a compare value 0-kCounterTop.
-    // Duty cycle of `compare/kCounterTop` of the period is spent low (LED on)
-    // when polarity-invert bit is set.  At 0% all LEDs off; at 100% all full on.
     const std::uint16_t duty = static_cast<std::uint16_t>(
         (percent * kCounterTop) / 100u);
 
-    // Bit15=1 → polarity inverted (active-low) so LED is ON when counter < duty.
     const std::uint16_t word = static_cast<std::uint16_t>(
         nrf::pwm0::POLARITY_ACTIVE_LOW | duty);
 
     if (percent == 0u) {
-        // Full off: set duty to 0 — counter never < 0, so output stays high.
         g_seq[0] = nrf::pwm0::POLARITY_ACTIVE_LOW | 0u;
         g_seq[1] = nrf::pwm0::POLARITY_ACTIVE_LOW | 0u;
         g_seq[2] = nrf::pwm0::POLARITY_ACTIVE_LOW | 0u;
-    } else {
-        g_seq[0] = word;
-        g_seq[1] = word;
-        g_seq[2] = word;
+        g_seq[3] = nrf::pwm0::POLARITY_ACTIVE_LOW | 0u;
+        pwm_reload();
+        // Stop PWM peripheral when fully off — saves clocking current.
+        nrf::reg<std::uint32_t>(nrf::pwm0::TASKS_STOP) = 1u;
+        nrf::reg<std::uint32_t>(nrf::pwm0::ENABLE) = 0u;
+        // Drive pins high (active-low LEDs off).
+        nrf::reg<std::uint32_t>(nrf::gpio::OUTSET) =
+            (1u << kPinLow) | (1u << kPinMid) | (1u << kPinHigh);
+        return;
     }
-    g_seq[3] = nrf::pwm0::POLARITY_ACTIVE_LOW | 0u;  // unused channel 3
 
+    nrf::reg<std::uint32_t>(nrf::pwm0::ENABLE) = 1u;
+    g_seq[0] = word;
+    g_seq[1] = word;
+    g_seq[2] = word;
+    g_seq[3] = nrf::pwm0::POLARITY_ACTIVE_LOW | 0u;
     pwm_reload();
 }
 

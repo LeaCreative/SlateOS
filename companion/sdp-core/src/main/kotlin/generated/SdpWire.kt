@@ -40,6 +40,7 @@ object SdpWire {
         const val HAPTIC = 0x60
         const val BACKLIGHT = 0x61
         const val EXT_MIN = 0xE0
+        const val TEXT_SCALED = 0xE0
         const val EXT_MAX = 0xEF
         const val COMMIT = 0xF0
         const val RETAIN = 0xF1
@@ -172,6 +173,11 @@ object SdpWire {
         const val SCREEN_REPLACE = 0x09
         const val CREDIT = 0x0A
         const val GOODBYE = 0x0B
+        const val TIME_SYNC = 0x20
+        // CONTROL 0xE0–0xEF extensions (skippable on old FW). Distinct from
+        // DISPLAY TEXT_SCALED 0xE0 (channel 1).
+        const val CONFIRM_STATUS_REQUEST = 0xE0
+        const val CONFIRM_STATUS = 0xE1
     }
 
     const val PROTOCOL_VERSION = 1

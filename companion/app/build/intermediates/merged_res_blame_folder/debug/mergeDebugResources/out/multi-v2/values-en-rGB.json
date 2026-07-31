@@ -1,27 +1,27 @@
 {
     "logs": [
         {
-            "outputFile": "slate.app-mergeDebugResources-45:/values-en-rGB/values-en-rGB.xml",
+            "outputFile": "slate.app-mergeDebugResources-51:/values-en-rGB/values-en-rGB.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\d8a7b7ac7d9e2866fa9be87ec85cf819\\gradle\\caches\\8.14.5\\transforms\\5056650f565ca465a1b6f65dc0807af2\\transformed\\core-1.15.0\\res\\values-en-rGB\\values-en-rGB.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\e3f01f45e48e3f1ac254c3e1ba0b4948\\transformed\\foundation-release\\res\\values-en-rGB\\values-en-rGB.xml",
                     "from": {
-                        "startLines": "2,3,4,5,6,7,8,9",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,151,253,352,451,555,658,774",
-                        "endColumns": "95,101,98,98,103,102,115,100",
-                        "endOffsets": "146,248,347,446,550,653,769,870"
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,141",
+                        "endColumns": "85,84",
+                        "endOffsets": "136,221"
                     },
                     "to": {
-                        "startLines": "2,3,4,5,6,7,8,81",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "105,201,303,402,501,605,708,8187",
-                        "endColumns": "95,101,98,98,103,102,115,100",
-                        "endOffsets": "196,298,397,496,600,703,819,8283"
+                        "startLines": "85,86",
+                        "startColumns": "4,4",
+                        "startOffsets": "8552,8638",
+                        "endColumns": "85,84",
+                        "endOffsets": "8633,8718"
                     }
                 },
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\d8a7b7ac7d9e2866fa9be87ec85cf819\\gradle\\caches\\8.14.5\\transforms\\3e4da18a22b652a376d7cf16f52b5672\\transformed\\ui-release\\res\\values-en-rGB\\values-en-rGB.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\3e4da18a22b652a376d7cf16f52b5672\\transformed\\ui-release\\res\\values-en-rGB\\values-en-rGB.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -38,7 +38,24 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\d8a7b7ac7d9e2866fa9be87ec85cf819\\gradle\\caches\\8.14.5\\transforms\\de66cc1f9e213a45b56e70b4869e71b2\\transformed\\material3-release\\res\\values-en-rGB\\values-en-rGB.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\5056650f565ca465a1b6f65dc0807af2\\transformed\\core-1.15.0\\res\\values-en-rGB\\values-en-rGB.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,151,253,352,451,555,658,774",
+                        "endColumns": "95,101,98,98,103,102,115,100",
+                        "endOffsets": "146,248,347,446,550,653,769,870"
+                    },
+                    "to": {
+                        "startLines": "2,3,4,5,6,7,8,81",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "105,201,303,402,501,605,708,8187",
+                        "endColumns": "95,101,98,98,103,102,115,100",
+                        "endOffsets": "196,298,397,496,600,703,819,8283"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\de66cc1f9e213a45b56e70b4869e71b2\\transformed\\material3-release\\res\\values-en-rGB\\values-en-rGB.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -52,23 +69,6 @@
                         "startOffsets": "1449,1567,1683,1794,1908,2007,2102,2214,2350,2466,2602,2686,2785,2876,2973,3092,3217,3321,3448,3571,3699,3860,3981,4097,4220,4345,4437,4535,4652,4776,4873,4975,5077,5207,5346,5452,5551,5629,5725,5819,5924,6011,6098,6200,6282,6366,6467,6568,6668,6767,6855,6961,7062,7166,7286,7368,7468",
                         "endColumns": "117,115,110,113,98,94,111,135,115,135,83,98,90,96,118,124,103,126,122,127,160,120,115,122,124,91,97,116,123,96,101,101,129,138,105,98,77,95,93,104,86,86,101,81,83,100,100,99,98,87,105,100,103,119,81,99,94",
                         "endOffsets": "1562,1678,1789,1903,2002,2097,2209,2345,2461,2597,2681,2780,2871,2968,3087,3212,3316,3443,3566,3694,3855,3976,4092,4215,4340,4432,4530,4647,4771,4868,4970,5072,5202,5341,5447,5546,5624,5720,5814,5919,6006,6093,6195,6277,6361,6462,6563,6663,6762,6850,6956,7057,7161,7281,7363,7463,7558"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\d8a7b7ac7d9e2866fa9be87ec85cf819\\gradle\\caches\\8.14.5\\transforms\\e3f01f45e48e3f1ac254c3e1ba0b4948\\transformed\\foundation-release\\res\\values-en-rGB\\values-en-rGB.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,141",
-                        "endColumns": "85,84",
-                        "endOffsets": "136,221"
-                    },
-                    "to": {
-                        "startLines": "85,86",
-                        "startColumns": "4,4",
-                        "startOffsets": "8552,8638",
-                        "endColumns": "85,84",
-                        "endOffsets": "8633,8718"
                     }
                 }
             ]

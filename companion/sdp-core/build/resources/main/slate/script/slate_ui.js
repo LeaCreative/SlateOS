@@ -81,6 +81,54 @@
     if (typeof fn === 'function') fn(this);
     u8(this.buf, OP.END_ELEM);
   };
+  Builder.prototype.line = function (x0, y0, x1, y1, c, width) {
+    u8(this.buf, OP.LINE);
+    u8(this.buf, x0); u8(this.buf, y0); u8(this.buf, x1); u8(this.buf, y1);
+    colorTag(this.buf, c);
+    u8(this.buf, width == null ? 1 : width);
+  };
+  Builder.prototype.circle = function (cx, cy, r, c, style) {
+    u8(this.buf, OP.CIRCLE);
+    u8(this.buf, cx); u8(this.buf, cy); u8(this.buf, r);
+    colorTag(this.buf, c);
+    u8(this.buf, style == null ? 0 : style);
+  };
+  Builder.prototype.arc = function (cx, cy, r, a0, a1, c, width) {
+    u8(this.buf, OP.ARC);
+    u8(this.buf, cx); u8(this.buf, cy); u8(this.buf, r);
+    u16le(this.buf, a0 | 0); u16le(this.buf, a1 | 0);
+    colorTag(this.buf, c);
+    u8(this.buf, width == null ? 1 : width);
+  };
+  Builder.prototype.progressArc = function (cx, cy, r, pct, fg, bg, width) {
+    u8(this.buf, OP.PROGRESS_ARC);
+    u8(this.buf, cx); u8(this.buf, cy); u8(this.buf, r);
+    u8(this.buf, pct | 0);
+    colorTag(this.buf, fg);
+    colorTag(this.buf, bg);
+    u8(this.buf, width == null ? 1 : width);
+  };
+  Builder.prototype.icon = function (atlas, id, x, y, tint) {
+    u8(this.buf, OP.ICON);
+    u8(this.buf, atlas | 0);
+    u16le(this.buf, id | 0);
+    u8(this.buf, x); u8(this.buf, y);
+    colorTag(this.buf, tint);
+  };
+  /** RAW RGB332 patch — data is Uint8Array or number[]. */
+  Builder.prototype.patch = function (slot, x, y, w, h, format, encoding, data) {
+    u8(this.buf, OP.PATCH);
+    u8(this.buf, slot | 0); u8(this.buf, x); u8(this.buf, y);
+    u8(this.buf, w); u8(this.buf, h);
+    u8(this.buf, format | 0); u8(this.buf, encoding | 0);
+    var len = data.length | 0;
+    u16le(this.buf, len);
+    for (var i = 0; i < len; i++) u8(this.buf, data[i] & 0xff);
+  };
+  Builder.prototype.patchRef = function (slot, x, y) {
+    u8(this.buf, OP.PATCH_REF);
+    u8(this.buf, slot | 0); u8(this.buf, x); u8(this.buf, y);
+  };
   Builder.prototype.retain = function (ttl) {
     u8(this.buf, OP.RETAIN);
     u16le(this.buf, ttl | 0);

@@ -35,6 +35,7 @@
     "HAPTIC": 96,
     "BACKLIGHT": 97,
     "EXT_MIN": 224,
+    "TEXT_SCALED": 224,
     "EXT_MAX": 239,
     "COMMIT": 240,
     "RETAIN": 241

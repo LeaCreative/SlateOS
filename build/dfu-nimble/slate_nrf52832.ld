@@ -1,0 +1,113 @@
+/* nRF52832 application linker script.
+ *
+ * FLASH origin / length come from CMake (flash_map.hpp / docs/ota.md):
+ *   - BOOTLOADER_PRESENT=OFF: origin 0x0 (bring-up only)
+ *   - BOOTLOADER_PRESENT=ON (default): origin 0x8020 (after MCUBoot 32B header),
+ *     length slot minus header — matches InfiniTime gcc_nrf52-mcuboot.ld
+ *
+ * RAM layout:
+ *   .data -> copied from flash to RAM by Reset_Handler
+ *   .bss  -> zeroed by Reset_Handler
+ *   heap  -> fixed reserve after .bss
+ *   stack -> fixed reserve at top of RAM
+ */
+
+MEMORY
+{
+  FLASH (rx) : ORIGIN = 0x00008020, LENGTH = 0x00073FE0
+  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 0x00010000
+}
+
+ENTRY(Reset_Handler)
+
+_stack_size = 0x00000600;
+_heap_size  = 0x00000200;
+
+SECTIONS
+{
+  /* -fdata-sections emits .isr_vector.<sym>; KEEP must use the wildcard or
+   * --gc-sections drops the table and the image starts with code (unbootable). */
+  .isr_vector :
+  {
+    KEEP(*(.isr_vector*))
+  } > FLASH
+
+  .text :
+  {
+    . = ALIGN(4);
+    *(.text.Reset_Handler)
+    *(.text*)
+    *(.rodata*)
+    *(.glue_7)
+    *(.glue_7t)
+    *(.eh_frame*)
+    . = ALIGN(4);
+  } > FLASH
+
+  .ARM.exidx :
+  {
+    . = ALIGN(4);
+    __exidx_start = .;
+    *(.ARM.exidx*)
+    __exidx_end = .;
+  } > FLASH
+
+  .preinit_array :
+  {
+    . = ALIGN(4);
+    __preinit_array_start = .;
+    KEEP(*(.preinit_array*))
+    __preinit_array_end = .;
+  } > FLASH
+
+  .init_array :
+  {
+    . = ALIGN(4);
+    __init_array_start = .;
+    KEEP(*(SORT(.init_array.*)))
+    KEEP(*(.init_array*))
+    __init_array_end = .;
+  } > FLASH
+
+  _etext = .;
+
+  _sidata = LOADADDR(.data);
+  .data : AT(_etext)
+  {
+    . = ALIGN(4);
+    _sdata = .;
+    *(.data*)
+    . = ALIGN(4);
+    _edata = .;
+  } > RAM
+
+  .bss (NOLOAD) :
+  {
+    . = ALIGN(4);
+    _sbss = .;
+    *(.bss*)
+    *(COMMON)
+    . = ALIGN(4);
+    _ebss = .;
+  } > RAM
+
+  .heap (NOLOAD) :
+  {
+    . = ALIGN(8);
+    __heap_start__ = .;
+    PROVIDE(end = .);
+    PROVIDE(_end = .);
+    PROVIDE(__end__ = .);
+    . += _heap_size;
+    . = ALIGN(8);
+    __heap_end__ = .;
+  } > RAM
+
+  /* MSP stack lives at top of RAM. Do not allocate a mid-RAM .stack_dummy —
+   * that double-reserved stack and wasted ~2 KB under FreeRTOS. */
+  __StackTop = ORIGIN(RAM) + LENGTH(RAM);
+  __StackLimit = __StackTop - _stack_size;
+  PROVIDE(__stack = __StackTop);
+
+  ASSERT(__StackLimit >= __heap_end__, "RAM overflow: heap collides with stack")
+}

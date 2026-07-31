@@ -1,0 +1,12 @@
+[submodule "third_party/FreeRTOS-Kernel"]
+	path = third_party/FreeRTOS-Kernel
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "third_party/mynewt-nimble"]
+	path = third_party/mynewt-nimble
+	url = https://github.com/apache/mynewt-nimble.git
+[submodule "third_party/nrfx"]
+	path = third_party/nrfx
+	url = https://github.com/NordicSemiconductor/nrfx.git
+[submodule "third_party/CMSIS_5"]
+	path = third_party/CMSIS_5
+	url = https://github.com/ARM-software/CMSIS_5.git

@@ -234,6 +234,8 @@ payload: remainder
 
 Channel 7 is nominally reserved, but M5 and the measurement gates use it for loopback and throughput testing. That is deliberate: the benchmark harness needs a channel with no protocol semantics attached. **Debug builds only** — release firmware must reject all traffic on channels 6 and 7, and the negotiation capability flags must not advertise them.
 
+**Single-in-flight reassembly.** The receiver reassembles all channels into **one** shared message buffer, so a message owns the link from its FIRST fragment to its LAST: the encoder must emit every fragment of a message contiguously and must never interleave fragments of messages on different channels (`SdpWriteQueue` on the companion enforces this by enqueuing each message's fragments atomically). If a FIRST — including a single-fragment FIRST|LAST — arrives on any channel while another channel has a reassembly in flight, that is a protocol violation: the receiver abandons the in-flight message (reject-and-resync, counted as a drop), accepts the new message, and drops the abandoned message's later continuation fragments via the per-channel sequence check. Channel-rejected frames (6, and 7 in release) are refused before touching reassembly state and do not abort an in-flight message.
+
 ### 4.3 Display list opcodes
 
 Coordinates are `u8` (0–239). Two operand types are used throughout and must be implemented identically by the firmware interpreter, the Kotlin DSL and the JS builder.

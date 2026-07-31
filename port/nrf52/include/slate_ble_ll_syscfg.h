@@ -1,0 +1,499 @@
+#pragma once
+/* Auto-generated BLE_LL defaults for Slate nRF52832 peripheral. */
+
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+extern const uint8_t g_slate_public_dev_addr[6];
+#ifdef __cplusplus
+}
+#endif
+
+#ifndef MYNEWT_VAL_BLE_CONTROLLER
+#define MYNEWT_VAL_BLE_CONTROLLER (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_HW_WHITELIST_ENABLE
+#define MYNEWT_VAL_BLE_HW_WHITELIST_ENABLE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_CONN_PARAM_REQ
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_CONN_PARAM_REQ (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_CTRL_TO_HOST_FLOW_CONTROL
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_CTRL_TO_HOST_FLOW_CONTROL (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_DATA_LEN_EXT
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_DATA_LEN_EXT (1)
+#endif
+
+/* Off until the BLE_LL_PHY guard bug below is patched. */
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_2M_PHY
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_2M_PHY (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_CODED_PHY
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_CODED_PHY (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_CSA2
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_CSA2 (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_ENCRYPTION
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_ENCRYPTION (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_PING
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LE_PING (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_EXT_ADV
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_EXT_ADV (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_ISO
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_ISO (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV_SYNC_TRANSFER
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV_SYNC_TRANSFER (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PRIVACY
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PRIVACY (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_SCA_UPDATE
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_SCA_UPDATE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_PERIPH_INIT_FEAT_XCHG
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_PERIPH_INIT_FEAT_XCHG (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_INIT_AUTO_DLE
+#define MYNEWT_VAL_BLE_LL_CONN_INIT_AUTO_DLE (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_INIT_MAX_TX_BYTES
+#define MYNEWT_VAL_BLE_LL_CONN_INIT_MAX_TX_BYTES (27)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_INIT_MIN_WIN_OFFSET
+#define MYNEWT_VAL_BLE_LL_CONN_INIT_MIN_WIN_OFFSET (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_INIT_SLOTS
+#define MYNEWT_VAL_BLE_LL_CONN_INIT_SLOTS (4)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_PHY_DEFAULT_PREF_MASK
+#define MYNEWT_VAL_BLE_LL_CONN_PHY_DEFAULT_PREF_MASK (0x03)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_PHY_INIT_UPDATE
+#define MYNEWT_VAL_BLE_LL_CONN_PHY_INIT_UPDATE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_PHY_PREFER_2M
+#define MYNEWT_VAL_BLE_LL_CONN_PHY_PREFER_2M (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED
+#define MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED_FIXED
+#define MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED_FIXED (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED_PERIOD_SLOTS
+#define MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED_PERIOD_SLOTS (8)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED_SLOT_US
+#define MYNEWT_VAL_BLE_LL_CONN_STRICT_SCHED_SLOT_US (3750)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_DIRECT_TEST_MAX_TX_OCTETS
+#define MYNEWT_VAL_BLE_LL_DIRECT_TEST_MAX_TX_OCTETS (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_DTM
+#define MYNEWT_VAL_BLE_LL_DTM (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_HCI_LLCP_TRACE
+#define MYNEWT_VAL_BLE_LL_HCI_LLCP_TRACE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_ISO
+#define MYNEWT_VAL_BLE_LL_ISO (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_MANUFACTURER_ID
+#define MYNEWT_VAL_BLE_LL_MANUFACTURER_ID (0x0FFF)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_MAX_PKT_SIZE
+#define MYNEWT_VAL_BLE_LL_MAX_PKT_SIZE (251)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_MFRG_ID
+#define MYNEWT_VAL_BLE_LL_MFRG_ID (0x0FFF)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_NUM_COMP_PKT_ITVL_MS
+#define MYNEWT_VAL_BLE_LL_NUM_COMP_PKT_ITVL_MS (2000)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_NUM_SCAN_DUP_ADVS
+#define MYNEWT_VAL_BLE_LL_NUM_SCAN_DUP_ADVS (8)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_NUM_SCAN_RSP_ADVS
+#define MYNEWT_VAL_BLE_LL_NUM_SCAN_RSP_ADVS (8)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_OUR_SCA
+#define MYNEWT_VAL_BLE_LL_OUR_SCA (60)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_PRIO
+#define MYNEWT_VAL_BLE_LL_PRIO (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_RESOLV_LIST_SIZE
+#define MYNEWT_VAL_BLE_LL_RESOLV_LIST_SIZE (4)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_RFMGMT_ENABLE_TIME
+#define MYNEWT_VAL_BLE_LL_RFMGMT_ENABLE_TIME (1500)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_RNG_BUFSIZE
+#define MYNEWT_VAL_BLE_LL_RNG_BUFSIZE (32)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_ROLE_BROADCASTER
+#define MYNEWT_VAL_BLE_LL_ROLE_BROADCASTER (1)
+#endif
+
+/* Slate never initiates. CENTRAL requires the scanner (BLE_LL_ROLE_OBSERVER),
+   so enabling it here without the observer leaves ble_ll_conn_hci.c calling
+   ble_ll_scan_get_*_rpa(), which ble_ll_scan.c never compiles. */
+#ifndef MYNEWT_VAL_BLE_LL_ROLE_CENTRAL
+#define MYNEWT_VAL_BLE_LL_ROLE_CENTRAL (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_ROLE_OBSERVER
+#define MYNEWT_VAL_BLE_LL_ROLE_OBSERVER (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_ROLE_PERIPHERAL
+#define MYNEWT_VAL_BLE_LL_ROLE_PERIPHERAL (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SCA
+#define MYNEWT_VAL_BLE_LL_SCA (60)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SUPP_MAX_RX_BYTES
+#define MYNEWT_VAL_BLE_LL_SUPP_MAX_RX_BYTES (251)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SUPP_MAX_TX_BYTES
+#define MYNEWT_VAL_BLE_LL_SUPP_MAX_TX_BYTES (251)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SYSVIEW
+#define MYNEWT_VAL_BLE_LL_SYSVIEW (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_TX_PWR_DBM
+#define MYNEWT_VAL_BLE_LL_TX_PWR_DBM (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_TX_PWR_MAX_DBM
+#define MYNEWT_VAL_BLE_LL_TX_PWR_MAX_DBM (4)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_VND_EVENT_ON_ASSERT
+#define MYNEWT_VAL_BLE_LL_VND_EVENT_ON_ASSERT (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_WHITELIST_SIZE
+#define MYNEWT_VAL_BLE_LL_WHITELIST_SIZE (8)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_DBG_TIME_ADDRESS_END_PIN
+#define MYNEWT_VAL_BLE_PHY_DBG_TIME_ADDRESS_END_PIN (-1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_DBG_TIME_TXRXEN_READY_PIN
+#define MYNEWT_VAL_BLE_PHY_DBG_TIME_TXRXEN_READY_PIN (-1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_DBG_TIME_WFR_PIN
+#define MYNEWT_VAL_BLE_PHY_DBG_TIME_WFR_PIN (-1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_EXTENDED_TIFS
+#define MYNEWT_VAL_BLE_PHY_EXTENDED_TIFS (2)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_NRF52_HEADERMASK_WORKAROUND
+#define MYNEWT_VAL_BLE_PHY_NRF52_HEADERMASK_WORKAROUND (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_SYSVIEW
+#define MYNEWT_VAL_BLE_PHY_SYSVIEW (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_VARIABLE_TIFS
+#define MYNEWT_VAL_BLE_PHY_VARIABLE_TIFS (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PUBLIC_DEV_ADDR
+extern const uint8_t g_slate_public_dev_addr[6];
+#define MYNEWT_VAL_BLE_PUBLIC_DEV_ADDR (g_slate_public_dev_addr)
+#endif
+
+
+#ifndef MYNEWT_VAL_BLE_ROLE_BROADCASTER
+#define MYNEWT_VAL_BLE_ROLE_BROADCASTER (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_ROLE_CENTRAL
+#define MYNEWT_VAL_BLE_ROLE_CENTRAL (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_ROLE_OBSERVER
+#define MYNEWT_VAL_BLE_ROLE_OBSERVER (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_ROLE_PERIPHERAL
+#define MYNEWT_VAL_BLE_ROLE_PERIPHERAL (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_XTAL_SETTLE_TIME
+#define MYNEWT_VAL_BLE_XTAL_SETTLE_TIME (1500)
+#endif
+
+/* nimble_port_init() hardcodes hal_timer_init(5, NULL) + os_cputime_init(32768),
+   so os_cputime must be hal_timer 5 — which is RTC0 — at 32768 Hz. Anything else
+   leaves hal_timer_init() returning EINVAL and os_cputime without a timer.
+   OS_CPUTIME_FREQ also selects the tick<->us conversions at compile time, so it
+   has to agree with the frequency the hardware is actually configured for. */
+#ifndef MYNEWT_VAL_OS_CPUTIME_FREQ
+#define MYNEWT_VAL_OS_CPUTIME_FREQ (32768)
+#endif
+
+#ifndef MYNEWT_VAL_OS_CPUTIME_TIMER_NUM
+#define MYNEWT_VAL_OS_CPUTIME_TIMER_NUM (5)
+#endif
+
+/* TIMER0 is driven directly by ble_phy.c for radio timing. hal_timer must not
+   also claim it, or the two fight over the same peripheral. */
+#ifndef MYNEWT_VAL_TIMER_0
+#define MYNEWT_VAL_TIMER_0 (0)
+#endif
+
+#ifndef MYNEWT_VAL_TIMER_1
+#define MYNEWT_VAL_TIMER_1 (0)
+#endif
+
+#ifndef MYNEWT_VAL_TIMER_2
+#define MYNEWT_VAL_TIMER_2 (0)
+#endif
+
+#ifndef MYNEWT_VAL_TIMER_3
+#define MYNEWT_VAL_TIMER_3 (0)
+#endif
+
+#ifndef MYNEWT_VAL_TIMER_4
+#define MYNEWT_VAL_TIMER_4 (0)
+#endif
+
+/* hal_timer's "timer 5" is RTC0, which Slate reserves for NimBLE (docs/ble.md).
+   RTC1 is board::micros(), RTC2 is power instrumentation. */
+#ifndef MYNEWT_VAL_TIMER_5
+#define MYNEWT_VAL_TIMER_5 (1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_ANTENNA
+#define MYNEWT_VAL_BLE_FEM_ANTENNA (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_LNA
+#define MYNEWT_VAL_BLE_FEM_LNA (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_LNA_GAIN
+#define MYNEWT_VAL_BLE_FEM_LNA_GAIN (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_LNA_GAIN_TUNABLE
+#define MYNEWT_VAL_BLE_FEM_LNA_GAIN_TUNABLE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_LNA_GPIO
+#define MYNEWT_VAL_BLE_FEM_LNA_GPIO (-1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_LNA_TURN_ON_US
+#define MYNEWT_VAL_BLE_FEM_LNA_TURN_ON_US (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_PA
+#define MYNEWT_VAL_BLE_FEM_PA (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_PA_GAIN
+#define MYNEWT_VAL_BLE_FEM_PA_GAIN (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_PA_GAIN_TUNABLE
+#define MYNEWT_VAL_BLE_FEM_PA_GAIN_TUNABLE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_PA_GPIO
+#define MYNEWT_VAL_BLE_FEM_PA_GPIO (-1)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_FEM_PA_TURN_ON_US
+#define MYNEWT_VAL_BLE_FEM_PA_TURN_ON_US (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_ENHANCED_CONN_UPDATE
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_ENHANCED_CONN_UPDATE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV_SYNC_CNT
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV_SYNC_CNT (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV_SYNC_LIST_CNT
+#define MYNEWT_VAL_BLE_LL_CFG_FEAT_LL_PERIODIC_ADV_SYNC_LIST_CNT (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_CONN_EVENT_END_MARGIN
+#define MYNEWT_VAL_BLE_LL_CONN_EVENT_END_MARGIN (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_DTM_EXTENSIONS
+#define MYNEWT_VAL_BLE_LL_DTM_EXTENSIONS (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_EXT
+#define MYNEWT_VAL_BLE_LL_EXT (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_HBD_FAKE_DUAL_MODE
+#define MYNEWT_VAL_BLE_LL_HBD_FAKE_DUAL_MODE (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_HCI_VS
+#define MYNEWT_VAL_BLE_LL_HCI_VS (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_HCI_VS_CONN_STRICT_SCHED
+#define MYNEWT_VAL_BLE_LL_HCI_VS_CONN_STRICT_SCHED (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_HCI_VS_EVENT_ON_ASSERT
+#define MYNEWT_VAL_BLE_LL_HCI_VS_EVENT_ON_ASSERT (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_HCI_VS_LOCAL_IRK
+#define MYNEWT_VAL_BLE_LL_HCI_VS_LOCAL_IRK (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_ISO_BROADCASTER
+#define MYNEWT_VAL_BLE_LL_ISO_BROADCASTER (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_ISO_HCI_DISCARD_THRESHOLD
+#define MYNEWT_VAL_BLE_LL_ISO_HCI_DISCARD_THRESHOLD (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_ISO_HCI_FEEDBACK_INTERVAL_MS
+#define MYNEWT_VAL_BLE_LL_ISO_HCI_FEEDBACK_INTERVAL_MS (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_PERIODIC_ADV_SYNC_BIGINFO_REPORTS
+#define MYNEWT_VAL_BLE_LL_PERIODIC_ADV_SYNC_BIGINFO_REPORTS (0)
+#endif
+
+/* ble_ll_ctrl.c guards the LL_PHY_UPDATE_IND transmit case on BLE_LL_PHY alone,
+   but its helper ble_ll_ctrl_phy_update_ind_instant() is inside the file's
+   BLE_LL_ROLE_CENTRAL block. Only a central transmits that PDU, so the case is
+   dead code for Slate, yet it still fails to link. Costs us 2M PHY; restoring
+   it needs the upstream guard widened to BLE_LL_PHY && BLE_LL_ROLE_CENTRAL. */
+#ifndef MYNEWT_VAL_BLE_LL_PHY
+#define MYNEWT_VAL_BLE_LL_PHY (0)
+#endif
+
+
+#ifndef MYNEWT_VAL_BLE_LL_SCAN_AUX_SEGMENT_CNT
+#define MYNEWT_VAL_BLE_LL_SCAN_AUX_SEGMENT_CNT (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SCHED_AUX_CHAIN_MAFS_DELAY
+#define MYNEWT_VAL_BLE_LL_SCHED_AUX_CHAIN_MAFS_DELAY (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SCHED_AUX_MAFS_DELAY
+#define MYNEWT_VAL_BLE_LL_SCHED_AUX_MAFS_DELAY (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SCHED_SCAN_AUX_PDU_LEN
+#define MYNEWT_VAL_BLE_LL_SCHED_SCAN_AUX_PDU_LEN (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_SCHED_SCAN_SYNC_PDU_LEN
+#define MYNEWT_VAL_BLE_LL_SCHED_SCAN_SYNC_PDU_LEN (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_LL_STACK_SIZE
+#define MYNEWT_VAL_BLE_LL_STACK_SIZE (256)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_NRF5340_VDDH
+#define MYNEWT_VAL_BLE_PHY_NRF5340_VDDH (0)
+#endif
+
+#ifndef MYNEWT_VAL_BLE_PHY_UBLOX_BMD345_PUBLIC_ADDR
+#define MYNEWT_VAL_BLE_PHY_UBLOX_BMD345_PUBLIC_ADDR (0)
+#endif
+
+#ifndef MYNEWT_VAL_MCU_HFCLK_SOURCE
+#define MYNEWT_VAL_MCU_HFCLK_SOURCE (0)
+#endif
+
+#ifndef MYNEWT_VAL_MCU_TARGET__nRF52832
+#define MYNEWT_VAL_MCU_TARGET__nRF52832 (1)
+#endif
+
+#ifndef MYNEWT_VAL_SELFTEST
+#define MYNEWT_VAL_SELFTEST (0)
+#endif
+
+#ifndef MYNEWT_VAL_TRNG
+#define MYNEWT_VAL_TRNG (0)
+#endif
+
+
+#ifndef MYNEWT_VAL_BLE_LL_PUBLIC_DEV_ADDR
+extern const uint8_t g_slate_public_dev_addr[6];
+#define MYNEWT_VAL_BLE_LL_PUBLIC_DEV_ADDR (g_slate_public_dev_addr)
+#endif
+

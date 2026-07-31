@@ -34,12 +34,15 @@ constexpr std::uint16_t kTargetDlOctets = 251u;
 // Connection interval targets (1.25 ms units).
 inline std::uint16_t interval_for(SessionProfile p) {
   switch (p) {
-    case SessionProfile::Ambient:   return 80u;   // 100 ms
+    case SessionProfile::Ambient:   return 400u;  // 500 ms (§8)
     case SessionProfile::Streaming: return 12u;   // 15 ms
     case SessionProfile::Active:
     default:                        return 24u;   // 30 ms
   }
 }
+
+// Renegotiate connection interval after a power-state / profile transition.
+bool request_conn_interval(std::uint16_t interval_units);
 
 // Drive the post-connect negotiation sequence. Platform hooks are injected
 // so host tests can simulate phone refusals.

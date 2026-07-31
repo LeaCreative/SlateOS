@@ -4,10 +4,23 @@
 
 namespace nrf {
 
+#if defined(SLATE_HOST_MMIO)
+// Host unit tests map selected peripheral addresses into process memory.
+namespace host_mmio {
+volatile std::uint32_t& cell(std::uintptr_t address);
+}
+template <typename T>
+inline volatile T& reg(std::uintptr_t address) {
+  static_assert(sizeof(T) == sizeof(std::uint32_t),
+                "host MMIO stubs 32-bit cells only");
+  return reinterpret_cast<volatile T&>(host_mmio::cell(address));
+}
+#else
 template <typename T>
 inline volatile T& reg(std::uintptr_t address) {
   return *reinterpret_cast<volatile T*>(address);
 }
+#endif
 
 constexpr std::uintptr_t CLOCK_BASE = 0x40000000u;
 constexpr std::uintptr_t POWER_BASE = 0x40000000u + 0x00000u;
@@ -20,6 +33,12 @@ constexpr std::uint32_t NVIC_NUM_VECTORS = 16u + 39u;
 
 namespace power {
 constexpr std::uintptr_t DCDCEN = POWER_BASE + 0x578u;
+// Soft-disable debug after measurement builds — see docs/power.md.
+constexpr std::uintptr_t TASKS_CONSTLAT = POWER_BASE + 0x078u;
+constexpr std::uintptr_t TASKS_LOWPWR = POWER_BASE + 0x07Cu;
+constexpr std::uintptr_t SYSTEMOFF = POWER_BASE + 0x500u;
+constexpr std::uintptr_t GPREGRET = POWER_BASE + 0x51Cu;
+constexpr std::uintptr_t RESETREAS = POWER_BASE + 0x400u;
 }
 
 namespace clock {
@@ -44,6 +63,14 @@ constexpr std::uint32_t NFCPINS_RESET_VALUE = 0xFFFFFFFFu;
 constexpr std::uint32_t NFCPINS_GPIO = 0xFFFFFFFEu;
 }
 
+namespace ficr {
+constexpr std::uintptr_t FICR_BASE = 0x10000000u;
+// Per-chip random device address (DEVICEADDRTYPE says "random" on nRF52).
+// Not named DEVICEADDR0/1 — nrfx's nrf51_to_nrf52.h defines those as macros.
+constexpr std::uintptr_t DEVICEADDR_LO = FICR_BASE + 0x0A4u;
+constexpr std::uintptr_t DEVICEADDR_HI = FICR_BASE + 0x0A8u;
+}
+
 namespace gpio {
 constexpr std::uintptr_t OUT = GPIO0_BASE + 0x504u;
 constexpr std::uintptr_t OUTSET = GPIO0_BASE + 0x508u;
@@ -63,6 +90,12 @@ constexpr std::uint32_t PIN_CNF_PULLDOWN = 1u << 2;
 constexpr std::uint32_t PIN_CNF_PULLUP = 3u << 2;
 constexpr std::uint32_t PIN_CNF_DRIVE_S0S1 = 0u << 8;
 constexpr std::uint32_t PIN_CNF_SENSE_DISABLED = 0u << 16;
+constexpr std::uint32_t PIN_CNF_SENSE_HIGH = 2u << 16;
+constexpr std::uint32_t PIN_CNF_SENSE_LOW = 3u << 16;
+
+// DETECT latch (nRF52832) — clear after PORT sense wake.
+constexpr std::uintptr_t LATCH = GPIO0_BASE + 0x520u;
+constexpr std::uintptr_t DETECTMODE = GPIO0_BASE + 0x524u;
 
 inline std::uintptr_t pin_cnf(std::uint32_t pin) {
   return PIN_CNF_BASE + (pin * sizeof(std::uint32_t));
@@ -134,7 +167,8 @@ constexpr std::uint32_t DISABLE           = 0u;
 constexpr std::uint32_t PSEL_DISCONNECTED = (1u << 31);
 }  // namespace spim0
 
-// ── TIMER1 — used for render/transmit profiling ──────────────────────────────
+// ── TIMER1 — board::micros / busy-wait (+ optional profiling captures) ───────
+// TIMER0 is reserved for NimBLE LL; do not use it in Slate app code.
 constexpr std::uintptr_t TIMER1_BASE = 0x40009000u;
 
 namespace timer1 {
@@ -270,18 +304,69 @@ constexpr std::uintptr_t NVIC_ICPR0 = 0xE000E280u;
 namespace irq {
 constexpr std::uint32_t GPIOTE = 6u;
 constexpr std::uint32_t TWIM1  = 4u;
+constexpr std::uint32_t SAADC  = 7u;
+constexpr std::uint32_t RTC2   = 36u;  // nRF52832: 35=SPIM2, 36=RTC2, 37=I2S, 38=FPU
 }  // namespace irq
 
+// ── SAADC (battery AIN7 = P0.31) ─────────────────────────────────────────────
+constexpr std::uintptr_t SAADC_BASE = 0x40007000u;
+namespace saadc {
+constexpr std::uintptr_t TASKS_START = SAADC_BASE + 0x000u;
+constexpr std::uintptr_t TASKS_SAMPLE = SAADC_BASE + 0x004u;
+constexpr std::uintptr_t TASKS_STOP = SAADC_BASE + 0x008u;
+constexpr std::uintptr_t EVENTS_STARTED = SAADC_BASE + 0x100u;
+constexpr std::uintptr_t EVENTS_END = SAADC_BASE + 0x104u;
+constexpr std::uintptr_t EVENTS_DONE = SAADC_BASE + 0x108u;
+constexpr std::uintptr_t EVENTS_STOPPED = SAADC_BASE + 0x110u;
+constexpr std::uintptr_t ENABLE = SAADC_BASE + 0x500u;
+constexpr std::uintptr_t CH0_PSELP = SAADC_BASE + 0x510u;
+constexpr std::uintptr_t CH0_PSELN = SAADC_BASE + 0x514u;
+constexpr std::uintptr_t CH0_CONFIG = SAADC_BASE + 0x518u;
+constexpr std::uintptr_t RESOLUTION = SAADC_BASE + 0x5F0u;
+constexpr std::uintptr_t OVERSAMPLE = SAADC_BASE + 0x5F4u;
+constexpr std::uintptr_t SAMPLERATE = SAADC_BASE + 0x5F8u;
+constexpr std::uintptr_t RESULT_PTR = SAADC_BASE + 0x62Cu;
+constexpr std::uintptr_t RESULT_MAXCNT = SAADC_BASE + 0x630u;
+constexpr std::uint32_t ENABLE_ON = 1u;
+constexpr std::uint32_t PSELP_AIN7 = 8u;  // P0.31
+constexpr std::uint32_t RES_12BIT = 1u;
+}  // namespace saadc
+
+// ── RTC2 — unused (FreeRTOS tick + wall clock share RTC1; NimBLE uses RTC0) ──
+constexpr std::uintptr_t RTC2_BASE = 0x40024000u;
+namespace rtc2 {
+constexpr std::uintptr_t TASKS_START = RTC2_BASE + 0x000u;
+constexpr std::uintptr_t TASKS_STOP = RTC2_BASE + 0x004u;
+constexpr std::uintptr_t TASKS_CLEAR = RTC2_BASE + 0x008u;
+constexpr std::uintptr_t EVENTS_COMPARE0 = RTC2_BASE + 0x140u;
+constexpr std::uintptr_t INTENSET = RTC2_BASE + 0x304u;
+constexpr std::uintptr_t INTENCLR = RTC2_BASE + 0x308u;
+constexpr std::uintptr_t EVTENSET = RTC2_BASE + 0x344u;
+constexpr std::uintptr_t EVTENCLR = RTC2_BASE + 0x348u;
+constexpr std::uintptr_t COUNTER = RTC2_BASE + 0x504u;
+constexpr std::uintptr_t PRESCALER = RTC2_BASE + 0x508u;
+constexpr std::uintptr_t CC0 = RTC2_BASE + 0x540u;
+}  // namespace rtc2
+
 inline void nvic_enable_irq(std::uint32_t irq_number) {
-  reg<std::uint32_t>(NVIC_ISER0) = (1u << irq_number);
+  reg<std::uint32_t>(NVIC_ISER0) = (1u << (irq_number & 31u));
+  if (irq_number >= 32u) {
+    reg<std::uint32_t>(0xE000E104u) = (1u << (irq_number - 32u));
+  }
 }
 
 inline void nvic_disable_irq(std::uint32_t irq_number) {
-  reg<std::uint32_t>(NVIC_ICER0) = (1u << irq_number);
+  reg<std::uint32_t>(NVIC_ICER0) = (1u << (irq_number & 31u));
+  if (irq_number >= 32u) {
+    reg<std::uint32_t>(0xE000E184u) = (1u << (irq_number - 32u));
+  }
 }
 
 inline void nvic_clear_pending(std::uint32_t irq_number) {
-  reg<std::uint32_t>(NVIC_ICPR0) = (1u << irq_number);
+  reg<std::uint32_t>(NVIC_ICPR0) = (1u << (irq_number & 31u));
+  if (irq_number >= 32u) {
+    reg<std::uint32_t>(0xE000E284u) = (1u << (irq_number - 32u));
+  }
 }
 
 }  // namespace nrf

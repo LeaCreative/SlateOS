@@ -10,6 +10,10 @@ object ScriptResources {
     const val HOST_JS = "/slate/script/slate_host.js"
     const val TIMER_MAIN = "/slate/subapps/timer/main.js"
     const val TIMER_MANIFEST = "/slate/subapps/timer/manifest.json"
+    const val NAV_MAIN = "/slate/subapps/navigation/main.js"
+    const val NAV_MANIFEST = "/slate/subapps/navigation/manifest.json"
+    const val CAMERA_MAIN = "/slate/subapps/camera/main.js"
+    const val CAMERA_MANIFEST = "/slate/subapps/camera/manifest.json"
 
     fun read(path: String): String {
         val stream = ScriptResources::class.java.getResourceAsStream(path)

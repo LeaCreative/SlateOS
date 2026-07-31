@@ -1,0 +1,4 @@
+C:/Users/highj/Documents/Projects/EvoTime/build/bisect1/CMakeFiles/slate_firmware.elf.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/bisect1/CMakeFiles/slate_dfu.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/bisect1/CMakeFiles/edit_cache.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/bisect1/CMakeFiles/rebuild_cache.dir

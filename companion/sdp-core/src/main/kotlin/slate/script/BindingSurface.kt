@@ -7,12 +7,13 @@ import slate.host.HostOutbound
  * Permission-gated binding surface (§6.3).
  *
  * Whitelist only — no reflection, filesystem, or raw Android objects.
- * Effective permission = manifest ∩ host-held.
+ * Effective permission = manifest ∩ hostHeld ∩ sourceCeiling.
  */
 class BindingSurface(
     private val script: ScriptManifest,
     private val governor: Governor,
     private val hostHeld: Set<ScriptPermission>,
+    private val sourceCeiling: Set<ScriptPermission>,
     private val store: MutableMap<String, String>,
     private val nowMs: () -> Long,
     private val onTimerSet: (id: String, intervalMs: Long) -> Unit,
@@ -22,7 +23,7 @@ class BindingSurface(
     private var storageBytes: Int = store.values.sumOf { it.toByteArray().size + 8 }
 
     fun effective(p: ScriptPermission): Boolean =
-        script.allows(p) && p in hostHeld
+        script.allows(p) && p in hostHeld && p in sourceCeiling
 
     fun injectStoreJson(): String {
         val o = JSONObject()
@@ -40,12 +41,16 @@ class BindingSurface(
                         "store" -> handleStore(m)
                         "timer" -> handleTimer(m)
                         "http" -> handleHttp(m)
-                        "notifications", "media", "location", "health", "haptic" -> {
+                        "notifications", "media", "location", "health", "haptic",
+                        "nav", "camera",
+                        -> {
                             val perm = when (m.adapter) {
                                 "notifications" -> ScriptPermission.Notifications
                                 "media" -> ScriptPermission.Media
                                 "location" -> ScriptPermission.Location
                                 "health" -> ScriptPermission.HealthRead
+                                "nav" -> ScriptPermission.Navigation
+                                "camera" -> ScriptPermission.Camera
                                 else -> null
                             }
                             if (perm != null && !effective(perm)) {

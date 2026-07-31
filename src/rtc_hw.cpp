@@ -17,26 +17,32 @@ constexpr std::uintptr_t COUNTER = RTC1_BASE + 0x504u;
 constexpr std::uintptr_t PRESCALER = RTC1_BASE + 0x508u;
 
 constexpr std::uint32_t INT_OVRFLW = 1u << 1;
-constexpr std::uint32_t irq_RTC1 = 17u;  // nRF52832 IRQ number
+constexpr std::uint32_t irq_RTC1 = 17u;
 
 volatile std::uint32_t g_overflows = 0u;
 
 }  // namespace
 
 void init() {
+  g_overflows = 0u;
+#if defined(SLATE_FREERTOS_RTC_TICK) && (SLATE_FREERTOS_RTC_TICK == 1)
+  // FreeRTOS owns RTC1 (PRESCALER=31 → 1024 Hz COUNTER, TICK + OVRFLW IRQs).
+  // vPortSetupTimerInterrupt starts the peripheral at scheduler start.
+  return;
+#else
   nrf::reg<std::uint32_t>(TASKS_STOP) = 1u;
   nrf::reg<std::uint32_t>(TASKS_CLEAR) = 1u;
-  nrf::reg<std::uint32_t>(PRESCALER) = 0u;  // 32768 Hz
+  nrf::reg<std::uint32_t>(PRESCALER) = 0u;  // 32768 Hz (bare-metal / no RTOS)
   nrf::reg<std::uint32_t>(EVENTS_OVRFLW) = 0u;
   nrf::reg<std::uint32_t>(EVTENSET) = INT_OVRFLW;
   nrf::reg<std::uint32_t>(INTENSET) = INT_OVRFLW;
   nrf::nvic_clear_pending(irq_RTC1);
   nrf::nvic_enable_irq(irq_RTC1);
   nrf::reg<std::uint32_t>(TASKS_START) = 1u;
+#endif
 }
 
 std::uint64_t ticks() {
-  // Read overflow then counter; retry if overflow raced.
   std::uint32_t ov;
   std::uint32_t ctr;
   do {
@@ -47,15 +53,26 @@ std::uint64_t ticks() {
 }
 
 void on_overflow_irq() {
+#if defined(SLATE_FREERTOS_RTC_TICK) && (SLATE_FREERTOS_RTC_TICK == 1)
+  // Event already cleared in RTC1_IRQHandler (port_rtc_tick.c).
+  ++g_overflows;
+#else
   if (nrf::reg<std::uint32_t>(EVENTS_OVRFLW) != 0u) {
     nrf::reg<std::uint32_t>(EVENTS_OVRFLW) = 0u;
     ++g_overflows;
   }
+#endif
 }
 
 }  // namespace rtc_hw
 }  // namespace slate
 
+extern "C" void slate_rtc1_on_overflow(void) {
+  slate::rtc_hw::on_overflow_irq();
+}
+
+#if !defined(SLATE_FREERTOS_RTC_TICK) || (SLATE_FREERTOS_RTC_TICK == 0)
 extern "C" void RTC1_IRQHandler() {
   slate::rtc_hw::on_overflow_irq();
 }
+#endif

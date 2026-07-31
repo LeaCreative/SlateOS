@@ -167,6 +167,7 @@ Status write(std::uint8_t addr, const std::uint8_t* data, std::size_t len,
     return Status::Ok;
   }
 
+  twim_enable();  // power::buses_idle may have disabled TWIM
   clear_events();
   nrf::reg<std::uint32_t>(nrf::twim1::ADDRESS) = addr;
   nrf::reg<std::uint32_t>(nrf::twim1::TXD_PTR) =
@@ -191,6 +192,7 @@ Status read(std::uint8_t addr, std::uint8_t* data, std::size_t len,
     return Status::Ok;
   }
 
+  twim_enable();
   clear_events();
   nrf::reg<std::uint32_t>(nrf::twim1::ADDRESS) = addr;
   nrf::reg<std::uint32_t>(nrf::twim1::RXD_PTR) =
@@ -220,6 +222,7 @@ Status write_read(std::uint8_t addr,
     return write(addr, tx, tx_len, timeout_us);
   }
 
+  twim_enable();
   clear_events();
   nrf::reg<std::uint32_t>(nrf::twim1::ADDRESS) = addr;
   nrf::reg<std::uint32_t>(nrf::twim1::TXD_PTR) =

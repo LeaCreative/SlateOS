@@ -179,6 +179,107 @@ void test_ext_skip() {
   expect_status("EXT skip unknown", run(b).status, sdp::Status::Ok);
 }
 
+// ── TEXT_SCALED (extension 0xE0) ─────────────────────────────────────────────
+
+struct ScaledSink : sdp::Sink {
+  int calls = 0;
+  std::uint8_t scale = 0u;
+  std::uint8_t len = 0u;
+  std::uint8_t align = 0xFFu;
+  void text_scaled(std::uint8_t, std::uint8_t, std::uint8_t, std::uint16_t,
+                   std::uint8_t al, std::uint8_t s, std::uint8_t l,
+                   const std::uint8_t*) override {
+    ++calls;
+    scale = s;
+    len = l;
+    align = al;
+  }
+};
+
+// pad appends bytes inside the declared length but past the fields we decode,
+// standing in for a field a later protocol revision appends.
+std::vector<std::uint8_t> text_scaled_list(std::uint8_t scale,
+                                           std::uint16_t pad) {
+  const char* text = "12:34";
+  const std::uint8_t tlen = 5u;
+  std::vector<std::uint8_t> b = {0xE0};
+  push_u16(b, static_cast<std::uint16_t>(9u + tlen + pad));
+  b.push_back(0x00);  // font 0
+  b.push_back(120);   // x
+  b.push_back(56);    // y
+  color_literal(b, 0xFFFF);
+  b.push_back(sdp::align::CENTER);
+  b.push_back(scale);
+  b.push_back(tlen);
+  for (const char* p = text; *p != '\0'; ++p) {
+    b.push_back(static_cast<std::uint8_t>(*p));
+  }
+  for (std::uint16_t i = 0u; i < pad; ++i) {
+    b.push_back(0xAA);
+  }
+  b.push_back(0xF0);
+  b.push_back(0x00);
+  return b;
+}
+
+sdp::ParseResult run_exec(const std::vector<std::uint8_t>& bytes,
+                          sdp::Sink* sink) {
+  sdp::ParseOptions opt;
+  opt.execute = true;
+  return sdp::parse(bytes.data(), bytes.size(), opt, sink);
+}
+
+void test_text_scaled_ok() {
+  ScaledSink sink;
+  const auto b = text_scaled_list(8u, 0u);
+  expect_status("TEXT_SCALED ok", run_exec(b, &sink).status, sdp::Status::Ok);
+  expect_true("TEXT_SCALED drawn once", sink.calls == 1);
+  expect_true("TEXT_SCALED scale", sink.scale == 8u);
+  expect_true("TEXT_SCALED len", sink.len == 5u);
+  expect_true("TEXT_SCALED align", sink.align == sdp::align::CENTER);
+}
+
+void test_text_scaled_scale_zero() {
+  const auto b = text_scaled_list(0u, 0u);
+  expect_status("TEXT_SCALED scale 0", run(b).status, sdp::Status::Reject);
+}
+
+void test_text_scaled_scale_too_big() {
+  const auto b =
+      text_scaled_list(static_cast<std::uint8_t>(sdp::kMaxTextScale + 1u), 0u);
+  expect_status("TEXT_SCALED scale over max", run(b).status,
+                sdp::Status::Reject);
+}
+
+void test_text_scaled_forward_compat() {
+  ScaledSink sink;
+  const auto b = text_scaled_list(4u, 6u);
+  expect_status("TEXT_SCALED trailing fields skipped",
+                run_exec(b, &sink).status, sdp::Status::Ok);
+  expect_true("TEXT_SCALED still drawn with padding", sink.calls == 1);
+}
+
+// A declared length shorter than the fields present must not let the op read
+// into the next one.
+void test_text_scaled_short_length() {
+  std::vector<std::uint8_t> b = {0xE0};
+  push_u16(b, 4u);  // far short of the 14 bytes that follow
+  b.push_back(0x00);
+  b.push_back(120);
+  b.push_back(56);
+  color_literal(b, 0xFFFF);
+  b.push_back(sdp::align::CENTER);
+  b.push_back(8u);
+  b.push_back(5u);
+  for (const char* p = "12:34"; *p != '\0'; ++p) {
+    b.push_back(static_cast<std::uint8_t>(*p));
+  }
+  b.push_back(0xF0);
+  b.push_back(0x00);
+  expect_status("TEXT_SCALED length under-declared", run(b).status,
+                sdp::Status::Reject);
+}
+
 // ── Malformed ────────────────────────────────────────────────────────────────
 
 void test_trunc_color() {
@@ -290,6 +391,11 @@ int main() {
   test_progress_elem_scroll();
   test_patch_haptic_backlight_retain();
   test_ext_skip();
+  test_text_scaled_ok();
+  test_text_scaled_scale_zero();
+  test_text_scaled_scale_too_big();
+  test_text_scaled_forward_compat();
+  test_text_scaled_short_length();
 
   test_trunc_color();
   test_bad_coord();

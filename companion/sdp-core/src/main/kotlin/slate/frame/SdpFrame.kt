@@ -58,6 +58,12 @@ object SdpFrame {
     /**
      * Fragment [msg] into ATT-sized frames. [seq] is updated (wraps at 256).
      * [extraFlags]: ACK_REQ / URGENT only.
+     *
+     * §4.2 single-in-flight rule: the watch reassembles into ONE shared
+     * buffer, so all fragments of a message must reach the link contiguously —
+     * never interleave fragments of messages on different channels. Send
+     * through [SdpWriteQueue], which enqueues each message's fragments
+     * atomically.
      */
     fun fragmentMessage(
         channel: Int,

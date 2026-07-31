@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="slate.app.debug"
     android:versionCode="1"
-    android:versionName="0.1.0-m13" >
+    android:versionName="0.1.0-m16" >
 
     <uses-sdk
         android:minSdkVersion="30"
@@ -19,16 +19,29 @@
         android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE" />
+    <!-- Required for AssociationRequest.DEVICE_PROFILE_WATCH (API 31+); missing → SecurityException on associate(). -->
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_PROFILE_WATCH" />
+    <uses-permission android:name="android.permission.REQUEST_COMPANION_START_FOREGROUND_SERVICES_FROM_BACKGROUND" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="true" />
+    <!-- Required for CompanionDeviceManager.associate(); missing → IllegalStateException. -->
+    <uses-feature
+        android:name="android.software.companion_device_setup"
+        android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <permission
         android:name="slate.app.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
@@ -39,8 +52,10 @@
     <application
         android:allowBackup="false"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:debuggable="true"
         android:extractNativeLibs="false"
+        android:fullBackupContent="@xml/full_backup_rules"
         android:icon="@android:drawable/ic_menu_compass"
         android:label="Slate"
         android:supportsRtl="true"
@@ -55,6 +70,14 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="slate.app.ota.SealedDfuProbeActivity"
+            android:exported="false"
+            android:label="Install firmware (sealed)" />
+        <activity
+            android:name="slate.app.ota.SlateOtaActivity"
+            android:exported="false"
+            android:label="Update Slate firmware" />
+        <activity
             android:name="slate.app.bench.BenchmarkActivity"
             android:exported="false"
             android:label="Slate benchmarks" />
@@ -66,9 +89,21 @@
             android:name="slate.app.repo.RepoActivity"
             android:exported="false"
             android:label="Sub-app repository" />
+        <activity
+            android:name="slate.app.link.TroubleshootingActivity"
+            android:exported="false"
+            android:label="Troubleshooting" />
 
         <service
             android:name="slate.app.link.LinkForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+        <service
+            android:name="slate.app.ota.SealedDfuService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+        <service
+            android:name="slate.app.ota.SlateOtaService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
         <service
@@ -82,6 +117,7 @@
         </service>
         <service
             android:name="slate.app.link.SlateCompanionDeviceService"
+            android:enabled="@bool/companion_presence_service_enabled"
             android:exported="true"
             android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE" >
             <intent-filter>
@@ -89,9 +125,28 @@
             </intent-filter>
         </service>
 
+        <receiver
+            android:name="slate.app.link.CompanionStartupReceiver"
+            android:enabled="true"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <activity
             android:name="androidx.compose.ui.tooling.PreviewActivity"
             android:exported="true" />
+
+        <service
+            android:name="androidx.camera.core.impl.MetadataHolderService"
+            android:enabled="false"
+            android:exported="false" >
+            <meta-data
+                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+        </service>
 
         <provider
             android:name="androidx.startup.InitializationProvider"

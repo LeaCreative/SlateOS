@@ -63,5 +63,7 @@ object HostCapabilities {
         "slate.timer",
         "slate.haptic",
         "slate.log",
+        "slate.nav",
+        "slate.camera",
     )
 }

@@ -3,6 +3,10 @@ package slate.frame
 /**
  * Per-channel SDP frame reassembler — mirrors firmware `sdp::frame::Reassembler`
  * for the subset needed by the companion (DIAG TX notifies).
+ *
+ * Mirrors the §4.2 single-in-flight rule: all channels share one buffer, so a
+ * FIRST on any channel aborts an in-flight message on another channel
+ * (counted in [preemptDrops]) rather than letting it be silently corrupted.
  */
 class SdpReassembler(
     private val diagAllowed: Boolean = true,
@@ -21,6 +25,10 @@ class SdpReassembler(
     private val buf = ByteArray(SdpFrame.MAX_MESSAGE_BYTES)
     private var msgLen = 0
     private var msgChannel = 0
+
+    /** In-flight messages abandoned because a FIRST arrived on another channel. */
+    var preemptDrops = 0
+        private set
 
     fun reset() {
         for (c in ch) {
@@ -51,6 +59,14 @@ class SdpReassembler(
 
         val st = ch[channel]
         if (first) {
+            // Single-in-flight: abort in-flight reassembly on other channels
+            // before this message overwrites the shared buffer.
+            for (i in ch.indices) {
+                if (i != channel && ch[i].active) {
+                    drop(i)
+                    preemptDrops++
+                }
+            }
             st.active = true
             st.expectSeq = seq
             st.filled = 0

@@ -7,30 +7,82 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import slate.app.repo.BundledPackageSeeder
+import slate.app.repo.InstalledStore
+import slate.app.repo.RepoPrefs
 import slate.compositor.Compositor
-import slate.host.HostInbound
+import slate.repo.PermissionPolicy
 import slate.script.JsSlateAppEndpoint
 import slate.script.ScriptConsole
-import slate.script.ScriptPermission
 import slate.script.ScriptResources
 
 /**
- * Owns JS sub-app sessions: one isolate each, timer fan-out, IPC latency probe.
+ * Owns JS sub-app sessions loaded from the M13 [InstalledStore]
+ * (seeded official demos or repo-installed packages).
  */
 class ScriptRuntimeHost(
     private val context: Context,
     private val scope: CoroutineScope,
     private val compositor: Compositor,
 ) {
-    private var timerApp: JsSlateAppEndpoint? = null
+    private val apps = HashMap<String, JsSlateAppEndpoint>()
     private val timerJobs = HashMap<String, Job>()
+    private val prefs by lazy { RepoPrefs(context) }
     var lastRenderIpcMs: Long = -1L
         private set
 
-    suspend fun ensureTimerRegistered() {
-        if (timerApp != null) return
+    suspend fun ensureSeeded() {
+        BundledPackageSeeder.ensureOfficialDemos(context)
+    }
+
+    suspend fun ensureTimerRegistered() = ensureRegistered(TIMER_ID)
+
+    suspend fun ensureRegistered(appId: String) {
+        if (apps.containsKey(appId)) return
+        ensureSeeded()
+        if (apps.isEmpty() && lastRenderIpcMs < 0) {
+            probeIpc()
+        }
+        val installed = InstalledStore.create(context).get(appId)
+            ?: error("Package $appId not installed — open Sub-app repository or re-seed demos")
+        val declared = installed.manifest().permissions
+        val granted = PermissionPolicy.bindable(
+            declared = declared,
+            trust = installed.trust,
+            userGrantedSensitive = prefs.userGrantedSensitive(appId),
+        )
+        val denied = declared - granted
+        ScriptConsole.log(
+            appId,
+            "info",
+            "permissions requested=[${declared.joinToString { it.id }}] " +
+                "granted=[${granted.joinToString { it.id }}]" +
+                if (denied.isEmpty()) {
+                    ""
+                } else {
+                    " denied=[${denied.joinToString { it.id }}]"
+                },
+        )
+        val script = installed.manifest().toScriptManifest()
+            .copy(permissions = granted)
         val engine = AndroidJsEngine.create(context)
-        // Measure isolate IPC before loading app logic (§6.4).
+        val ceiling = PermissionPolicy.sourceCeiling(installed.trust)
+        val ep = JsSlateAppEndpoint(
+            scriptManifest = script,
+            engine = engine,
+            hostHeldPermissions = PermissionPolicy.HOST_HELD,
+            sourceCeiling = ceiling,
+            onTimerSet = { id, ms -> scheduleTimer(appId, id, ms) },
+            onTimerClear = { id -> clearTimer(id) },
+        )
+        ep.installRuntime(appJs = installed.entryJs())
+        compositor.register(ep)
+        apps[appId] = ep
+        ScriptConsole.log(appId, "info", "registered from InstalledStore v${installed.version}")
+    }
+
+    private suspend fun probeIpc() {
+        val engine = AndroidJsEngine.create(context)
         engine.evaluate(ScriptResources.read(ScriptResources.UI_JS))
         engine.evaluate(ScriptResources.read(ScriptResources.HOST_JS))
         engine.evaluate("function render(){ return []; }")
@@ -50,27 +102,15 @@ class ScriptRuntimeHost(
                 "IPC render ${ipc}ms > 20ms — propose QuickJS in-process fallback with the same whitelisted BindingSurface (no reflection)",
             )
         }
-
-        val ep = JsSlateAppEndpoint.loadTimer(
-            engine = engine,
-            hostHeld = setOf(ScriptPermission.Storage),
-            onTimerSet = { id, ms -> scheduleTimer(id, ms) },
-            onTimerClear = { id -> clearTimer(id) },
-        )
-        // ui+host already loaded; install app entry only
-        engine.evaluate(ScriptResources.read(ScriptResources.TIMER_MAIN))
-        compositor.register(ep)
-        timerApp = ep
+        engine.close()
     }
 
-    private fun scheduleTimer(id: String, intervalMs: Long) {
+    private fun scheduleTimer(appId: String, id: String, intervalMs: Long) {
         clearTimer(id)
-        val appId = timerApp?.manifest?.id ?: return
         timerJobs[id] = scope.launch {
             while (isActive) {
                 delay(intervalMs)
-                val payload = JSONObject().put("id", id).toString()
-                compositor.dispatchSystemEvent(appId, "timer", payload)
+                compositor.dispatchSystemEvent(appId, "timer", JSONObject().put("id", id).toString())
             }
         }
     }
@@ -82,7 +122,13 @@ class ScriptRuntimeHost(
     fun close() {
         timerJobs.values.forEach { it.cancel() }
         timerJobs.clear()
-        timerApp?.close()
-        timerApp = null
+        apps.values.forEach { it.close() }
+        apps.clear()
+    }
+
+    companion object {
+        const val TIMER_ID = "slate.timer"
+        const val NAV_ID = "slate.navigation"
+        const val CAMERA_ID = "slate.camera"
     }
 }

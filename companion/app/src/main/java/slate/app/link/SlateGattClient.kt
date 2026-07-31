@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import slate.diag.SdpDiag
 import slate.frame.SdpFrame
 import slate.frame.SdpReassembler
-import java.util.concurrent.ConcurrentLinkedQueue
+import slate.frame.SdpWriteQueue
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -32,8 +32,10 @@ class SlateGattClient(
     private val appContext: Context,
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val channelSeq = ChannelSeq()
-    private val writeQueue = ConcurrentLinkedQueue<ByteArray>()
+
+    // Owns per-channel TX seq and enqueues each message's fragments atomically
+    // (§4.2 single-in-flight — fragments must never interleave across channels).
+    private val writeQueue = SdpWriteQueue()
     private val writing = AtomicBoolean(false)
 
     private var gatt: BluetoothGatt? = null
@@ -49,6 +51,9 @@ class SlateGattClient(
 
     private val txReasm = SdpReassembler(diagAllowed = true)
     private val diagListeners = CopyOnWriteArrayList<(ByteArray) -> Unit>()
+    private val controlListeners = CopyOnWriteArrayList<(ByteArray) -> Unit>()
+    private val inputListeners = CopyOnWriteArrayList<(ByteArray) -> Unit>()
+    private val otaListeners = CopyOnWriteArrayList<(ByteArray) -> Unit>()
 
     fun addDiagListener(listener: (ByteArray) -> Unit) {
         diagListeners += listener
@@ -56,6 +61,30 @@ class SlateGattClient(
 
     fun removeDiagListener(listener: (ByteArray) -> Unit) {
         diagListeners -= listener
+    }
+
+    fun addControlListener(listener: (ByteArray) -> Unit) {
+        controlListeners += listener
+    }
+
+    fun removeControlListener(listener: (ByteArray) -> Unit) {
+        controlListeners -= listener
+    }
+
+    fun addInputListener(listener: (ByteArray) -> Unit) {
+        inputListeners += listener
+    }
+
+    fun removeInputListener(listener: (ByteArray) -> Unit) {
+        inputListeners -= listener
+    }
+
+    fun addOtaListener(listener: (ByteArray) -> Unit) {
+        otaListeners += listener
+    }
+
+    fun removeOtaListener(listener: (ByteArray) -> Unit) {
+        otaListeners -= listener
     }
 
     private val callback = object : BluetoothGattCallback() {
@@ -104,20 +133,38 @@ class SlateGattClient(
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
             LinkLog.i("onServicesDiscovered status=$status")
             if (status != BluetoothGatt.GATT_SUCCESS) {
-                update { copy(lastError = "discover failed status=$status") }
+                update {
+                    copy(
+                        connected = false,
+                        lastError = "discover failed status=$status",
+                    )
+                }
+                closeInternal()
                 return
             }
             val svc = g.getService(SlateGattIds.SERVICE)
             if (svc == null) {
-                update { copy(lastError = "Slate service not found") }
+                update {
+                    copy(
+                        connected = false,
+                        lastError = "Slate service not found",
+                    )
+                }
                 LinkLog.w("Slate service ${SlateGattIds.SERVICE} missing")
+                closeInternal()
                 return
             }
             rxChar = svc.getCharacteristic(SlateGattIds.RX)
             txChar = svc.getCharacteristic(SlateGattIds.TX)
             statusChar = svc.getCharacteristic(SlateGattIds.STATUS)
             if (rxChar == null || txChar == null) {
-                update { copy(lastError = "RX/TX characteristics missing") }
+                update {
+                    copy(
+                        connected = false,
+                        lastError = "RX/TX characteristics missing",
+                    )
+                }
+                closeInternal()
                 return
             }
 
@@ -258,11 +305,8 @@ class SlateGattClient(
         if (payloadMax < 20) {
             LinkLog.w("ATT payload too small: $payloadMax")
         }
-        val fragments = channelSeq.nextFragments(channel, message)
-        LinkLog.i("sendMessage ch=$channel bytes=${message.size} fragments=${fragments.size}")
-        for (f in fragments) {
-            writeQueue.offer(f)
-        }
+        val fragments = writeQueue.enqueueMessage(channel, message)
+        LinkLog.i("sendMessage ch=$channel bytes=${message.size} fragments=$fragments")
         pumpWrites()
         return true
     }
@@ -385,9 +429,43 @@ class SlateGattClient(
             SdpReassembler.Status.Ok -> {
                 val msg = txReasm.message()
                 val ch = txReasm.messageChannel()
-                if (ch == SdpFrame.CHAN_DIAG) {
-                    dispatchDiag(msg)
+                when (ch) {
+                    SdpFrame.CHAN_CONTROL -> dispatchControl(msg)
+                    SdpFrame.CHAN_INPUT -> dispatchInput(msg)
+                    SdpFrame.CHAN_DIAG -> dispatchDiag(msg)
+                    SdpFrame.CHAN_OTA -> dispatchOta(msg)
+                    else -> LinkLog.i("TX ch=$ch len=${msg.size} (no listener)")
                 }
+            }
+        }
+    }
+
+    private fun dispatchControl(msg: ByteArray) {
+        for (l in controlListeners) {
+            try {
+                l(msg)
+            } catch (t: Throwable) {
+                LinkLog.e("control listener", t)
+            }
+        }
+    }
+
+    private fun dispatchInput(msg: ByteArray) {
+        for (l in inputListeners) {
+            try {
+                l(msg)
+            } catch (t: Throwable) {
+                LinkLog.e("input listener", t)
+            }
+        }
+    }
+
+    private fun dispatchOta(msg: ByteArray) {
+        for (l in otaListeners) {
+            try {
+                l(msg)
+            } catch (t: Throwable) {
+                LinkLog.e("ota listener", t)
             }
         }
     }

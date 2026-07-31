@@ -57,26 +57,65 @@ object SlatePackageReader {
 class PackageException(message: String) : Exception(message)
 
 /**
- * §6.1 / §6.6 third-party reduced permission set.
- * No http, health, or location unless the user grants per-app.
+ * §6.1 / §6.6 permission ceilings.
+ *
+ * Effective bindable set = declared ∩ [PermissionPolicy.effective] ∩
+ * [HOST_HELD] ∩ [sourceCeiling]. Store install already applies [effective];
+ * runtime re-applies host + source ceilings so a future privileged-internal
+ * permission cannot silently land on third-party / store apps.
  */
 object PermissionPolicy {
+    /**
+     * What the companion host can technically wire (whitelisted bindings only —
+     * no reflection, filesystem, or raw Android APIs; see CLAUDE.md).
+     */
+    val HOST_HELD: Set<ScriptPermission> = ScriptPermission.entries.toSet()
+
+    /**
+     * Privileged-internal permissions: grantable only under Official/bundled
+     * trust. Add new host-only capabilities here — never to third-party even
+     * with a user toggle.
+     */
+    val PRIVILEGED_INTERNAL: Set<ScriptPermission> = emptySet()
+
     val THIRD_PARTY_BLOCKED: Set<ScriptPermission> = setOf(
         ScriptPermission.Http,
         ScriptPermission.HealthRead,
         ScriptPermission.Location,
+        ScriptPermission.Camera,
+        ScriptPermission.Navigation,
     )
+
+    /** Max permissions a package from [trust] may ever hold. */
+    fun sourceCeiling(trust: RepoTrust): Set<ScriptPermission> = when (trust) {
+        RepoTrust.Official -> HOST_HELD
+        RepoTrust.ThirdParty -> HOST_HELD - PRIVILEGED_INTERNAL
+    }
 
     fun effective(
         declared: Set<ScriptPermission>,
         trust: RepoTrust,
         userGrantedSensitive: Set<ScriptPermission> = emptySet(),
     ): Set<ScriptPermission> {
-        if (trust == RepoTrust.Official) return declared
+        if (trust == RepoTrust.Official) {
+            return declared.intersect(sourceCeiling(trust)).intersect(HOST_HELD)
+        }
         return declared.filter { p ->
-            p !in THIRD_PARTY_BLOCKED || p in userGrantedSensitive
+            p in sourceCeiling(trust) &&
+                p in HOST_HELD &&
+                (p !in THIRD_PARTY_BLOCKED || p in userGrantedSensitive)
         }.toSet()
     }
+
+    /**
+     * Runtime bindable set for [JsSlateAppEndpoint] / [BindingSurface].
+     * Recomputes from declared permissions + trust + user grants.
+     */
+    fun bindable(
+        declared: Set<ScriptPermission>,
+        trust: RepoTrust,
+        userGrantedSensitive: Set<ScriptPermission> = emptySet(),
+    ): Set<ScriptPermission> = effective(declared, trust, userGrantedSensitive)
 
     fun blockedByDefault(declared: Set<ScriptPermission>, trust: RepoTrust): Set<ScriptPermission> {
         if (trust == RepoTrust.Official) return emptySet()

@@ -1,10 +1,11 @@
 #include "battery.hpp"
+#include "battery_hw.hpp"
 #include "nrf52832_regs.hpp"
+#include "power.hpp"
 
 #include <cstdint>
 
-// SAADC + charge pin. Until full SAADC bring-up, millivolts fall back to 4.0 V
-// when the ADC is not yet sampled; charge detect uses P0.12 (low = charging).
+// SAADC + charge pin. Unknown ADC must not look like a healthy battery.
 
 namespace slate {
 namespace battery_hw {
@@ -32,10 +33,14 @@ void init() {
   h.read_adc_raw = &read_adc;
   h.is_charging = &is_charging;
   battery::init(h);
+
+  // Sample before any DFU/OTA gate can run (InfiniTime measures early too).
+  sample_now();
 }
 
-// Optional: push a raw SAADC sample from a future sensors task.
 void set_adc_raw(int raw) { g_last_adc = raw; }
+
+void sample_now() { set_adc_raw(power::sample_battery_adc()); }
 
 }  // namespace battery_hw
 }  // namespace slate

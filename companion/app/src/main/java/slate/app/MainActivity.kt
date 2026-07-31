@@ -4,8 +4,11 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.TypedValue
 import android.view.Gravity
 import android.widget.Button
@@ -22,19 +25,24 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import slate.app.bench.BenchmarkActivity
+import slate.app.host.CompositorHost
 import slate.app.link.AssociationHelper
+import slate.app.link.LinkContention
 import slate.app.link.LinkForegroundService
 import slate.app.link.LinkLog
 import slate.app.link.LinkMetrics
 import slate.app.link.SharedLink
 import slate.app.notif.NotifPrefs
 import slate.app.notif.SlateNotificationListener
+import slate.app.ota.SealedDfuProbeActivity
+import slate.app.ota.SlateOtaActivity
 import slate.app.repo.RepoActivity
 import slate.app.script.DevConsoleActivity
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var metricsView: TextView
+    private lateinit var confirmBanner: TextView
     private lateinit var statusView: TextView
     private lateinit var nlsStatus: TextView
     private val association by lazy { AssociationHelper(this) }
@@ -54,8 +62,22 @@ class MainActivity : ComponentActivity() {
         }
         LinkLog.i("Associated ${device.address}")
         association.startObservingPresence(device.address)
-        LinkForegroundService.start(this, device.address)
-        statusView.text = "Associated ${device.address} — link service started"
+        val held = LinkContention.remediationIfHeldByOther(
+            this,
+            device.address,
+            weAreConnected = gatt.metrics.value.connected,
+        )
+        if (held != null) {
+            statusView.text = held
+            SharedLink.lastContentionMessage = held
+            return@registerForActivityResult
+        }
+        statusView.text = if (LinkForegroundService.start(this, device.address)) {
+            "Associated ${device.address} — link service started"
+        } else {
+            "Associated ${device.address}, but Android blocked the link service; " +
+                "check notification/background settings"
+        }
     }
 
     private val permissionLauncher = registerForActivityResult(
@@ -77,16 +99,21 @@ class MainActivity : ComponentActivity() {
             setPadding(pad)
         }
 
-        root.addView(text("Slate companion (M12)", 22f, true))
+        root.addView(text("Slate companion (M16)", 22f, true))
         root.addView(
             text(
-                "CDM · FGS · compositor · JS sub-apps (interpreted only) · notifications",
+                "CDM · FGS · compositor · JS sub-apps (nav / camera / timer) · notifications",
                 14f,
                 false,
             ),
         )
 
         metricsView = text("…", 15f, false).also { root.addView(it) }
+        confirmBanner = text("", 16f, true).also {
+            it.setPadding(dp(8), dp(12), dp(8), dp(12))
+            it.visibility = android.view.View.GONE
+            root.addView(it)
+        }
         statusView = text("", 13f, false).also { root.addView(it) }
         root.addView(
             text(
@@ -97,16 +124,30 @@ class MainActivity : ComponentActivity() {
         )
 
         root.addView(button("1. Grant permissions") {
-            permissionLauncher.launch(requiredPermissions())
+            permissionLauncher.launch(companionPermissions())
         })
         root.addView(button("1b. Notification access (system settings)") {
             SlateNotificationListener.openListenerSettings(this)
             statusView.text = "Enable “Slate notifications” in the list, then return"
         })
         root.addView(button("2. Associate watch (CDM)") {
-            if (!hasPermissions()) {
+            if (!hasCompanionPermissions()) {
                 statusView.text = "Grant permissions first"
                 return@button
+            }
+            val known = SharedLink.associatedAddress
+                ?: association.lastAssociatedAddress()
+                ?: association.associatedAddresses().firstOrNull()
+            if (known != null) {
+                val held = LinkContention.remediationIfHeldByOther(
+                    this,
+                    known,
+                    weAreConnected = gatt.metrics.value.connected,
+                )
+                if (held != null) {
+                    statusView.text = held
+                    return@button
+                }
             }
             association.associate(
                 activity = this,
@@ -118,13 +159,27 @@ class MainActivity : ComponentActivity() {
         })
         root.addView(button("3. Start / reconnect link service") {
             val addr = SharedLink.associatedAddress
+                ?: association.lastAssociatedAddress()
                 ?: association.associatedAddresses().firstOrNull()
             if (addr == null) {
                 statusView.text = "No associated device"
             } else {
                 association.startObservingPresence(addr)
-                LinkForegroundService.start(this, addr)
-                statusView.text = "Reconnecting $addr"
+                val held = LinkContention.remediationIfHeldByOther(
+                    this,
+                    addr,
+                    weAreConnected = gatt.metrics.value.connected,
+                )
+                if (held != null) {
+                    statusView.text = held
+                    SharedLink.lastContentionMessage = held
+                    return@button
+                }
+                statusView.text = if (LinkForegroundService.start(this, addr)) {
+                    "Reconnecting $addr"
+                } else {
+                    "Android blocked the link service; check background settings"
+                }
             }
         })
         root.addView(button("Ping RTT (DIAG ch7)") { gatt.pingRtt() })
@@ -139,6 +194,21 @@ class MainActivity : ComponentActivity() {
         root.addView(button("Open Timer (JS sub-app)") {
             LinkForegroundService.openTimer(this)
             statusView.text = "Requested Timer JS focus"
+        })
+        root.addView(button("Open Navigation (JS)") {
+            LinkForegroundService.openNavigation(this)
+            statusView.text = "Requested Navigation JS focus (one DL / maneuver)"
+        })
+        root.addView(button("Open Camera (JS + PATCH)") {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionLauncher.launch(arrayOf(Manifest.permission.CAMERA))
+                statusView.text = "Grant camera, then tap Open Camera again"
+                return@button
+            }
+            LinkForegroundService.openCamera(this)
+            statusView.text = "Requested Camera JS focus (RGB332 PATCH stream)"
         })
         root.addView(button("Script console") {
             startActivity(Intent(this, DevConsoleActivity::class.java))
@@ -157,6 +227,29 @@ class MainActivity : ComponentActivity() {
             NotifPrefs(this).interruptFilterEnabled = false
             statusView.text = "Interrupt filter OFF — any HIGH+ may steal focus"
         })
+        root.addView(button("Install Slate on sealed PineTime") {
+            startActivity(Intent(this, SealedDfuProbeActivity::class.java))
+        })
+        root.addView(button("Update Slate firmware (SDP OTA)") {
+            startActivity(Intent(this, SlateOtaActivity::class.java))
+        })
+        root.addView(button("Troubleshooting (BLE one-slot)") {
+            startActivity(Intent(this, slate.app.link.TroubleshootingActivity::class.java))
+        })
+        root.addView(button("Background reliability settings") {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            statusView.text =
+                "Allow Slate to run unrestricted if your phone kills the link service"
+        })
+        root.addView(button("Slate app battery / autostart settings") {
+            startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", packageName, null),
+                ),
+            )
+            statusView.text = manufacturerBackgroundGuidance()
+        })
         root.addView(button("Benchmarks (gates A / B / D)") {
             startActivity(Intent(this, BenchmarkActivity::class.java))
         })
@@ -171,9 +264,21 @@ class MainActivity : ComponentActivity() {
 
         setContentView(ScrollView(this).apply { addView(root) })
 
+        // Associations persist, but observation may not survive reboot/update.
+        val associated = association.associatedAddresses().map { it.uppercase() }.toSet()
+        association.presenceAddresses()
+            .filter { it.uppercase() in associated }
+            .forEach(association::startObservingPresence)
+        showBatteryOptimizationWarning()
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 gatt.metrics.collect { renderMetrics(it) }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                SharedLink.confirmUi.collect { renderConfirmBanner(it) }
             }
         }
     }
@@ -187,6 +292,40 @@ class MainActivity : ComponentActivity() {
                 } else {
                     "disabled — open settings"
                 }
+        }
+        SharedLink.lastContentionMessage?.let {
+            if (::statusView.isInitialized) statusView.text = it
+        }
+    }
+
+    private fun renderConfirmBanner(ui: CompositorHost.ConfirmUi) {
+        if (!::confirmBanner.isInitialized) return
+        when (ui) {
+            is CompositorHost.ConfirmUi.Idle -> {
+                confirmBanner.visibility = android.view.View.GONE
+            }
+            is CompositorHost.ConfirmUi.OnTrial -> {
+                confirmBanner.visibility = android.view.View.VISIBLE
+                confirmBanner.setBackgroundColor(0xFFFFCC00.toInt())
+                confirmBanner.setTextColor(0xFF000000.toInt())
+                confirmBanner.text =
+                    "Image on trial — keep connected, ${ui.secondsRemaining} s to confirm"
+            }
+            is CompositorHost.ConfirmUi.Confirmed -> {
+                confirmBanner.visibility = android.view.View.VISIBLE
+                confirmBanner.setBackgroundColor(0xFF2E7D32.toInt())
+                confirmBanner.setTextColor(0xFFFFFFFF.toInt())
+                confirmBanner.text = "Confirmed — image is permanent"
+            }
+            is CompositorHost.ConfirmUi.StuckWarning -> {
+                confirmBanner.visibility = android.view.View.VISIBLE
+                confirmBanner.setBackgroundColor(0xFFC62828.toInt())
+                confirmBanner.setTextColor(0xFFFFFFFF.toInt())
+                confirmBanner.text =
+                    "Trial not clearing after HELLO. " +
+                        (SharedLink.lastContentionMessage
+                            ?: LinkContention.remediationBody(this))
+            }
         }
     }
 
@@ -208,10 +347,11 @@ class MainActivity : ComponentActivity() {
             )
             appendLine("Notes: ${m.notes.ifBlank { "—" }}")
             if (m.lastError.isNotBlank()) appendLine("Error: ${m.lastError}")
+            SharedLink.lastContentionMessage?.let { appendLine("Link: $it") }
         }
     }
 
-    private fun requiredPermissions(): Array<String> {
+    private fun companionPermissions(): Array<String> {
         val list = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= 31) {
             list += Manifest.permission.BLUETOOTH_CONNECT
@@ -223,10 +363,34 @@ class MainActivity : ComponentActivity() {
         return list.toTypedArray()
     }
 
-    private fun hasPermissions(): Boolean =
-        requiredPermissions().all {
+    private fun hasCompanionPermissions(): Boolean =
+        companionPermissions().all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
         }
+
+    private fun showBatteryOptimizationWarning() {
+        val pm = getSystemService(PowerManager::class.java) ?: return
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            statusView.text =
+                manufacturerBackgroundGuidance()
+        }
+    }
+
+    private fun manufacturerBackgroundGuidance(): String {
+        val steps = when {
+            Build.MANUFACTURER.contains("xiaomi", ignoreCase = true) ->
+                "enable Autostart and set Battery saver to No restrictions"
+            Build.MANUFACTURER.contains("samsung", ignoreCase = true) ->
+                "add Slate to Battery > Background usage limits > Never sleeping apps"
+            Build.MANUFACTURER.contains("huawei", ignoreCase = true) ||
+                Build.MANUFACTURER.contains("honor", ignoreCase = true) ->
+                "open App launch, manage Slate manually, and enable all background toggles"
+            else ->
+                "set battery/background usage to Unrestricted and allow autostart if offered"
+        }
+        return "Background restrictions can stop the BLE link: $steps. " +
+            "Also open “Background reliability settings” and allow Slate."
+    }
 
     private fun dp(v: Int): Int =
         TypedValue.applyDimension(

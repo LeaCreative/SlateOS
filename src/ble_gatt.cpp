@@ -1,10 +1,42 @@
 #include "ble_gatt.hpp"
 
+#include "freertos_smoke.hpp"
 #include "rtt.hpp"
 
 #include <cstring>
 
 namespace ble {
+
+namespace {
+
+SessionUpFn g_session_up = nullptr;
+void* g_session_up_ctx = nullptr;
+SessionDownFn g_session_down = nullptr;
+void* g_session_down_ctx = nullptr;
+
+}  // namespace
+
+void set_session_up_hook(SessionUpFn fn, void* ctx) {
+  g_session_up = fn;
+  g_session_up_ctx = ctx;
+}
+
+void notify_session_up() {
+  if (g_session_up) {
+    g_session_up(g_session_up_ctx);
+  }
+}
+
+void set_session_down_hook(SessionDownFn fn, void* ctx) {
+  g_session_down = fn;
+  g_session_down_ctx = ctx;
+}
+
+void notify_session_down() {
+  if (g_session_down) {
+    g_session_down(g_session_down_ctx);
+  }
+}
 
 void encode_status(const StatusSnapshot& s, std::uint8_t out[kStatusPayloadLen]) {
   out[0] = static_cast<std::uint8_t>(s.att_mtu & 0xFFu);
@@ -46,6 +78,8 @@ void GattServer::refresh_status(const NegotiatedParams& n, bool linked) {
     link_->set_status(s);
   }
   encode_status(s, status_raw_);
+  // STATUS[11] reserved → M5a FreeRTOS smoke result (0=pending, 1=pass, 2=fail).
+  status_raw_[11] = static_cast<std::uint8_t>(freertos_smoke::result());
 }
 
 void GattServer::set_tx_sink(TxNotifyFn fn, void* ctx) {
@@ -65,6 +99,22 @@ void start_stack(GattServer* gatt, SessionProfile profile) {
            "BLE: NimBLE not linked (SLATE_HAS_NIMBLE=0) — transport ready, radio idle");
   rtt::log(rtt::Level::Info, "BLE: Slate UUID base e979acfb-c338-44fa-a962-e96e4cf078f3");
   rtt::log(rtt::Level::Info, "BLE: Service e979acfb-c338-0000-a962-e96e4cf078f3");
+}
+
+bool request_conn_interval(std::uint16_t interval_units) {
+  (void)interval_units;
+  return false;
+}
+
+void update_battery_level(std::uint8_t percent) {
+  (void)percent;
+}
+
+bool central_connected() { return false; }
+
+void bringup_snapshot(std::uint8_t* state, std::uint16_t* rc) {
+  if (state != nullptr) *state = 0u;
+  if (rc != nullptr) *rc = 0u;
 }
 
 #endif

@@ -38,7 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import slate.app.link.SharedLink
+import slate.app.link.LinkForegroundService
 import slate.repo.Availability
 import slate.repo.PermissionPolicy
 import slate.repo.RepoTrust
@@ -56,13 +56,13 @@ class RepoActivity : ComponentActivity() {
             store = store,
             hostVersion = hostVer,
             watchProtocol = {
-                SharedLink.compositorHost?.compositor?.watchProtocolVersion ?: 1
+                LinkForegroundService.instance?.watchProtocolVersion() ?: 1
             },
         )
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    RepoScreen(manager = manager, prefs = prefs)
+                    RepoScreen(manager = manager, prefs = prefs, context = this)
                 }
             }
         }
@@ -72,7 +72,7 @@ class RepoActivity : ComponentActivity() {
 private enum class Tab { Browse, Installed, Sources }
 
 @Composable
-private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs) {
+private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.content.Context) {
     var tab by remember { mutableStateOf(Tab.Browse) }
     var selected by remember { mutableStateOf<BrowseItem?>(null) }
     val catalog by manager.catalog.collectAsState()
@@ -118,6 +118,12 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs) {
             TextButton(onClick = { tab = Tab.Sources }) { Text("Sources") }
             TextButton(onClick = { scope.launch { manager.refreshIndexes(force = true) } }) {
                 Text("Refresh")
+            }
+            TextButton(onClick = {
+                BundledPackageSeeder.ensureOfficialDemos(context)
+                manager.refreshLocal()
+            }) {
+                Text("Seed demos")
             }
         }
         Spacer(modifier = Modifier.height(8.dp))

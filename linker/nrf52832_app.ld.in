@@ -1,8 +1,9 @@
 /* nRF52832 application linker script.
  *
- * FLASH origin:
- *   - 0x00000000 when BOOTLOADER_PRESENT=OFF for standalone bring-up
- *   - 0x00008000 when BOOTLOADER_PRESENT=ON to sit above a 32KB bootloader
+ * FLASH origin / length come from CMake (flash_map.hpp / docs/ota.md):
+ *   - BOOTLOADER_PRESENT=OFF: origin 0x0 (bring-up only)
+ *   - BOOTLOADER_PRESENT=ON (default): origin 0x8020 (after MCUBoot 32B header),
+ *     length slot minus header — matches InfiniTime gcc_nrf52-mcuboot.ld
  *
  * RAM layout:
  *   .data -> copied from flash to RAM by Reset_Handler
@@ -24,10 +25,11 @@ _heap_size  = @SLATE_HEAP_SIZE@;
 
 SECTIONS
 {
+  /* -fdata-sections emits .isr_vector.<sym>; KEEP must use the wildcard or
+   * --gc-sections drops the table and the image starts with code (unbootable). */
   .isr_vector :
   {
-    . = ALIGN(256);
-    KEEP(*(.isr_vector))
+    KEEP(*(.isr_vector*))
   } > FLASH
 
   .text :
@@ -93,18 +95,16 @@ SECTIONS
   {
     . = ALIGN(8);
     __heap_start__ = .;
+    PROVIDE(end = .);
+    PROVIDE(_end = .);
+    PROVIDE(__end__ = .);
     . += _heap_size;
     . = ALIGN(8);
     __heap_end__ = .;
   } > RAM
 
-  .stack_dummy (NOLOAD) :
-  {
-    . = ALIGN(8);
-    . += _stack_size;
-    . = ALIGN(8);
-  } > RAM
-
+  /* MSP stack lives at top of RAM. Do not allocate a mid-RAM .stack_dummy —
+   * that double-reserved stack and wasted ~2 KB under FreeRTOS. */
   __StackTop = ORIGIN(RAM) + LENGTH(RAM);
   __StackLimit = __StackTop - _stack_size;
   PROVIDE(__stack = __StackTop);

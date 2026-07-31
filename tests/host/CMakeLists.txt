@@ -89,10 +89,29 @@ add_executable(test_ble_link
   "${SLATE_ROOT}/src/ble_link.cpp"
   "${SLATE_ROOT}/src/ble_conn.cpp"
   "${SLATE_ROOT}/src/ble_gatt.cpp"
+  "${SLATE_ROOT}/src/freertos_smoke.cpp"
 )
 target_include_directories(test_ble_link PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_ble_link PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_ble_link ble_link)
+
+add_executable(test_ble_app_inbox
+  test_ble_app_inbox.cpp
+  rtt_stub.cpp
+  "${SLATE_ROOT}/src/sdp_frame.cpp"
+  "${SLATE_ROOT}/src/sdp_diag.cpp"
+  "${SLATE_ROOT}/src/ble_link.cpp"
+)
+target_include_directories(test_ble_app_inbox PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_ble_app_inbox PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_ble_app_inbox ble_app_inbox)
+
+add_executable(test_ble_gap_adv_policy
+  test_ble_gap_adv_policy.cpp
+)
+target_include_directories(test_ble_gap_adv_policy PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_ble_gap_adv_policy PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_ble_gap_adv_policy ble_gap_adv_policy)
 
 add_executable(test_sdp_diag
   test_sdp_diag.cpp
@@ -128,6 +147,27 @@ target_include_directories(test_local_core PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_local_core PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_local_core local_core)
 
+add_executable(test_battery
+  test_battery.cpp
+  "${SLATE_ROOT}/src/battery.cpp"
+)
+target_include_directories(test_battery PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_battery PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_battery battery)
+
+add_executable(test_local_ui
+  test_local_ui.cpp
+  "${SLATE_ROOT}/src/local_ui.cpp"
+  "${SLATE_ROOT}/src/notif_store.cpp"
+  "${SLATE_ROOT}/src/wall_clock.cpp"
+  "${SLATE_ROOT}/src/persist.cpp"
+  "${SLATE_ROOT}/src/sdp_parser.cpp"
+  "${SLATE_ROOT}/src/sdp_validate.cpp"
+)
+target_include_directories(test_local_ui PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_local_ui PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_local_ui local_ui)
+
 add_executable(test_assets
   test_assets.cpp
   "${SLATE_ROOT}/src/asset_pack.cpp"
@@ -147,3 +187,43 @@ endif()
 if(TARGET slate_host_runtime_dlls)
   add_dependencies(test_assets slate_host_runtime_dlls)
 endif()
+
+add_executable(test_ota_xfer
+  test_ota_xfer.cpp
+  "${SLATE_ROOT}/src/ota_xfer.cpp"
+  "${SLATE_ROOT}/src/dfu_nordic.cpp"
+  "${SLATE_ROOT}/src/sha256.cpp"
+)
+target_include_directories(test_ota_xfer PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_ota_xfer PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_ota_xfer ota_xfer)
+
+# WDT withhold-on-hold (InfiniTime SystemTask). Compiles real src/wdt.cpp with
+# host-mapped RR0 and a fake board::button_raw().
+add_executable(test_wdt_hold
+  test_wdt_hold.cpp
+  wdt_host_fakes.cpp
+  "${SLATE_ROOT}/src/wdt.cpp"
+)
+target_include_directories(test_wdt_hold PRIVATE "${SLATE_ROOT}/include")
+target_compile_definitions(test_wdt_hold PRIVATE SLATE_HOST_MMIO=1)
+target_compile_options(test_wdt_hold PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_wdt_hold wdt_hold)
+
+# App-task-only WDT pets (no tick/idle reload when wedged).
+add_executable(test_wdt_app_pet
+  test_wdt_app_pet.cpp
+  wdt_host_fakes.cpp
+  "${SLATE_ROOT}/src/wdt.cpp"
+)
+target_include_directories(test_wdt_app_pet PRIVATE "${SLATE_ROOT}/include")
+target_compile_definitions(test_wdt_app_pet PRIVATE SLATE_HOST_MMIO=1)
+target_compile_options(test_wdt_app_pet PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_wdt_app_pet wdt_app_pet)
+
+add_executable(test_spi_timeout
+  test_spi_timeout.cpp
+)
+target_include_directories(test_spi_timeout PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_spi_timeout PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_spi_timeout spi_timeout)

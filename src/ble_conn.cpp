@@ -42,13 +42,17 @@ void negotiate(SessionProfile profile, const ConnHooks& hooks, NegotiatedParams*
 
   // 3) 2M PHY
   log(hooks, "negotiate: request 2M PHY");
+  bool phy_req_ok = true;
   if (hooks.request_phy_2m) {
-    (void)hooks.request_phy_2m();
+    phy_req_ok = hooks.request_phy_2m();
+    if (!phy_req_ok) {
+      log(hooks, "negotiate: 2M PHY request failed");
+    }
   }
   if (hooks.read_phy) {
     hooks.read_phy(&out->phy_tx, &out->phy_rx);
   }
-  out->phy_ok = (out->phy_tx == 2u && out->phy_rx == 2u);
+  out->phy_ok = phy_req_ok && (out->phy_tx == 2u && out->phy_rx == 2u);
   if (!out->phy_ok) {
     log(hooks, "negotiate: PHY not 2M (phone or link refused)");
   }

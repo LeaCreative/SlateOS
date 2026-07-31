@@ -4,9 +4,12 @@
   "cell_width": 3,
   "cell_height": 5,
   "advance": 4,
-  "first_codepoint": 48,
-  "glyph_count": 10,
+  "first_codepoint": 45,
+  "glyph_count": 14,
   "glyphs": [
+    {"codepoint": 45, "rows": [0, 0, 7, 0, 0]},
+    {"codepoint": 46, "rows": [0, 0, 0, 0, 2]},
+    {"codepoint": 47, "rows": [1, 1, 2, 4, 4]},
     {"codepoint": 48, "rows": [7, 5, 5, 5, 7]},
     {"codepoint": 49, "rows": [2, 2, 2, 2, 2]},
     {"codepoint": 50, "rows": [7, 1, 7, 4, 7]},
@@ -16,6 +19,7 @@
     {"codepoint": 54, "rows": [7, 4, 7, 5, 7]},
     {"codepoint": 55, "rows": [7, 1, 1, 1, 1]},
     {"codepoint": 56, "rows": [7, 5, 7, 5, 7]},
-    {"codepoint": 57, "rows": [7, 5, 7, 1, 7]}
+    {"codepoint": 57, "rows": [7, 5, 7, 1, 7]},
+    {"codepoint": 58, "rows": [0, 2, 0, 2, 0]}
   ]
 }

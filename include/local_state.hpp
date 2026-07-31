@@ -36,8 +36,27 @@ struct State {
   std::uint8_t charging = 0u;
   std::uint8_t link_up = 0u;
   std::uint8_t remote_stale = 0u;  // session heartbeat overlay
-  std::uint8_t battery_pct = 100u;
-  std::uint8_t pad0 = 0u;
+  std::uint8_t battery_pct = 0xFFu;  // unknown until first valid SAADC (kPercentUnknown)
+  // MCUBoot swapped this image in on trial and will revert it on the next reset
+  // until it is confirmed. The face shows a marker so the state is not silent.
+  std::uint8_t trial_image = 0u;
+  // Temporary bring-up diagnostics rendered under the battery gauge: why the
+  // previous boot ended, how long this one has lasted, and whether the side
+  // button strobe reads as pressed. Remove with SLATE_DIAG_OVERLAY.
+  std::uint8_t diag_button = 0u;
+
+  std::uint32_t diag_reset_reason = 0u;
+  std::uint32_t diag_uptime_s = 0u;
+  std::uint32_t diag_stall_ms = 0u;
+  // BLE bring-up checkpoint + failing rc (ble::bringup_snapshot state map:
+  // 7 = advertising, 9x = failure at stage x). Sealed units have no SWD, so
+  // the overlay is the only way to see where the radio died.
+  std::uint8_t diag_ble_state = 0u;
+  std::uint16_t diag_ble_rc = 0u;
+  // Repaint counter. Driven by app-loop iterations rather than the clock, so a
+  // climbing paint count next to a frozen uptime means the timebase died while
+  // the loop lived, and both frozen means the loop itself stopped.
+  std::uint32_t diag_paints = 0u;
 
   std::uint32_t steps = 0u;
   std::uint32_t steps_at_day_start = 0u;

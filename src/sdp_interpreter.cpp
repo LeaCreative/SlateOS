@@ -10,22 +10,26 @@
 namespace sdp {
 namespace {
 
+// scale multiplies every glyph pixel into a scale×scale block, so the 3×5
+// built-in font stays usable on a 240px panel where 1:1 is unreadable.
 void draw_char(Renderer* r, std::uint16_t x, std::uint16_t y, char c,
-               std::uint16_t color) {
+               std::uint16_t color, std::uint8_t scale) {
   using namespace font::builtin3x5;
   const int cp = static_cast<int>(c);
   if (cp < static_cast<int>(kFirstCodepoint) ||
       cp >= static_cast<int>(kFirstCodepoint + kGlyphCount)) {
-    // Unknown glyph: 3×5 block placeholder (matches emulator).
-    r->fill_rect(x, y, kCellWidth, kCellHeight, color);
+    // Unknown glyph: filled cell placeholder (matches emulator).
+    r->fill_rect(x, y, static_cast<std::uint16_t>(kCellWidth * scale),
+                 static_cast<std::uint16_t>(kCellHeight * scale), color);
     return;
   }
   const std::uint8_t* g = kRows[static_cast<std::uint8_t>(cp - kFirstCodepoint)];
   for (std::uint16_t row = 0u; row < kCellHeight; ++row) {
     for (std::uint16_t col = 0u; col < kCellWidth; ++col) {
       if (g[row] & (1u << (kCellWidth - 1u - col))) {
-        r->fill_rect(static_cast<std::uint16_t>(x + col),
-                     static_cast<std::uint16_t>(y + row), 1u, 1u, color);
+        r->fill_rect(static_cast<std::uint16_t>(x + col * scale),
+                     static_cast<std::uint16_t>(y + row * scale), scale, scale,
+                     color);
       }
     }
   }
@@ -33,21 +37,26 @@ void draw_char(Renderer* r, std::uint16_t x, std::uint16_t y, char c,
 
 void draw_text_run(Renderer* r, std::uint8_t x, std::uint8_t y,
                    std::uint16_t color, std::uint8_t al, std::uint8_t len,
-                   const std::uint8_t* utf8) {
+                   const std::uint8_t* utf8, std::uint8_t scale) {
+  const std::uint16_t advance =
+      static_cast<std::uint16_t>(font::builtin3x5::kAdvance * scale);
+  // Trailing advance is inter-glyph spacing, not ink, so alignment measures the
+  // last cell rather than its gap.
   const std::uint16_t pixel_w =
-      static_cast<std::uint16_t>(len) * font::builtin3x5::kAdvance;
+      (len == 0u) ? 0u
+                  : static_cast<std::uint16_t>((len - 1u) * advance +
+                                               font::builtin3x5::kCellWidth *
+                                                   scale);
   std::uint16_t start_x = x;
-  if (al == align::CENTER && pixel_w / 2u < x) {
-    start_x = static_cast<std::uint16_t>(x - pixel_w / 2u);
-  } else if (al == align::CENTER) {
-    start_x = 0u;
+  if (al == align::CENTER) {
+    start_x = (pixel_w / 2u < x) ? static_cast<std::uint16_t>(x - pixel_w / 2u)
+                                 : 0u;
   } else if (al == align::RIGHT) {
     start_x = (pixel_w < x) ? static_cast<std::uint16_t>(x - pixel_w) : 0u;
   }
   for (std::uint8_t i = 0u; i < len; ++i) {
-    draw_char(r,
-              static_cast<std::uint16_t>(start_x + i * font::builtin3x5::kAdvance),
-              y, static_cast<char>(utf8[i]), color);
+    draw_char(r, static_cast<std::uint16_t>(start_x + i * advance), y,
+              static_cast<char>(utf8[i]), color, scale);
   }
 }
 
@@ -211,7 +220,14 @@ struct DrawSink : Sink {
             std::uint16_t color, std::uint8_t al, std::uint8_t len,
             const std::uint8_t* utf8) override {
     (void)font;
-    draw_text_run(r, x, map_y(y), color, al, len, utf8);
+    draw_text_run(r, x, map_y(y), color, al, len, utf8, 1u);
+  }
+
+  void text_scaled(std::uint8_t font, std::uint8_t x, std::uint8_t y,
+                   std::uint16_t color, std::uint8_t al, std::uint8_t scale,
+                   std::uint8_t len, const std::uint8_t* utf8) override {
+    (void)font;
+    draw_text_run(r, x, map_y(y), color, al, len, utf8, scale);
   }
 
   void text_box(std::uint8_t font, std::uint8_t x, std::uint8_t y,
@@ -219,7 +235,7 @@ struct DrawSink : Sink {
                 std::uint8_t al, std::uint8_t flags, std::uint8_t len,
                 const std::uint8_t* utf8) override {
     (void)font; (void)w; (void)h; (void)flags;
-    draw_text_run(r, x, map_y(y), color, al, len, utf8);
+    draw_text_run(r, x, map_y(y), color, al, len, utf8, 1u);
   }
 
   void icon(std::uint8_t atlas, std::uint16_t id, std::uint8_t x, std::uint8_t y,

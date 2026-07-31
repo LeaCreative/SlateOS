@@ -10,10 +10,13 @@ constexpr std::uint8_t kId = 0u;
 constexpr std::uint8_t kCellWidth = 3u;
 constexpr std::uint8_t kCellHeight = 5u;
 constexpr std::uint8_t kAdvance = 4u;
-constexpr std::uint8_t kFirstCodepoint = 48u;
-constexpr std::uint8_t kGlyphCount = 10u;
+constexpr std::uint8_t kFirstCodepoint = 45u;
+constexpr std::uint8_t kGlyphCount = 14u;
 
 constexpr std::uint8_t kRows[kGlyphCount][kCellHeight] = {
+    {0, 0, 7, 0, 0},
+    {0, 0, 0, 0, 2},
+    {1, 1, 2, 4, 4},
     {7, 5, 5, 5, 7},
     {2, 2, 2, 2, 2},
     {7, 1, 7, 4, 7},
@@ -23,7 +26,8 @@ constexpr std::uint8_t kRows[kGlyphCount][kCellHeight] = {
     {7, 4, 7, 5, 7},
     {7, 1, 1, 1, 1},
     {7, 5, 7, 5, 7},
-    {7, 5, 7, 1, 7}
+    {7, 5, 7, 1, 7},
+    {0, 2, 0, 2, 0}
 };
 
 }  // namespace font::builtin3x5

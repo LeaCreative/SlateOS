@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.session.ConfirmStatusTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-07-31T12:59:10.025Z" hostname="DAN01" time="0.039">
+  <properties/>
+  <testcase name="encodeRequestIsSingleByte()" classname="slate.session.ConfirmStatusTest" time="0.025"/>
+  <testcase name="parseRejectsShortOrWrongOp()" classname="slate.session.ConfirmStatusTest" time="0.007"/>
+  <testcase name="sessionClientStoresConfirmStatus()" classname="slate.session.ConfirmStatusTest" time="0.003"/>
+  <testcase name="parseTrialCountdown()" classname="slate.session.ConfirmStatusTest" time="0.001"/>
+  <testcase name="parseConfirmed()" classname="slate.session.ConfirmStatusTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

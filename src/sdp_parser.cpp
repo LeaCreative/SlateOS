@@ -59,13 +59,49 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
     }
     ++out.ops_consumed;
 
-    // Extension range: length-prefixed skip (§7.2).
+    // Extension range: length-prefixed (§7.2). Known extensions are decoded;
+    // anything else — including fields a newer revision appends to an extension
+    // we already know — is skipped using the declared length.
     if (opcode >= op::EXT_MIN && opcode <= op::EXT_MAX) {
       const std::uint16_t len = r.take_u16_le();
       if (!r.ok()) {
         break;
       }
-      r.skip(len);
+      // A payload running past the buffer is a truncated list, not a malformed
+      // one, so let the reader report Truncated and resync upstream.
+      if (!r.need(len)) {
+        break;
+      }
+      const std::size_t before = r.remaining();
+      if (opcode == op::TEXT_SCALED) {
+        const std::uint8_t font = r.take_u8();
+        const std::uint8_t x = r.take_u8();
+        const std::uint8_t y = r.take_u8();
+        if (!r.ok()) break;
+        std::uint16_t color = 0u;
+        if (decode_color(r, pal, &color) != Status::Ok) break;
+        const std::uint8_t al = r.take_u8();
+        const std::uint8_t scale = r.take_u8();
+        const std::uint8_t text_len = r.take_u8();
+        if (!r.ok()) break;
+        if (!check_id_u8(font, kMaxFontId) || !check_coord(x) ||
+            !check_coord(y) || !check_enum(al, align::Max) ||
+            scale < kMinTextScale || scale > kMaxTextScale) {
+          reject(r, &out);
+          break;
+        }
+        const std::uint8_t* utf8 = r.take_bytes(text_len);
+        if (!r.ok()) break;
+        if (require_exec(opt, sink)) {
+          sink->text_scaled(font, x, y, color, al, scale, text_len, utf8);
+        }
+      }
+      const std::size_t used = before - r.remaining();
+      if (used > len) {
+        reject(r, &out);
+        break;
+      }
+      r.skip(len - used);
       if (!r.ok()) {
         break;
       }

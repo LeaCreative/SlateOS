@@ -17,6 +17,8 @@ class Compositor(
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val pushToWatch: suspend (bytes: ByteArray) -> Boolean,
     private val onAdapterCommand: (HostOutbound.AdapterCommand) -> Unit = {},
+    private val onScreenStackOp: (StackOp) -> Unit = {},
+    private val onScreenPop: () -> Unit = {},
 ) {
     data class StackEntry(
         val appId: String,
@@ -103,6 +105,7 @@ class Compositor(
         }
 
         ensureStarted(appId)
+        onScreenStackOp(op)
 
         when (op) {
             StackOp.Push -> {
@@ -146,6 +149,7 @@ class Compositor(
     suspend fun relinquishFocus(appId: String) {
         if (stack.lastOrNull()?.appId != appId) return
         stack.removeAt(stack.lastIndex)
+        onScreenPop()
         blur(appId)
         val next = stack.lastOrNull() ?: return
         apps[next.appId]?.let { reg ->
@@ -252,6 +256,16 @@ class Compositor(
         if (out.none { it is HostOutbound.PushDisplayList }) {
             reg.dirty = false
         }
+    }
+
+    /**
+     * Privileged host push (camera PATCH stream). Only while [appId] is focused;
+     * still subject to credit / quota.
+     */
+    suspend fun pushHostDisplayList(appId: String, bytes: ByteArray): Boolean {
+        if (focusedAppId != appId) return false
+        val entry = stack.lastOrNull() ?: return false
+        return maybePush(appId, entry.priority, focused = true, bytes)
     }
 
     private suspend fun maybePush(

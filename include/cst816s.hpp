@@ -32,7 +32,8 @@ struct TouchSample {
   bool valid = false;
 };
 
-// Hard-reset the controller, configure IRQ on P0.28 (GPIOTE), enable NVIC.
+// Hard-reset the controller, configure IRQ on P0.28 via PIN_CNF SENSE +
+// GPIOTE PORT (not edge-triggered IN — saves ~0.47 mA in some configs).
 // Requires twi::init() first.
 void init();
 

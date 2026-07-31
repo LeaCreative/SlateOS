@@ -19,7 +19,9 @@ struct Civil {
 };
 
 struct Hooks {
-  // Monotonic tick count at ~32768 Hz (RTC COUNTER + overflow<<24).
+  // Monotonic tick count (RTC1 COUNTER + overflow<<24). Rate is
+  // kTicksPerSec in wall_clock.cpp — 1024 Hz with FreeRTOS RTC tick,
+  // 32768 Hz on bare-metal builds.
   std::uint64_t (*ticks)(void* ctx) = nullptr;
   void* ctx = nullptr;
 };

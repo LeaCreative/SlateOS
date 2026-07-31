@@ -1,0 +1,2447 @@
+Archive member included to satisfy reference by file (symbol)
+
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o)
+                              CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj (__aeabi_ldivmod)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
+                              CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj (__aeabi_uldivmod)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_popcountsi2.o)
+                              CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj (__popcountsi2)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+                              C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o) (__udivmoddi4)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_dvmd_tls.o)
+                              C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o) (__aeabi_ldiv0)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcmp.o)
+                              CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj (memcmp)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memset.o)
+                              CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj (memset)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strchr.o)
+                              CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj (strchr)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcspn.o)
+                              CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj (strcspn)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strspn.o)
+                              CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj (strspn)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcpy.o)
+                              CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj (strcpy)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcpy-stub.o)
+                              CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj (memcpy)
+C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+                              CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj (strlen)
+
+Discarded input sections
+
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .text._ZN5board6microsEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .text._ZN5board8motor_onEv
+                0x00000000        0xe CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .text._ZN5board11pulse_motorEm
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .data          0x00000000       0x48 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .text._ZN12_GLOBAL__N_110write_charEc
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .text._ZN3rtt4initEv
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .text._ZN3rtt5writeEPKc
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .rodata._ZN3rtt10write_lineEPKc.str1.1
+                0x00000000        0x3 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .text._ZN3rtt10write_lineEPKc
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .rodata._ZN3rtt9write_hexEm.str1.1
+                0x00000000        0x3 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .text._ZN3rtt9write_hexEm
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .rodata._ZN3rtt3logENS_5LevelEPKc.str1.1
+                0x00000000        0x5 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .text._ZN3rtt3logENS_5LevelEPKc
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .rodata.CSWTCH.4
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .rodata._ZZN3rtt9write_hexEmE7kDigits
+                0x00000000       0x11 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .rodata.str1.1
+                0x00000000        0x9 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .bss._ZN12_GLOBAL__N_111down_bufferE
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .bss._ZN12_GLOBAL__N_19up_bufferE
+                0x00000000      0x100 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .text._ZN3spi11is_acquiredEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .text._ZN3spi8transferEPKhjPhj
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .bss._ZZN3spi8transferEPKhjPhjE5zeros
+                0x00000000       0xff CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .text._ZN6st77898sleep_inEv
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .text._ZN6st77899sleep_outEv
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN12_GLOBAL__N_14isinEl
+                0x00000000       0x44 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8RendererC2Ev
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer11fill_screenEt
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer5flushEv
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZNK8Renderer7in_clipEtt
+                0x00000000       0x3e CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer9put_pixelEttt
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer9fill_rectEttttt
+                0x00000000       0x88 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer9draw_lineEsssst
+                0x00000000       0xce CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZZZN8Renderer11draw_circleEssstENKUlssE_clEssENKUlssE_clEss
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer11draw_circleEssst
+                0x00000000       0xde CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZZZN8Renderer15draw_round_rectEttttttENKUlssbbE_clEssbbENKUlssE_clEss
+                0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZZN8Renderer15draw_round_rectEttttttENKUlssbbE_clEssbb
+                0x00000000       0x88 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer15draw_round_rectEtttttt
+                0x00000000      0x160 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer8draw_arcEssssst
+                0x00000000       0x68 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer11blit_rgb565EttttPKt
+                0x00000000       0x56 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer11blit_rgb332EttttPKh
+                0x00000000       0x7e CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer9blit_1bitEttttPKhtt
+                0x00000000       0x7a CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer15set_tile_filterEl
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer8set_clipEtttt
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer10clear_clipEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer17clear_tile_bufferEt
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text._ZN8Renderer19flush_filtered_tileEv
+                0x00000000       0x32 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .rodata._ZN12_GLOBAL__N_1L9kSinTableE
+                0x00000000       0xb6 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .text._ZN9backlight3offEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .text._ZN9backlight6on_lowEv
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .text._ZN9backlight6on_midEv
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .text._ZN9backlight7on_highEv
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text._ZN12_GLOBAL__N_112clear_eventsEv
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text._ZN12_GLOBAL__N_110wait_eventEjmPN3twi6StatusE.constprop.0
+                0x00000000       0x82 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text._ZN3twi11recover_busEv
+                0x00000000       0x96 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text._ZN3twi4initEv
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text._ZN3twi5writeEhPKhjm
+                0x00000000       0x54 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text._ZN3twi4readEhPhjm
+                0x00000000       0x54 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text._ZN3twi10write_readEhPKhjPhjm
+                0x00000000       0x86 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .text._ZN7cst816s4initEv
+                0x00000000       0x84 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .text._ZN7cst816s11irq_pendingEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .text._ZN7cst816s4pollEv
+                0x00000000       0x90 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .bss._ZZN7cst816s4pollEvE4reg0
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .text._ZN12_GLOBAL__N_111strobe_readEv
+                0x00000000       0x42 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .text._ZN6button4initEv
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .text._ZN6button11raw_pressedEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .text._ZN6button4pollEv
+                0x00000000      0x120 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .bss._ZN12_GLOBAL__N_111g_saw_shortE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .bss._ZN12_GLOBAL__N_114g_long_emittedE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .bss._ZN12_GLOBAL__N_116g_press_start_usE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .bss._ZN12_GLOBAL__N_116g_phase_start_usE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .bss._ZN12_GLOBAL__N_17g_phaseE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .text._ZN5input8hit_testEttPKNS_7HitRectEj
+                0x00000000       0x52 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .text._ZN5input4initEv
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .text._ZN5input13set_hit_rectsEPKNS_7HitRectEj
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .text._ZN5input4pollEv
+                0x00000000       0xdc CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .rodata.CSWTCH.8
+                0x00000000        0x3 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .bss._ZN12_GLOBAL__N_112g_rect_countE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .bss._ZN12_GLOBAL__N_17g_rectsE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .rodata        0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .text._ZN5slate11InputRouter4initENS0_5HooksEPN3sdp11InterpreterEPNS_7session7ManagerE
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .text._ZN5slate11InputRouter8set_hitsEPKN5input7HitRectEj
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .text._ZN5slate11InputRouter4emitEPKhj
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .text._ZNK5slate11InputRouter8find_hitEtt
+                0x00000000       0x52 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .text._ZN5slate11InputRouter9map_swipeEN5input8SwipeDirE
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .text._ZN5slate11InputRouter10map_buttonEN6button6ActionE
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .text._ZN5slate11InputRouter8on_eventERKN5input5EventE
+                0x00000000      0x188 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .group         0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .text._ZN3sdp6Reader4needEj
+                0x00000000       0x22 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .text._ZN3sdp6Reader7take_u8Ev
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .text._ZN3sdp12decode_colorERNS_6ReaderERKNS_7PaletteEPt
+                0x00000000       0x60 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .text._ZN3sdp12decode_styleERNS_6ReaderEPNS_5StyleE
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .group         0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .group         0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .group         0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_112require_execERKNS_12ParseOptionsEPNS_4SinkE.isra.0
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text._ZN3sdp6Reader4needEj
+                0x00000000       0x22 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text._ZN3sdp6Reader7take_u8Ev
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text._ZN3sdp6Reader11take_u16_leEv
+                0x00000000       0x22 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text._ZN3sdp6Reader10take_bytesEj
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text._ZN3sdp10check_rectEhhhh
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .text._ZN3sdp5parseEPKhjRKNS_12ParseOptionsEPNS_4SinkE
+                0x00000000      0xd40 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .group         0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink5clearEt
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink11set_paletteEht
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink4rectEhhhhtNS_5StyleE
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink10rect_roundEhhhhhtNS_5StyleE
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink4lineEhhhhth
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink6circleEhhhtNS_5StyleE
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink3arcEhhhttth
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink8polylineEhthPKh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink9clip_rectEhhhh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink10clip_clearEv
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink4textEhhhthhPKh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink8text_boxEhhhhhthhhPKh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink4iconEhthht
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink5imageEhthh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink12progress_barEhhhhhtt
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink12progress_arcEhhhhtth
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink10begin_elemEthhhhh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink8end_elemEv
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink13scroll_regionEhht
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink5patchEhhhhhhhtPKh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink9patch_refEhhh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink6hapticEh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink9backlightEh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink6commitEh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp4Sink6retainEt
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18MetaSink10begin_elemEthhhhh
+                0x00000000       0x2e CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18MetaSink8end_elemEv
+                0x00000000       0x6c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18MetaSink13scroll_regionEhht
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink9patch_refEhhh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink6hapticEh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_114SideEffectSink9backlightEh
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_114SideEffectSink6hapticEh
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink10clip_clearEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink5clearEt
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_113draw_text_runEP8RendererhhthhPKh
+                0x00000000       0xbc CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink13scroll_regionEhht
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZNK3sdp12_GLOBAL__N_18DrawSink5map_yEh.isra.0
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink4rectEhhhhtNS_5StyleE
+                0x00000000       0x96 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink10rect_roundEhhhhhtNS_5StyleE
+                0x00000000       0x68 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink6circleEhhhtNS_5StyleE
+                0x00000000       0x6c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink4lineEhhhhth
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink8polylineEhthPKh
+                0x00000000       0x60 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink3arcEhhhttth
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink12progress_arcEhhhhtth
+                0x00000000       0x78 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink9clip_rectEhhhh
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink5patchEhhhhhhhtPKh
+                0x00000000       0xf0 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink4textEhhhthhPKh
+                0x00000000       0x36 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink8text_boxEhhhhhthhhPKh
+                0x00000000       0x36 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink4iconEhthht
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink5imageEhthh
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp12_GLOBAL__N_18DrawSink12progress_barEhhhhhtt
+                0x00000000       0x60 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp11Interpreter4initEP8Renderer
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp11Interpreter28rebuild_hits_and_scroll_metaEv
+                0x00000000       0xa4 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp11Interpreter26render_retained_to_displayEv
+                0x00000000       0x9c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp11Interpreter9push_listEPKhj
+                0x00000000      0x100 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp11Interpreter17rerender_retainedEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text._ZN3sdp11Interpreter17set_scroll_offsetEt
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .rodata.CSWTCH.57
+                0x00000000        0x5 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .rodata._ZTVN3sdp12_GLOBAL__N_18MetaSinkE
+                0x00000000       0x6c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .rodata._ZTVN3sdp12_GLOBAL__N_18DrawSinkE
+                0x00000000       0x6c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .rodata._ZTVN3sdp12_GLOBAL__N_114SideEffectSinkE
+                0x00000000       0x6c CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .rodata._ZN4font10builtin3x5L5kRowsE
+                0x00000000       0x32 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .rodata        0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .text._ZN3sdp5frame15encode_fragmentEhhhtPKhjPhj
+                0x00000000       0x78 CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .text._ZN3sdp5frame16fragment_messageEhhPhPKhjPFbS3_jPvES4_
+                0x00000000       0xca CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .text._ZN3sdp5frame11Reassembler13reset_channelEh
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .text._ZN3sdp5frame11Reassembler5resetEv
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .text._ZN3sdp5frame11Reassembler6ingestEPKhj
+                0x00000000      0x13c CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench4initEPFmvEPFbPKhjPvES6_PFNS0_12RenderReportES5_jS6_ES6_PFNS0_10MbufReportES6_ES6_
+                0x00000000       0x22 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench11reply_bytesEPKhj
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench11handle_pingEPKhj
+                0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench17maybe_finish_thruEv
+                0x00000000       0x94 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench17handle_thru_startEPKhj
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench16handle_thru_dataEPKhj
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench10handle_rttEPKhj
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench11handle_mbufEv
+                0x00000000       0x64 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench13handle_renderEPKhj
+                0x00000000       0x8c CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .text._ZN3sdp4diag5Bench6handleEPKhj
+                0x00000000       0x60 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+ .group         0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZZN5slate7session7Manager18encode_hello_offerEPhjbENKUlhE_clEh
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZZN5slate7session7Manager18fill_opcode_bitmapEPhENKUlhE_clEh.isra.0
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7profile4findEh
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager18fill_opcode_bitmapEPh
+                0x00000000       0xdc CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager18encode_hello_offerEPhjb
+                0x00000000      0x108 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager9set_stateENS0_5StateE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager11clear_phoneEv
+                0x00000000       0x16 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager4initERKNS0_5HooksE
+                0x00000000       0x32 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZNK5slate7session7Manager13free_dl_bytesEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager10send_inputEPKhj
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager16send_session_endEh
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager11send_creditEv
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager16send_profile_ackEhh
+                0x00000000       0x22 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager16send_hello_offerEv
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager22apply_selected_profileEh
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .rodata._ZN5slate7session7Manager10on_link_upEm.str1.1
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager10on_link_upEm
+                0x00000000       0x44 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .rodata._ZN5slate7session7Manager12on_link_downEm.str1.1
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager12on_link_downEm
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager18parse_hello_acceptEPKhj
+                0x00000000       0x64 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager14pop_remote_allEhb
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .rodata._ZN5slate7session7Manager11enter_staleEv.str1.1
+                0x00000000       0x21 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager11enter_staleEv
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .rodata._ZN5slate7session7Manager10on_controlEPKhjm.str1.1
+                0x00000000       0x87 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager10on_controlEPKhjm
+                0x00000000      0x150 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager10on_displayEPKhjm
+                0x00000000       0x5a CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .rodata._ZN5slate7session7Manager4tickEm.str1.1
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager4tickEm
+                0x00000000       0x44 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text._ZN5slate7session7Manager10local_backEm
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .rodata.str1.1
+                0x00000000       0x19 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .rodata._ZN5slate7profileL8kCatalogE
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .text._ZN5slate7persist4initERKNS0_5HooksE
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .text._ZN5slate7persist4loadENS0_4SlotEPvj
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .text._ZN5slate7persist4saveENS0_4SlotEPKvj
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .bss._ZN5slate7persist12_GLOBAL__N_17g_hooksE
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .text._ZN5slate12persist_nvmc12_GLOBAL__N_19nvmc_waitEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .text._ZN5slate12persist_nvmc12_GLOBAL__N_110load_cacheEv
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .text._ZN5slate12persist_nvmc4initEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .text._ZN5slate12persist_nvmc9read_slotENS_7persist4SlotEPvjS3_
+                0x00000000       0x54 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .text._ZN5slate12persist_nvmc10write_slotENS_7persist4SlotEPKvjPv
+                0x00000000       0xb8 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .bss._ZN5slate12persist_nvmc12_GLOBAL__N_113g_cache_validE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .bss._ZN5slate12persist_nvmc12_GLOBAL__N_112g_page_cacheE
+                0x00000000     0x1000 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock12_GLOBAL__N_19now_ticksEv
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock12_GLOBAL__N_15crc32EPKhj.constprop.0
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock4initERKNS0_5HooksE
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock14load_persistedEv
+                0x00000000       0x64 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock14save_persistedEv
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock14apply_cts_syncEm
+                0x00000000       0xf0 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock9unix_timeEv
+                0x00000000       0x68 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock9civil_nowEv
+                0x00000000       0xc4 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock9drift_ppmEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock9is_syncedEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text._ZN5slate5clock12set_for_testEml
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .rodata._ZZN5slate5clock9civil_nowEvE4kDim
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .bss._ZN5slate5clock12_GLOBAL__N_18g_syncedE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .bss._ZN5slate5clock12_GLOBAL__N_16g_blobE
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .bss._ZN5slate5clock12_GLOBAL__N_17g_hooksE
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .text._ZN5slate6rtc_hw4initEv
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .text._ZN5slate6rtc_hw5ticksEv
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text._ZN5slate5notif12_GLOBAL__N_18copy_strEPchPKhhPh
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text._ZN5slate5notif4initEPNS0_5StoreE
+                0x00000000        0xe CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text._ZN5slate5notif5clearEPNS0_5StoreE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text._ZN5slate5notif14mark_all_staleEPNS0_5StoreEb
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text._ZN5slate5notif2atEPKNS0_5StoreEh
+                0x00000000       0x16 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text._ZN5slate5notif9remove_atEPNS0_5StoreEh
+                0x00000000       0x48 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text._ZN5slate5notif17on_system_messageEPNS0_5StoreEPKhj
+                0x00000000      0x1b6 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text._ZN5slate5alarm4initEPNS0_5TableE
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text._ZN5slate5alarm4loadEPNS0_5TableE
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text._ZN5slate5alarm4saveEPKNS0_5TableE
+                0x00000000        0xe CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text._ZN5slate5alarm9add_alarmEPNS0_5TableEhhh
+                0x00000000       0x44 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text._ZN5slate5alarm11start_timerEPNS0_5TableEtm
+                0x00000000       0x52 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text._ZN5slate5alarm12cancel_timerEPNS0_5TableEh
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text._ZN5slate5alarm4pollEPNS0_5TableEmhhh
+                0x00000000       0xc4 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver2wrEhh
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver2rdEhPh
+                0x00000000       0x22 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver4initERKNS0_3BusE
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver20write_feature_configEPKhj
+                0x00000000       0x82 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver19enable_step_counterEv
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver17enable_any_motionEh
+                0x00000000       0x48 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver9configureEPKhjh
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver20set_tilt_sensitivityEh
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver10read_stepsEv
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver11reset_stepsEv
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text._ZN5slate3bma6Driver16consume_tilt_irqEv
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .text._ZN5slate7battery4initERKNS0_5HooksE
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .text._ZN5slate7battery10millivoltsEv
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .text._ZN5slate7battery7percentEv
+                0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .text._ZN5slate7battery8chargingEv
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .bss._ZN5slate7battery12_GLOBAL__N_17g_hooksE
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .text._ZN5slate10battery_hw12_GLOBAL__N_18read_adcEPv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .text._ZN5slate10battery_hw12_GLOBAL__N_111is_chargingEPv
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .text._ZN5slate10battery_hw4initEv
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .text._ZN5slate10battery_hw11set_adc_rawEi
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .data._ZN5slate10battery_hw12_GLOBAL__N_110g_last_adcE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .text._ZN5slate2ui12_GLOBAL__N_11W1bEh
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .text._ZN5slate2ui12_GLOBAL__N_11W3u16Et
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .text._ZN5slate2ui12_GLOBAL__N_17fmt_u32EPcjm
+                0x00000000       0x5e CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .text._ZN5slate2ui12_GLOBAL__N_11W11text_digitsEhhhPKc
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .text._ZN5slate2ui12_GLOBAL__N_11W3rgbEt.constprop.0
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .rodata._ZN5slate2ui12build_screenERKNS0_9ViewModelEPhj.str1.1
+                0x00000000        0xd CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .text._ZN5slate2ui12build_screenERKNS0_9ViewModelEPhj
+                0x00000000      0x460 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZNK5slate4core4Core7budgetsEv
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core13load_settingsEv
+                0x00000000       0x48 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core13save_settingsEv
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core12show_currentEv
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core4initERKNS0_5HooksEPNS_3bma6DriverE
+                0x00000000       0x66 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core10on_link_upEv
+                0x00000000       0x26 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core12on_link_downEv
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core16set_remote_staleEb
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core17on_system_messageEPKhj
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core14apply_cts_timeEm
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core12wake_displayEv
+                0x00000000       0x16 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core11enter_alertEhh
+                0x00000000       0x2a CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core10poll_stepsEv
+                0x00000000       0x54 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core12poll_batteryEv
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core11poll_alarmsEv
+                0x00000000       0x52 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core9poll_tiltEv
+                0x00000000       0x2e CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core4tickEm
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core15on_button_pressEv
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text._ZN5slate4core4Core11on_tap_elemEt
+                0x00000000       0x52 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .rodata        0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt2512_GLOBAL__N_111read_statusEv
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt2512_GLOBAL__N_110wait_readyEv
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt2512_GLOBAL__N_18cmd_onlyEh
+                0x00000000       0x2a CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt2512_GLOBAL__N_112ensure_awakeEv
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt254initEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt255probeEv
+                0x00000000       0x4e CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt254readEmPhj
+                0x00000000       0x56 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt2510write_pageEmPKhj
+                0x00000000       0x7a CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt2512erase_sectorEm
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt2515deep_power_downEv
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt254wakeEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text._ZN5slate4xt257is_busyEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .bss._ZN5slate4xt2512_GLOBAL__N_18g_asleepE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs12_GLOBAL__N_17bd_syncEPK10lfs_config
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs12_GLOBAL__N_18bd_eraseEPK10lfs_configm
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs12_GLOBAL__N_17bd_progEPK10lfs_configmmPKvm
+                0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs12_GLOBAL__N_17bd_readEPK10lfs_configmmPvm
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs12_GLOBAL__N_19open_fileEP8lfs_filePKci
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .rodata._ZN5slate2fs5mountEv.str1.1
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs5mountEv
+                0x00000000       0xc0 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs7unmountEv
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs7mountedEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs11sleep_flashEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs10wake_flashEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs9read_fileEPKcmPhj
+                0x00000000       0x74 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs18write_file_replaceEPKcPKhj
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs13write_file_atEPKcmPKhj
+                0x00000000       0x78 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs11remove_fileEPKc
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text._ZN5slate2fs6existsEPKc
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss._ZN5slate2fs12_GLOBAL__N_110g_file_bufE
+                0x00000000      0x100 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss._ZN5slate2fs12_GLOBAL__N_111g_lookaheadE
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss._ZN5slate2fs12_GLOBAL__N_110g_prog_bufE
+                0x00000000      0x100 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss._ZN5slate2fs12_GLOBAL__N_110g_read_bufE
+                0x00000000      0x100 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss._ZN5slate2fs12_GLOBAL__N_19g_mountedE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss._ZN5slate2fs12_GLOBAL__N_15g_cfgE
+                0x00000000       0x54 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .bss._ZN5slate2fs12_GLOBAL__N_15g_lfsE
+                0x00000000       0x80 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text._ZN5slate4pack12_GLOBAL__N_16rd_u32EPKh
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text._ZN5slate4pack5fnv1aEPKhj
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text._ZN5slate4pack5parseEPKhjPNS0_5IndexE
+                0x00000000      0x1dc CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text._ZN5slate4pack9find_fontERKNS0_5IndexEh
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text._ZN5slate4pack10find_glyphERKNS0_8FontInfoEt
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text._ZN5slate4pack10find_atlasERKNS0_5IndexEh
+                0x00000000       0x36 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text._ZN5slate4pack9find_iconERKNS0_9AtlasInfoEt
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .rodata._ZN5slate4packL6kMagicE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache11reset_statsEv
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache4initERKNS0_5HooksEPKNS_4pack5IndexE
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZNK5slate5cache10GlyphCache14make_glyph_keyEht
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZNK5slate5cache10GlyphCache13make_icon_keyEht
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZNK5slate5cache10GlyphCache10find_entryEm
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache9evict_lruEv
+                0x00000000       0x5e CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache11alloc_bytesEtPt
+                0x00000000       0xb8 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache14lookup_or_loadEmmtPt
+                0x00000000      0x106 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache9get_glyphEhtPt
+                0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache8get_iconEhtPt
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text._ZN5slate5cache10GlyphCache10bench_textEhPKc
+                0x00000000       0x62 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .bss._ZZN5slate5cache10GlyphCache11alloc_bytesEtPtE3tmp
+                0x00000000     0x1800 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text._ZN5slate5asset12_GLOBAL__N_16rd_u32EPKh
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text._ZN5slate5asset8Receiver5resetEv
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text._ZN5slate5asset8Receiver11send_creditEv
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text._ZN5slate5asset8Receiver4initERKNS0_5HooksE
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text._ZN5slate5asset8Receiver8send_ackEv
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text._ZN5slate5asset8Receiver8send_nakENS0_9NakReasonE
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text._ZN5slate5asset8Receiver10on_messageEPKhj
+                0x00000000      0x1a0 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .rodata        0x00000000        0x3 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power12_GLOBAL__N_111apply_radioEt
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power10buses_idleEv
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power10buses_wakeEv
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power16prefer_low_powerEv
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .rodata._ZN5slate5power20disable_debug_assistEv.str1.1
+                0x00000000       0x4b CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power20disable_debug_assistEv
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power9hrs_sleepEv
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .rodata._ZN5slate5power4initERKNS0_5HooksE.str1.1
+                0x00000000       0x3e CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power4initERKNS0_5HooksE
+                0x00000000       0x80 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power18sample_battery_adcEv
+                0x00000000       0xc0 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power7currentEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .rodata._ZN5slate5power5enterENS0_5StateE.str1.1
+                0x00000000       0x11 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power5enterENS0_5StateE
+                0x00000000       0xf8 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power13apply_profileERKNS_7profile4DescE
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text._ZN5slate5power8sleep_msEm
+                0x00000000       0x8c CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .rodata.str1.1
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .rodata.CSWTCH.18
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .bss._ZZN5slate5power18sample_battery_adcEvE6result
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .bss._ZN5slate5power12_GLOBAL__N_112g_lcd_asleepE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .data._ZN5slate5power12_GLOBAL__N_17g_stateE
+                0x00000000        0x1 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .bss._ZN5slate5power12_GLOBAL__N_17g_hooksE
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text._ZN5slate8ota_slot4initEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text._ZN5slate8ota_slot9erase_allEv
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text._ZN5slate8ota_slot5writeEmPKhj
+                0x00000000       0x48 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text._ZN5slate8ota_slot4readEmPhj
+                0x00000000       0x32 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text._ZN5slate8ota_slot8capacityEv
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text._ZN5slate8ota_slot30write_infinitime_pending_magicEv
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text._ZN5slate8ota_slot14request_rebootEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .rodata        0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text._ZN5slate3ota8Receiver5resetEv
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text._ZNK5slate3ota8Receiver10battery_okEv
+                0x00000000       0x2a CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text._ZN5slate3ota8Receiver11send_creditEv
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text._ZN5slate3ota8Receiver4initERKNS0_5HooksE
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text._ZN5slate3ota8Receiver8send_ackEv
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text._ZN5slate3ota8Receiver8send_nakENS0_9NakReasonE
+                0x00000000       0x1e CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text._ZN5slate3ota8Receiver10on_messageEPKhj
+                0x00000000      0x1de CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .rodata        0x00000000        0x3 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .text._ZN5slate6sha25612_GLOBAL__N_19transformERNS0_3CtxEPKh
+                0x00000000      0x148 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .text._ZN5slate6sha2564initERNS0_3CtxE
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .text._ZN5slate6sha2566updateERNS0_3CtxEPKhj
+                0x00000000       0x44 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .text._ZN5slate6sha2565finalERNS0_3CtxEPh
+                0x00000000       0xaa CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .text._ZN5slate6sha2564hashEPKhjPh
+                0x00000000       0x78 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .rodata._ZZN5slate6sha25612_GLOBAL__N_19transformERNS0_3CtxEPKhE1k
+                0x00000000      0x100 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .text._ZN5slate4boot12_GLOBAL__N_19nvmc_waitEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .text._ZN5slate4boot13needs_confirmEv
+                0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .rodata._ZN5slate4boot13confirm_imageEv.str1.1
+                0x00000000       0x19 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .text._ZN5slate4boot13confirm_imageEv
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .text._ZN5slate4boot17on_ble_session_upEv
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .text._ZN5slate4boot14on_stable_bootEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .rodata._ZN5slate4boot12_GLOBAL__N_1L10kBootMagicE
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .text._ZN5slate3dfu6Engine4initERKNS0_5HooksE
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .text._ZN5slate3dfu6Engine5resetEv
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .text._ZNK5slate3dfu6Engine10battery_okEv
+                0x00000000       0x2a CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .text._ZN5slate3dfu6Engine7respondEhh
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .text._ZN5slate3dfu6Engine10on_controlEPKhj
+                0x00000000      0x116 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .text._ZN5slate3dfu6Engine9on_packetEPKhj
+                0x00000000       0x86 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+ .text._ZN5slate3wdt10is_runningEv
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .text._ZN5slate7mcuboot10public_keyEv
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .text._ZN5slate7mcuboot14public_key_lenEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .rodata._ZN5slate7mcubootL16kEcdsaP256PubKeyE
+                0x00000000       0x41 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_pair_isnull
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_pair_cmp
+                0x00000000       0x22 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_pair_issync
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_tag_dsize
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_gstate_xor
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_gstate_iszero
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_gstate_hasmovehere
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_mlist_remove
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_alloc_lookahead
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_traverse_filter
+                0x00000000       0x74 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_commit_size
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_size_count
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_bd_read
+                0x00000000      0x162 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_getslice
+                0x00000000      0x124 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_get
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_getgstate
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_parent_match
+                0x00000000       0x36 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .rodata.lfs_dir_getinfo.str1.1
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_getinfo
+                0x00000000       0x90 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_traverse.constprop.0
+                0x00000000      0x29c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_getread.constprop.0
+                0x00000000       0xb8 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_bd_crc.constprop.0
+                0x00000000       0x5c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_fetchmatch
+                0x00000000      0x3f0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_parent
+                0x00000000       0x9c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_fetch
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_pred
+                0x00000000       0x72 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .rodata.lfs_dir_find.str1.1
+                0x00000000        0x5 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_find
+                0x00000000      0x150 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_bd_cmp.constprop.0
+                0x00000000       0x64 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_find_match
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_preporphans.isra.0
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_ctz_index.isra.0
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_ctz_find.constprop.0
+                0x00000000       0x92 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_flushedread
+                0x00000000       0xd4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_ctz_traverse
+                0x00000000       0x7e CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_traverse_
+                0x00000000      0x168 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_alloc_scan
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_alloc
+                0x00000000       0x7a CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_alloc
+                0x00000000       0x78 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_size_
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_bd_erase.isra.0
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_cache_zero.isra.0
+                0x00000000       0x16 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_bd_flush
+                0x00000000       0x74 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_bd_prog
+                0x00000000       0x90 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_relocate
+                0x00000000       0xe8 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_flushedwrite
+                0x00000000      0x25c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_commitprog
+                0x00000000       0x3e CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_commitattr
+                0x00000000       0xaa CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_commit_commit
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_flush
+                0x00000000       0xd4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_write_
+                0x00000000       0x8c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_init
+                0x00000000       0xb2 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_seek_
+                0x00000000       0x94 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_commitcrc
+                0x00000000      0x1e4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_compact
+                0x00000000      0x1e0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_split
+                0x00000000       0x74 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_relocatingcommit
+                0x00000000      0x3c4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_orphaningcommit
+                0x00000000      0x2e8 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_deorphan
+                0x00000000      0x150 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_commit
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_forceconsistency
+                0x00000000       0xb4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_drop
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_sync_
+                0x00000000       0xba CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_commitattr
+                0x00000000       0x56 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .rodata.lfs_format.str1.1
+                0x00000000        0x9 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_format
+                0x00000000       0xbc CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_mount
+                0x00000000      0x17c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_unmount
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_remove
+                0x00000000       0xd4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_rename
+                0x00000000      0x25c CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_stat
+                0x00000000       0x2a CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_getattr
+                0x00000000       0x70 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_setattr
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_removeattr
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_opencfg
+                0x00000000      0x224 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_close
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_sync
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_read
+                0x00000000       0x2e CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_write
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_seek
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_truncate
+                0x00000000       0xfe CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_tell
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_rewind
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_file_size
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_mkdir
+                0x00000000      0x148 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_open
+                0x00000000       0x84 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_close
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_read
+                0x00000000       0x94 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_seek
+                0x00000000       0x88 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_tell
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_dir_rewind
+                0x00000000       0x16 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_stat
+                0x00000000       0x60 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_size
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_traverse
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_mkconsistent
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_gc
+                0x00000000       0x8e CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text.lfs_fs_grow
+                0x00000000       0x54 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .rodata        0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+ .text.lfs_crc  0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+ .rodata.rtable.0
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link7tx_emitEPKhjPv
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link4initEb
+                0x00000000       0x64 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link6set_txEPFbPKhjPvES3_
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link15set_app_handlerEPFvhPKhjPvES3_
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link10set_statusERKNS_14StatusSnapshotE
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link12send_messageEhPKhj
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link10reply_diagEPKhj
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text._ZN3ble4Link11on_rx_writeEPKhj
+                0x00000000       0x6a CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .rodata        0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .text._ZN3ble12_GLOBAL__N_13logERKNS_9ConnHooksEPKc.isra.0
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .rodata._ZN3ble9negotiateENS_14SessionProfileERKNS_9ConnHooksEPNS_16NegotiatedParamsE.str1.1
+                0x00000000      0x182 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .text._ZN3ble9negotiateENS_14SessionProfileERKNS_9ConnHooksEPNS_16NegotiatedParamsE
+                0x00000000      0x148 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .rodata        0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble19set_session_up_hookEPFvPvES0_
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble17notify_session_upEv
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble21set_session_down_hookEPFvPvES0_
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble19notify_session_downEv
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble13encode_statusERKNS_14StatusSnapshotEPh
+                0x00000000       0x3a CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble10GattServer4initEPNS_4LinkENS_8GattCapsE
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble10GattServer5on_rxEPKhj
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble10GattServer14refresh_statusERKNS_16NegotiatedParamsEb
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble10GattServer11set_tx_sinkEPFbPKhjPvES3_
+                0x00000000        0xa CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .rodata._ZN3ble11start_stackEPNS_10GattServerENS_14SessionProfileE.str1.1
+                0x00000000       0xb8 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble11start_stackEPNS_10GattServerENS_14SessionProfileE
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble21request_conn_intervalEt
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text._ZN3ble20update_battery_levelEh
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .bss._ZN3ble12_GLOBAL__N_118g_session_down_ctxE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .bss._ZN3ble12_GLOBAL__N_114g_session_downE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .bss._ZN3ble12_GLOBAL__N_116g_session_up_ctxE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .bss._ZN3ble12_GLOBAL__N_112g_session_upE
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .rodata        0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+ .text._ZN3ble10mbuf_statsEv
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+ .data._ZZN3ble10mbuf_statsEvE1g
+                0x00000000        0x6 CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_nimble.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_nimble.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/ble_nimble.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/ble_nimble.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/ble_nimble.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .text._ZN14freertos_smoke12create_tasksEv
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .text._ZN14freertos_smoke6resultEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .text._ZN14freertos_smoke8finishedEv
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .text._ZN9boot_diag24hardfault_paint_and_hangEv
+                0x00000000        0x8 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.prvTaskIsTaskSuspended
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskDelete
+                0x00000000       0xdc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskResume
+                0x00000000       0x98 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskResumeFromISR
+                0x00000000       0xc0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskEndScheduler
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskGetTickCountFromISR
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.uxTaskGetNumberOfTasks
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.pcTaskGetName
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskDelay
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskCatchUpTicks
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskSuspend
+                0x00000000       0xd4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskPlaceOnUnorderedEventList
+                0x00000000       0x68 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskRemoveFromUnorderedEventList
+                0x00000000       0xbc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskSetTimeOutState
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.uxTaskGetStackHighWaterMark
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskGetCurrentTaskHandle
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskGetCurrentTaskHandleForCore
+                0x00000000       0x10 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskPriorityInherit
+                0x00000000       0xa0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskPriorityDisinherit
+                0x00000000       0x9c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskPriorityDisinheritAfterTimeout
+                0x00000000       0xa8 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.uxTaskResetEventItemValue
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.pvTaskIncrementMutexHeldCount
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.ulTaskGenericNotifyTake
+                0x00000000       0xa8 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskGenericNotifyWait
+                0x00000000       0xd4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskGenericNotify
+                0x00000000      0x124 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskGenericNotifyFromISR
+                0x00000000      0x174 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskGenericNotifyGiveFromISR
+                0x00000000      0x10c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskGenericNotifyStateClear
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.ulTaskGenericNotifyValueClear
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.vTaskResetState
+                0x00000000       0x64 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.prvCopyDataToQueue
+                0x00000000       0x66 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueCreateCountingSemaphore
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueGenericSend
+                0x00000000      0x144 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueCreateMutex
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueGiveMutexRecursive
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueGenericSendFromISR
+                0x00000000       0xc0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueGiveFromISR
+                0x00000000       0xa4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueSemaphoreTake
+                0x00000000      0x150 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueTakeMutexRecursive
+                0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueuePeek
+                0x00000000      0x120 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueReceiveFromISR
+                0x00000000       0xa8 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueuePeekFromISR
+                0x00000000       0x68 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.uxQueueMessagesWaiting
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.uxQueueSpacesAvailable
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.uxQueueMessagesWaitingFromISR
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.vQueueDelete
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.uxQueueGetQueueItemSize
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.uxQueueGetQueueLength
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueIsQueueEmptyFromISR
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueIsQueueFullFromISR
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+ .text.vListInsertEnd
+                0x00000000       0x16 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerCreate
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerGenericCommandFromTask
+                0x00000000       0x5c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerGenericCommandFromISR
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerGetTimerDaemonTaskHandle
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerGetPeriod
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.vTimerSetReloadMode
+                0x00000000       0x38 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerGetReloadMode
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.uxTimerGetReloadMode
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerGetExpiryTime
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.pcTimerGetName
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerIsTimerActive
+                0x00000000       0x28 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.pvTimerGetTimerID
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.vTimerSetTimerID
+                0x00000000       0x24 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.vTimerResetState
+                0x00000000       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.xEventGroupCreate
+                0x00000000       0x1a CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .rodata.xEventGroupWaitBits.str1.1
+                0x00000000       0x55 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.xEventGroupWaitBits
+                0x00000000       0xf4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.xEventGroupClearBits
+                0x00000000       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.xEventGroupGetBitsFromISR
+                0x00000000       0x1c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.xEventGroupSetBits
+                0x00000000       0x7c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.xEventGroupSync
+                0x00000000       0xb4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.vEventGroupDelete
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.vEventGroupSetBitsCallback
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text.vEventGroupClearBitsCallback
+                0x00000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.prvBytesInBuffer
+                0x00000000       0x12 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .rodata.prvWriteBytesToBuffer.str1.1
+                0x00000000       0x56 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.prvWriteBytesToBuffer
+                0x00000000       0x6c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.prvWriteMessageToBuffer
+                0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.prvReadBytesFromBuffer
+                0x00000000       0x58 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.prvReadMessageFromBuffer
+                0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.prvInitialiseNewStreamBuffer.isra.0
+                0x00000000       0x40 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferGenericCreate
+                0x00000000       0x8c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.vStreamBufferDelete
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferReset
+                0x00000000       0x44 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferResetFromISR
+                0x00000000       0x50 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferSetTriggerLevel
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferSpacesAvailable
+                0x00000000       0x30 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferBytesAvailable
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferSend
+                0x00000000      0x110 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferSendFromISR
+                0x00000000       0x90 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferReceive
+                0x00000000       0xd0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferNextMessageLengthBytes
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferReceiveFromISR
+                0x00000000       0x88 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferIsEmpty
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferIsFull
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferSendCompletedFromISR
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.xStreamBufferReceiveCompletedFromISR
+                0x00000000       0x4c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.uxStreamBufferGetStreamBufferNotificationIndex
+                0x00000000       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text.vStreamBufferSetStreamBufferNotificationIndex
+                0x00000000       0x44 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .comment       0x00000000       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .text.xPortGetFreeHeapSize
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .text.xPortGetMinimumEverFreeHeapSize
+                0x00000000        0xc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .text.vPortInitialiseBlocks
+                0x00000000        0x2 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .text.pvPortCalloc
+                0x00000000       0x2a CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .text.vPortGetHeapStats
+                0x00000000       0x84 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .text.vPortHeapResetState
+                0x00000000       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .text          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .data          0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .bss           0x00000000        0x0 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .text.vPortEndScheduler
+                0x00000000       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .text.vPortValidateInterruptPriority
+                0x00000000       0x54 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .text          0x00000000       0xa0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o)
+ .debug_line_str
+                0x00000000       0xc9 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o)
+ .debug_frame   0x00000000       0x44 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o)
+ .ARM.attributes
+                0x00000000       0x22 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_ldivmod.o)
+ .text          0x00000000       0x30 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
+ .debug_line_str
+                0x00000000       0xc9 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
+ .debug_frame   0x00000000       0x2c C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
+ .ARM.attributes
+                0x00000000       0x22 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_aeabi_uldivmod.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_popcountsi2.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_popcountsi2.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_popcountsi2.o)
+ .text.__popcountsi2
+                0x00000000       0x28 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_popcountsi2.o)
+ .debug_frame   0x00000000       0x20 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_popcountsi2.o)
+ .ARM.attributes
+                0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_popcountsi2.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .text.__udivmoddi4
+                0x00000000      0x2f8 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .ARM.extab.text.__udivmoddi4
+                0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .ARM.exidx.text.__udivmoddi4
+                0x00000000        0x8 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .debug_frame   0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .ARM.attributes
+                0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_udivmoddi4.o)
+ .text          0x00000000        0x4 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_dvmd_tls.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_dvmd_tls.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_dvmd_tls.o)
+ .debug_line_str
+                0x00000000       0xcd C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_dvmd_tls.o)
+ .ARM.attributes
+                0x00000000       0x22 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a(_dvmd_tls.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcmp.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcmp.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcmp.o)
+ .text.memcmp   0x00000000       0x20 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcmp.o)
+ .debug_frame   0x00000000       0x28 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcmp.o)
+ .ARM.attributes
+                0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcmp.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memset.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memset.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memset.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strchr.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strchr.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strchr.o)
+ .text.strchr   0x00000000       0x1a C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strchr.o)
+ .debug_frame   0x00000000       0x20 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strchr.o)
+ .ARM.attributes
+                0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strchr.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcspn.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcspn.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcspn.o)
+ .text.strcspn  0x00000000       0x22 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcspn.o)
+ .debug_frame   0x00000000       0x2c C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcspn.o)
+ .ARM.attributes
+                0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcspn.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strspn.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strspn.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strspn.o)
+ .text.strspn   0x00000000       0x20 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strspn.o)
+ .debug_frame   0x00000000       0x2c C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strspn.o)
+ .ARM.attributes
+                0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strspn.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcpy.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcpy.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcpy.o)
+ .text.strcpy   0x00000000       0x10 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcpy.o)
+ .debug_frame   0x00000000       0x20 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcpy.o)
+ .ARM.attributes
+                0x00000000       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strcpy.o)
+ .text          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcpy-stub.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcpy-stub.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcpy-stub.o)
+ .text          0x00000000       0x10 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .data          0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .bss           0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .ARM.extab     0x00000000        0x0 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .ARM.exidx     0x00000000        0x8 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .debug_line_str
+                0x00000000       0xeb C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .debug_frame   0x00000000       0x20 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+ .ARM.attributes
+                0x00000000       0x17 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-strlen.o)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+FLASH            0x00008020         0x00073fe0         xr
+RAM              0x20000000         0x00010000         xrw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/rtt.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/renderer.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/twi.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/button.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/input_event.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/input_router.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/sdp_validate.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/sdp_parser.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/sdp_interpreter.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/sdp_frame.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/sdp_diag.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/session.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/persist.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/persist_nvmc.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/wall_clock.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/notif_store.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/alarm_sched.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/bma42x.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/battery.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/battery_hw.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/local_ui.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/local_core.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/xt25.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/lfs_fs.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/asset_pack.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/glyph_cache.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/asset_xfer.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/ota_slot.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/ota_xfer.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/sha256.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/boot_util.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/dfu_nordic.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/mcuboot_pubkey.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/littlefs/lfs_util.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/ble_link.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/ble_conn.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/ble_gatt.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/ble_mbuf_stats.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/ble_nimble.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/freertos_smoke.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/event_groups.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/stream_buffer.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+LOAD CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libstdc++_nano.a
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libm.a
+START GROUP
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a
+END GROUP
+START GROUP
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libnosys.a
+END GROUP
+START GROUP
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libgcc.a
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a
+LOAD C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libnosys.a
+END GROUP
+                0x00001000                        _stack_size = 0x1000
+                0x00000200                        _heap_size = 0x200
+
+.isr_vector     0x00008020       0xd8
+ *(.isr_vector*)
+ .isr_vector    0x00008020       0xd8 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+
+.text           0x00008100     0x2220
+                0x00008100                        . = ALIGN (0x4)
+ *(.text.Reset_Handler)
+ .text.Reset_Handler
+                0x00008100       0x78 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+                0x00008100                Reset_Handler
+ *(.text*)
+ .text.Default_Handler
+                0x00008178       0x12 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+                0x00008178                TIMER2_IRQHandler
+                0x00008178                DebugMon_Handler
+                0x00008178                RTC0_IRQHandler
+                0x00008178                SWI0_EGU0_IRQHandler
+                0x00008178                SWI2_EGU2_IRQHandler
+                0x00008178                PWM1_IRQHandler
+                0x00008178                NMI_Handler
+                0x00008178                POWER_CLOCK_IRQHandler
+                0x00008178                RADIO_IRQHandler
+                0x00008178                PDM_IRQHandler
+                0x00008178                TEMP_IRQHandler
+                0x00008178                QDEC_IRQHandler
+                0x00008178                TIMER3_IRQHandler
+                0x00008178                FPU_IRQHandler
+                0x00008178                SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0_IRQHandler
+                0x00008178                UsageFault_Handler
+                0x00008178                UARTE0_UART0_IRQHandler
+                0x00008178                TIMER4_IRQHandler
+                0x00008178                I2S_IRQHandler
+                0x00008178                SWI4_EGU4_IRQHandler
+                0x00008178                TIMER0_IRQHandler
+                0x00008178                TIMER1_IRQHandler
+                0x00008178                PWM2_IRQHandler
+                0x00008178                ECB_IRQHandler
+                0x00008178                SPIM1_SPIS1_TWIM1_TWIS1_SPI1_TWI1_IRQHandler
+                0x00008178                Default_Handler
+                0x00008178                SAADC_IRQHandler
+                0x00008178                MemManage_Handler
+                0x00008178                CCM_AAR_IRQHandler
+                0x00008178                WDT_IRQHandler
+                0x00008178                SWI5_EGU5_IRQHandler
+                0x00008178                RNG_IRQHandler
+                0x00008178                PWM0_IRQHandler
+                0x00008178                SWI3_EGU3_IRQHandler
+                0x00008178                SWI1_EGU1_IRQHandler
+                0x00008178                SPIM2_SPIS2_SPI2_IRQHandler
+                0x00008178                NFCT_IRQHandler
+                0x00008178                BusFault_Handler
+                0x00008178                MWU_IRQHandler
+                0x00008178                COMP_LPCOMP_IRQHandler
+ *fill*         0x0000818a        0x2 
+ .text.slate_relocate_vtor
+                0x0000818c       0x34 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+                0x0000818c                slate_relocate_vtor
+ .text._ZN12_GLOBAL__N_115nvmc_wait_readyEv
+                0x000081c0       0x10 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .text.SystemInit
+                0x000081d0       0xac CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+                0x000081d0                SystemInit
+ .text._ZN5board12busy_wait_usEm
+                0x0000827c       0x20 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+                0x0000827c                board::busy_wait_us(unsigned long)
+ .text._ZN5board12busy_wait_msEm
+                0x0000829c       0x28 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+                0x0000829c                board::busy_wait_ms(unsigned long)
+ .text._ZN5board9motor_offEv
+                0x000082c4        0xe CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+                0x000082c4                board::motor_off()
+ *fill*         0x000082d2        0x2 
+ .text._ZN3spi4initEv
+                0x000082d4       0x80 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x000082d4                spi::init()
+ .text._ZN3spi7acquireEv
+                0x00008354       0x18 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x00008354                spi::acquire()
+ .text._ZN3spi7releaseEv
+                0x0000836c        0xc CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x0000836c                spi::release()
+ .text._ZN3spi8transmitEPKhj
+                0x00008378       0x38 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x00008378                spi::transmit(unsigned char const*, unsigned int)
+ .text._ZN3spi9cs_assertEm
+                0x000083b0        0xe CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x000083b0                spi::cs_assert(unsigned long)
+ .text._ZN3spi11cs_deassertEm
+                0x000083be        0xe CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x000083be                spi::cs_deassert(unsigned long)
+ .text._ZN3spi10dc_commandEv
+                0x000083cc        0xe CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x000083cc                spi::dc_command()
+ .text._ZN3spi7dc_dataEv
+                0x000083da        0xe CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+                0x000083da                spi::dc_data()
+ .text._ZN12_GLOBAL__N_117send_command_dataEhPKhm
+                0x000083e8       0x3c CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .text._ZN12_GLOBAL__N_112send_commandEh
+                0x00008424       0x2e CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .text._ZN6st778910set_windowEtttt
+                0x00008452       0x42 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+                0x00008452                st7789::set_window(unsigned short, unsigned short, unsigned short, unsigned short)
+ .text._ZN12_GLOBAL__N_115clear_full_gramEt.constprop.0
+                0x00008494       0x54 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .text._ZN6st77894initEv
+                0x000084e8      0x1bc CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+                0x000084e8                st7789::init()
+ .text._ZN6st778912write_pixelsEPKhm
+                0x000086a4       0x2a CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+                0x000086a4                st7789::write_pixels(unsigned char const*, unsigned long)
+ *fill*         0x000086ce        0x2 
+ .text._ZN9backlight3setEm.part.0
+                0x000086d0       0x44 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .text._ZN9backlight4initEv
+                0x00008714       0x74 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+                0x00008714                backlight::init()
+ .text._ZN9backlight3setEm
+                0x00008788       0x5c CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+                0x00008788                backlight::set(unsigned long)
+ .text.GPIOTE_IRQHandler
+                0x000087e4       0x4c CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+                0x000087e4                GPIOTE_IRQHandler
+ .text._ZN5slate6rtc_hw15on_overflow_irqEv
+                0x00008830       0x20 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+                0x00008830                slate::rtc_hw::on_overflow_irq()
+ .text.RTC1_IRQHandler
+                0x00008850        0x4 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+                0x00008850                RTC1_IRQHandler
+ .text.RTC2_IRQHandler
+                0x00008854       0x20 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+                0x00008854                RTC2_IRQHandler
+ .text._ZN5slate3wdt3petEv
+                0x00008874       0x14 CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+                0x00008874                slate::wdt::pet()
+ .text._ZN9boot_diag12_GLOBAL__N_19fill_rectEttttt.part.0
+                0x00008888       0x7e CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ *fill*         0x00008906        0x2 
+ .text._ZN9boot_diag12_GLOBAL__N_110draw_hex32Ettmtt.constprop.0
+                0x00008908       0x94 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .text._ZN9boot_diag4fillEt
+                0x0000899c       0x16 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+                0x0000899c                boot_diag::fill(unsigned short)
+ *fill*         0x000089b2        0x2 
+ .text._ZN9boot_diag15paint_resetreasEv
+                0x000089b4       0x78 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+                0x000089b4                boot_diag::paint_resetreas()
+ .text._ZN9boot_diag35hardfault_paint_and_hang_from_frameEPKm
+                0x00008a2c       0x42 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+                0x00008a2c                boot_diag::hardfault_paint_and_hang_from_frame(unsigned long const*)
+ .text._ZN9boot_diag21assert_paint_and_hangEv
+                0x00008a6e       0x14 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+                0x00008a6e                boot_diag::assert_paint_and_hang()
+ .text.slate_bisect_hardfault_c
+                0x00008a82        0x6 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+                0x00008a82                slate_bisect_hardfault_c
+ .text.HardFault_Handler
+                0x00008a88       0x12 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+                0x00008a88                HardFault_Handler
+ .text._ZN12_GLOBAL__N_112bisect2_taskEPv
+                0x00008a9a       0x34 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+ .text.vApplicationIdleHook
+                0x00008ace        0xe CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+                0x00008ace                vApplicationIdleHook
+ .text.vApplicationMallocFailedHook
+                0x00008adc        0x6 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+                0x00008adc                vApplicationMallocFailedHook
+ .text.vApplicationStackOverflowHook
+                0x00008ae2        0x6 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+                0x00008ae2                vApplicationStackOverflowHook
+ .text.vAssertCalled
+                0x00008ae8        0x6 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+                0x00008ae8                vAssertCalled
+ *fill*         0x00008aee        0x2 
+ .text.startup.main
+                0x00008af0       0x5c CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+                0x00008af0                main
+ .text.prvAddCurrentTaskToDelayedList
+                0x00008b4c       0xac CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.prvResetNextTaskUnblockTime
+                0x00008bf8       0x24 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.prvCheckTasksWaitingTermination
+                0x00008c1c       0x48 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.prvIdleTask
+                0x00008c64       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .text.xTaskCreate
+                0x00008c90      0x1cc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00008c90                xTaskCreate
+ .text.vTaskStartScheduler
+                0x00008e5c       0x90 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00008e5c                vTaskStartScheduler
+ .text.vTaskSuspendAll
+                0x00008eec       0x10 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00008eec                vTaskSuspendAll
+ .text.xTaskGetTickCount
+                0x00008efc        0xc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00008efc                xTaskGetTickCount
+ .text.xTaskIncrementTick
+                0x00008f08      0x190 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00008f08                xTaskIncrementTick
+ .text.xTaskResumeAll
+                0x00009098      0x15c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00009098                xTaskResumeAll
+ .text.vTaskSwitchContext
+                0x000091f4       0x9c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x000091f4                vTaskSwitchContext
+ .text.vTaskPlaceOnEventList
+                0x00009290       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00009290                vTaskPlaceOnEventList
+ .text.vTaskPlaceOnEventListRestricted
+                0x000092c4       0x58 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x000092c4                vTaskPlaceOnEventListRestricted
+ .text.xTaskRemoveFromEventList
+                0x0000931c       0xc8 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x0000931c                xTaskRemoveFromEventList
+ .text.vTaskInternalSetTimeOutState
+                0x000093e4       0x18 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x000093e4                vTaskInternalSetTimeOutState
+ .text.xTaskCheckForTimeOut
+                0x000093fc       0x6c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x000093fc                xTaskCheckForTimeOut
+ .text.vTaskMissedYield
+                0x00009468        0xc CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00009468                vTaskMissedYield
+ .text.xTaskGetSchedulerState
+                0x00009474       0x20 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x00009474                xTaskGetSchedulerState
+ .text.prvIsQueueEmpty
+                0x00009494       0x16 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.prvCopyDataFromQueue
+                0x000094aa       0x2a CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.prvUnlockQueue
+                0x000094d4       0x6c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .text.xQueueGenericReset
+                0x00009540       0x98 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+                0x00009540                xQueueGenericReset
+ .text.xQueueGenericCreate
+                0x000095d8       0x50 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+                0x000095d8                xQueueGenericCreate
+ .text.xQueueReceive
+                0x00009628      0x124 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+                0x00009628                xQueueReceive
+ .text.vQueueWaitForMessageRestricted
+                0x0000974c       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+                0x0000974c                vQueueWaitForMessageRestricted
+ .text.vListInitialise
+                0x00009792       0x16 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+                0x00009792                vListInitialise
+ .text.vListInitialiseItem
+                0x000097a8        0x6 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+                0x000097a8                vListInitialiseItem
+ .text.vListInsert
+                0x000097ae       0x2e CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+                0x000097ae                vListInsert
+ .text.uxListRemove
+                0x000097dc       0x1e CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+                0x000097dc                uxListRemove
+ *fill*         0x000097fa        0x2 
+ .text.prvInsertTimerInActiveList
+                0x000097fc       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.prvReloadTimer
+                0x00009838       0x26 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ *fill*         0x0000985e        0x2 
+ .text.prvProcessExpiredTimer
+                0x00009860       0x40 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.prvSwitchTimerLists
+                0x000098a0       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.prvCheckForValidListAndQueue
+                0x000098cc       0x4c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.prvTimerTask
+                0x00009918      0x184 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .text.xTimerCreateTimerTask
+                0x00009a9c       0x50 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+                0x00009a9c                xTimerCreateTimerTask
+ .text.pvPortMalloc
+                0x00009aec      0x190 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+                0x00009aec                pvPortMalloc
+ .text.vPortFree
+                0x00009c7c       0xf8 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+                0x00009c7c                vPortFree
+ *fill*         0x00009d74        0xc 
+ .text.SVC_Handler
+                0x00009d80       0x24 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009d80                SVC_Handler
+ .text.prvPortStartFirstTask
+                0x00009da4       0x28 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ *fill*         0x00009dcc        0x4 
+ .text.PendSV_Handler
+                0x00009dd0       0x64 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009dd0                PendSV_Handler
+ .text.vPortEnableVFP
+                0x00009e34       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .text.prvTaskExitError
+                0x00009e48       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .text.pxPortInitialiseStack
+                0x00009e84       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009e84                pxPortInitialiseStack
+ .text.vPortEnterCritical
+                0x00009eb0       0x3c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009eb0                vPortEnterCritical
+ .text.vPortExitCritical
+                0x00009eec       0x28 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009eec                vPortExitCritical
+ .text.SysTick_Handler
+                0x00009f14       0x2c CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009f14                SysTick_Handler
+ .text.vPortSetupTimerInterrupt
+                0x00009f40       0x16 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009f40                vPortSetupTimerInterrupt
+ *fill*         0x00009f56        0x2 
+ .text.xPortStartScheduler
+                0x00009f58      0x154 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x00009f58                xPortStartScheduler
+ .text.memset   0x0000a0ac       0x10 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memset.o)
+                0x0000a0ac                memset
+ .text.memcpy   0x0000a0bc       0x1c C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcpy-stub.o)
+                0x0000a0bc                memcpy
+ *(.rodata*)
+ .rodata._ZN6st77894initEv.str1.1
+                0x0000a0d8      0x1dc CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+                                 0x1e (size before relaxing)
+ .rodata        0x0000a2b4        0x5 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .rodata._ZN9boot_diag12_GLOBAL__N_1L8kFont3x5E
+                0x0000a2b9       0x50 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ *fill*         0x0000a309        0x3 
+ .rodata        0x0000a30c       0x10 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .rodata.main.str1.1
+                0x0000a31c        0x3 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+ .rodata.prvTaskIsTaskSuspended.str1.1
+                0x0000a31c       0x4e CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .rodata.vTaskStartScheduler.str1.1
+                0x0000a31c        0x5 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .rodata.uxTopUsedPriority
+                0x0000a31c        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .rodata.xQueueGenericReset.str1.1
+                0x0000a320       0x4e CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .rodata.prvTimerTask.str1.1
+                0x0000a320       0x4f CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .rodata.xTimerCreateTimerTask.str1.1
+                0x0000a320        0x8 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .rodata.pvPortMalloc.str1.1
+                0x0000a320       0x60 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .rodata.prvTaskExitError.str1.1
+                0x0000a320       0x63 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ *(.glue_7)
+ .glue_7        0x0000a320        0x0 linker stubs
+ *(.glue_7t)
+ .glue_7t       0x0000a320        0x0 linker stubs
+ *(.eh_frame*)
+                0x0000a384                        . = ALIGN (0x4)
+
+.vfp11_veneer   0x0000a320        0x0
+ .vfp11_veneer  0x0000a320        0x0 linker stubs
+
+.v4_bx          0x0000a320        0x0
+ .v4_bx         0x0000a320        0x0 linker stubs
+
+.iplt           0x0000a320        0x0
+ .iplt          0x0000a320        0x0 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+
+.rel.dyn        0x0000a320        0x0
+ .rel.iplt      0x0000a320        0x0 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+
+.ARM.exidx      0x0000a320        0x0
+                0x0000a320                        . = ALIGN (0x4)
+                0x0000a320                        __exidx_start = .
+ *(.ARM.exidx*)
+                0x0000a320                        __exidx_end = .
+
+.preinit_array  0x0000a320        0x0
+                0x0000a320                        . = ALIGN (0x4)
+                0x0000a320                        __preinit_array_start = .
+ *(.preinit_array*)
+                0x0000a320                        __preinit_array_end = .
+
+.init_array     0x0000a320        0x0
+                0x0000a320                        . = ALIGN (0x4)
+                0x0000a320                        __init_array_start = .
+ *(SORT_BY_NAME(.init_array.*))
+ *(.init_array*)
+                0x0000a320                        __init_array_end = .
+                0x0000a320                        _etext = .
+                0x0000a320                        _sidata = LOADADDR (.data)
+
+.data           0x20000000        0x4 load address 0x0000a320
+                0x20000000                        . = ALIGN (0x4)
+                0x20000000                        _sdata = .
+ *(.data*)
+ .data.uxCriticalNesting
+                0x20000000        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+                0x20000004                        . = ALIGN (0x4)
+                0x20000004                        _edata = .
+
+.igot.plt       0x20000004        0x0 load address 0x0000a324
+ .igot.plt      0x20000004        0x0 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+
+.bss            0x20000100     0x3a54 load address 0x0000a500
+                0x20000100                        . = ALIGN (0x4)
+                0x20000100                        _sbss = .
+ *(.bss*)
+ .bss._ZN12_GLOBAL__N_112g_vtable_ramE
+                0x20000100       0xd8 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+ .bss._ZN12_GLOBAL__N_110g_acquiredE
+                0x200001d8        0x1 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ *fill*         0x200001d9        0x3 
+ .bss._ZL5g_seq
+                0x200001dc        0x8 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .bss._ZN12_GLOBAL__N_113g_irq_latchedE
+                0x200001e4        0x1 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ *fill*         0x200001e5        0x3 
+ .bss._ZN5slate6rtc_hw12_GLOBAL__N_111g_overflowsE
+                0x200001e8        0x4 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .bss._ZN5slate5power10g_rtc_wakeE
+                0x200001ec        0x1 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+                0x200001ec                slate::power::g_rtc_wake
+ *fill*         0x200001ed        0x3 
+ .bss.uxSchedulerSuspended
+                0x200001f0        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xIdleTaskHandles
+                0x200001f4        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xNextTaskUnblockTime
+                0x200001f8        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.uxTaskNumber
+                0x200001fc        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xNumOfOverflows
+                0x20000200        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xYieldPendings
+                0x20000204        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xPendedTicks
+                0x20000208        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xSchedulerRunning
+                0x2000020c        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.uxTopReadyPriority
+                0x20000210        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xTickCount
+                0x20000214        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.uxCurrentNumberOfTasks
+                0x20000218        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xSuspendedTaskList
+                0x2000021c       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.uxDeletedTasksWaitingCleanUp
+                0x20000230        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xTasksWaitingTermination
+                0x20000234       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xPendingReadyList
+                0x20000248       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.pxOverflowDelayedTaskList
+                0x2000025c        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.pxDelayedTaskList
+                0x20000260        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xDelayedTaskList2
+                0x20000264       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.xDelayedTaskList1
+                0x20000278       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.pxReadyTasksLists
+                0x2000028c       0x64 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .bss.pxCurrentTCB
+                0x200002f0        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+                0x200002f0                pxCurrentTCB
+ .bss.xLastTime.0
+                0x200002f4        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss.xTimerTaskHandle
+                0x200002f8        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss.xTimerQueue
+                0x200002fc        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss.pxOverflowTimerList
+                0x20000300        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss.pxCurrentTimerList
+                0x20000304        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss.xActiveTimerList2
+                0x20000308       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss.xActiveTimerList1
+                0x2000031c       0x14 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .bss.xNumberOfSuccessfulFrees
+                0x20000330        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss.xNumberOfSuccessfulAllocations
+                0x20000334        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss.xMinimumEverFreeBytesRemaining
+                0x20000338        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss.xFreeBytesRemaining
+                0x2000033c        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss.pxEnd     0x20000340        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss.xStart    0x20000344        0x8 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss.ucHeap    0x2000034c     0x3800 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .bss.ulMaxPRIGROUPValue
+                0x20003b4c        0x4 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .bss.ucMaxSysCallPriority
+                0x20003b50        0x1 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ *(COMMON)
+                0x20003b54                        . = ALIGN (0x4)
+ *fill*         0x20003b51        0x3 
+                0x20003b54                        _ebss = .
+
+.heap           0x20003b54      0x204 load address 0x0000df54
+                0x20003b58                        . = ALIGN (0x8)
+ *fill*         0x20003b54        0x4 
+                0x20003b58                        __heap_start__ = .
+                [!provide]                        PROVIDE (end = .)
+                [!provide]                        PROVIDE (_end = .)
+                [!provide]                        PROVIDE (__end__ = .)
+                0x20003d58                        . = (. + _heap_size)
+ *fill*         0x20003b58      0x200 
+                0x20003d58                        . = ALIGN (0x8)
+                0x20003d58                        __heap_end__ = .
+                0x20010000                        __StackTop = (ORIGIN (RAM) + LENGTH (RAM))
+                0x2000f000                        __StackLimit = (__StackTop - _stack_size)
+                [!provide]                        PROVIDE (__stack = __StackTop)
+                0x00000001                        ASSERT ((__StackLimit >= __heap_end__), RAM overflow: heap collides with stack)
+OUTPUT(slate_firmware.elf elf32-littlearm)
+LOAD linker stubs
+
+.comment        0x00000000       0x45
+ .comment       0x00000000       0x45 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+                                 0x46 (size before relaxing)
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .comment       0x00000045       0x46 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+
+.ARM.attributes
+                0x00000000       0x32
+ .ARM.attributes
+                0x00000000       0x34 CMakeFiles/slate_firmware.elf.dir/src/startup.cpp.obj
+ .ARM.attributes
+                0x00000034       0x34 CMakeFiles/slate_firmware.elf.dir/src/system_nrf52832.cpp.obj
+ .ARM.attributes
+                0x00000068       0x34 CMakeFiles/slate_firmware.elf.dir/src/spi_bus.cpp.obj
+ .ARM.attributes
+                0x0000009c       0x34 CMakeFiles/slate_firmware.elf.dir/src/st7789.cpp.obj
+ .ARM.attributes
+                0x000000d0       0x34 CMakeFiles/slate_firmware.elf.dir/src/backlight.cpp.obj
+ .ARM.attributes
+                0x00000104       0x34 CMakeFiles/slate_firmware.elf.dir/src/cst816s.cpp.obj
+ .ARM.attributes
+                0x00000138       0x34 CMakeFiles/slate_firmware.elf.dir/src/rtc_hw.cpp.obj
+ .ARM.attributes
+                0x0000016c       0x34 CMakeFiles/slate_firmware.elf.dir/src/power.cpp.obj
+ .ARM.attributes
+                0x000001a0       0x34 CMakeFiles/slate_firmware.elf.dir/src/wdt.cpp.obj
+ .ARM.attributes
+                0x000001d4       0x34 CMakeFiles/slate_firmware.elf.dir/src/boot_diag.cpp.obj
+ .ARM.attributes
+                0x00000208       0x34 CMakeFiles/slate_firmware.elf.dir/src/main_bisect.cpp.obj
+ .ARM.attributes
+                0x0000023c       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/tasks.c.obj
+ .ARM.attributes
+                0x00000270       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/queue.c.obj
+ .ARM.attributes
+                0x000002a4       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/list.c.obj
+ .ARM.attributes
+                0x000002d8       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/timers.c.obj
+ .ARM.attributes
+                0x0000030c       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/MemMang/heap_4.c.obj
+ .ARM.attributes
+                0x00000340       0x34 CMakeFiles/slate_firmware.elf.dir/third_party/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/port.c.obj
+ .ARM.attributes
+                0x00000374       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memset.o)
+ .ARM.attributes
+                0x000003a8       0x34 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcpy-stub.o)
+
+.debug_frame    0x00000000       0x48
+ .debug_frame   0x00000000       0x20 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memset.o)
+ .debug_frame   0x00000020       0x28 C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/../lib/gcc/arm-none-eabi/14.2.1/thumb/v7e-m+fp/hard\libc_nano.a(libc_a-memcpy-stub.o)

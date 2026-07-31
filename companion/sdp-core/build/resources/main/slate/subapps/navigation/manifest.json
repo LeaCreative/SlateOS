@@ -1,0 +1,13 @@
+{
+  "id": "slate.navigation",
+  "name": "Navigation",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["navigation"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.nav", "slate.haptic"]
+}

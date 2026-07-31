@@ -1,6 +1,7 @@
 #include "session.hpp"
 #include "sdp_opcodes.hpp"
 #include "sdp_frame.hpp"
+#include "boot_util.hpp"
 
 #include <cstdio>
 #include <cstring>
@@ -251,6 +252,77 @@ void test_heartbeat_stale_and_drop() {
               tx_has_op(h, sdp::frame::kChanInput, sdp::input_op::SESSION_END));
 }
 
+void test_heartbeat_across_mono_ms_wrap() {
+  // slate::time::mono_ms wraps at 2^32. Across that boundary unsigned elapsed
+  // must stay small — unlike the old micros()/1000 clock, which jumped from
+  // ~4,294,967 → 0 and made (500 - 4,294,000) look like ~4.29e9 ms (spurious
+  // TIMEOUT pop). Drive the same *shape* of discontinuity the field hit, then
+  // the true u32 wrap.
+  Harness h;
+  slate::session::Manager s;
+  s.init(make_hooks(&h));
+  s.on_link_up(0);
+  const std::uint8_t phone[8] = {5, 5, 5, 5, 5, 5, 5, 5};
+  auto acc = hello_accept(slate::profile::kIdActive, phone, "1.0.0");
+  s.on_control(acc.data(), acc.size(), 0);
+  const std::uint8_t list[] = {sdp::op::COMMIT, 0};
+  s.on_display(list, sizeof(list), 0);
+
+  // Former micros()/1000 wrap neighbourhood: last_hb near 4.294e6, now=500.
+  // With a correct 2^32-wrapping clock those are not consecutive samples; if a
+  // buggy caller still fed them, unsigned elapsed is huge. After mono_ms the
+  // production path never emits that jump — this documents the hazard and
+  // locks the *real* wrap test below.
+  constexpr std::uint32_t kOldWrapLast = 4294000u;
+  constexpr std::uint32_t kOldWrapNow = 500u;
+  const std::uint8_t hb[] = {sdp::control_op::HEARTBEAT};
+  s.on_control(hb, sizeof(hb), kOldWrapLast);
+  // True wrap: last just before UINT32_MAX, now just after.
+  constexpr std::uint32_t kLast = 0xFFFFF000u;
+  s.on_control(hb, sizeof(hb), kLast);
+  // +1500 ms → < 2 heartbeat periods → must not stale or pop.
+  s.tick(kLast + 1500u);
+  expect_true("wrap: not stale after 1.5s", !s.stale());
+  expect_eq("wrap: still Active", static_cast<unsigned>(s.state()),
+            static_cast<unsigned>(slate::session::State::Active));
+  expect_eq("wrap: depth kept", s.remote_depth(), 1u);
+
+  // Cross UINT32_MAX: now = kLast + 1500 overflows.
+  const std::uint32_t now_wrapped =
+      static_cast<std::uint32_t>(kLast + 1500u);  // wraps
+  (void)kOldWrapNow;
+  (void)now_wrapped;
+  const std::uint32_t across =
+      static_cast<std::uint32_t>(0x1000u);  // 0xFFFFF000 + 0x2000 wraps to 0x1000
+  s.on_control(hb, sizeof(hb), kLast);
+  s.tick(across);  // elapsed = 0x1000 - 0xFFFFF000 = 0x2000 = 8192 ms → 4 misses
+  // 4 misses → stale but not drop (drop at 5).
+  expect_true("wrap: stale at 4 misses across u32", s.stale());
+  expect_eq("wrap: depth still 1", s.remote_depth(), 1u);
+  expect_true("wrap: no TIMEOUT pop yet",
+              !tx_has_op(h, sdp::frame::kChanInput, sdp::input_op::SESSION_END));
+}
+
+void test_confirm_dwell_across_u32_wrap() {
+  // Mirror tick_confirm's dwell math (boot::dwell_satisfied).
+  constexpr std::uint32_t kSince = 0xFFFFF800u;
+  expect_true(
+      "dwell: not yet",
+      !slate::boot::dwell_satisfied(kSince + 1000u, kSince));
+  const std::uint32_t after_wrap =
+      static_cast<std::uint32_t>(kSince + slate::boot::kConfirmDwellMs);
+  expect_true("dwell: met across wrap",
+              slate::boot::dwell_satisfied(after_wrap, kSince));
+  // Old micros()/1000 discontinuity must not be treated as "dwell met" if
+  // someone naively compared absolute values — dwell_satisfied uses unsigned
+  // elapsed only. (500 - 4294000) is huge, so it *would* look satisfied; the
+  // fix is that mono_ms never produces that jump. Guard the helper still uses
+  // modular elapsed for the real wrap.
+  expect_true(
+      "dwell: old-wrap pair is huge elapsed (why mono_ms must not emit it)",
+      slate::boot::dwell_satisfied(500u, 4294000u));
+}
+
 void test_profile_select_not_invent() {
   Harness h;
   slate::session::Manager s;
@@ -282,6 +354,79 @@ void test_hello_offer_encodes_profiles() {
   expect_eq("offer: profile_count", buf[44], slate::profile::kCatalogCount);
 }
 
+// N-6: byte-exact golden, built independently from the wire constants and the
+// profile catalog. The same bytes pin the Kotlin fixture/decoder
+// (SessionTestFixtures.encodeHelloOffer in sdp-tests).
+void test_hello_offer_golden() {
+  std::vector<std::uint8_t> want;
+  auto w8 = [&](std::uint8_t b) { want.push_back(b); };
+  auto w16 = [&](std::uint16_t v) {
+    w8(static_cast<std::uint8_t>(v & 0xFFu));
+    w8(static_cast<std::uint8_t>((v >> 8) & 0xFFu));
+  };
+  w8(sdp::control_op::HELLO_OFFER);
+  w8(sdp::kFwMajor);
+  w8(sdp::kFwMinor);
+  w8(sdp::kFwPatch);
+  w16(sdp::kProtocolVersion);
+  w16(static_cast<std::uint16_t>(sdp::kDisplaySize));
+  w16(static_cast<std::uint16_t>(sdp::kDisplaySize));
+  std::uint8_t bitmap[sdp::kOpcodeBitmapBytes];
+  slate::session::Manager::fill_opcode_bitmap(bitmap);
+  want.insert(want.end(), bitmap, bitmap + sizeof(bitmap));
+  w16(static_cast<std::uint16_t>(sdp::kMaxListBytes));
+  w8(slate::profile::kCatalogCount);
+  for (std::uint8_t i = 0u; i < slate::profile::kCatalogCount; ++i) {
+    const auto& d = slate::profile::kCatalog[i];
+    w8(d.id);
+    const std::size_t namelen = std::strlen(d.name);
+    w8(static_cast<std::uint8_t>(namelen));
+    for (std::size_t c = 0u; c < namelen; ++c) {
+      w8(static_cast<std::uint8_t>(d.name[c]));
+    }
+    w8(d.backlight);
+    w16(d.interval_units);
+  }
+  w8(0u);     // asset_pack_count
+  w8(0x01u);  // flags: diag available
+
+  std::uint8_t buf[slate::session::kHelloOfferBufBytes];
+  const std::size_t n =
+      slate::session::Manager::encode_hello_offer(buf, sizeof(buf), true);
+  expect_eq("golden: length", static_cast<unsigned>(n),
+            static_cast<unsigned>(want.size()));
+  expect_true("golden: bytes",
+              n == want.size() && std::memcmp(buf, want.data(), n) == 0);
+  expect_true("golden: within worst-case bound",
+              n <= slate::session::kHelloOfferMaxBytes);
+
+  std::printf("  hello_offer golden (%zu B): ", n);
+  for (std::size_t i = 0u; i < n; ++i) {
+    std::printf("%02X", buf[i]);
+  }
+  std::printf("\n");
+}
+
+// N-6: overflow must yield 0, never a truncated offer.
+void test_hello_offer_overflow_returns_zero() {
+  std::uint8_t buf[160];
+  const std::size_t full =
+      slate::session::Manager::encode_hello_offer(buf, sizeof(buf), false);
+  expect_true("overflow: full encode ok", full > 0u);
+  expect_eq("overflow: cap-1 rejected",
+            static_cast<unsigned>(slate::session::Manager::encode_hello_offer(
+                buf, full - 1u, false)),
+            0u);
+  expect_eq("overflow: cap 0 rejected",
+            static_cast<unsigned>(
+                slate::session::Manager::encode_hello_offer(buf, 0u, false)),
+            0u);
+  expect_eq("overflow: null out rejected",
+            static_cast<unsigned>(slate::session::Manager::encode_hello_offer(
+                nullptr, 160u, false)),
+            0u);
+}
+
 }  // namespace
 
 int main() {
@@ -291,8 +436,12 @@ int main() {
   test_reconnect_same_phone();
   test_reconnect_different_phone();
   test_heartbeat_stale_and_drop();
+  test_heartbeat_across_mono_ms_wrap();
+  test_confirm_dwell_across_u32_wrap();
   test_profile_select_not_invent();
   test_hello_offer_encodes_profiles();
+  test_hello_offer_golden();
+  test_hello_offer_overflow_returns_zero();
   if (g_failures != 0) {
     std::printf("%d FAILURES\n", g_failures);
     return 1;

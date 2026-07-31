@@ -99,8 +99,10 @@ void Renderer::draw_line(std::int16_t x0, std::int16_t y0,
                           std::int16_t x1, std::int16_t y1,
                           std::uint16_t colour) {
     // Bresenham's line algorithm.
-    std::int16_t dx = static_cast<std::int16_t>(std::abs(x1 - x0));
-    std::int16_t dy = static_cast<std::int16_t>(-std::abs(y1 - y0));
+    const std::int16_t adx = static_cast<std::int16_t>(x1 - x0);
+    const std::int16_t ady = static_cast<std::int16_t>(y1 - y0);
+    std::int16_t dx = (adx < 0) ? static_cast<std::int16_t>(-adx) : adx;
+    std::int16_t dy = (ady < 0) ? ady : static_cast<std::int16_t>(-ady);
     std::int16_t sx = (x0 < x1) ? 1 : -1;
     std::int16_t sy = (y0 < y1) ? 1 : -1;
     std::int16_t err = static_cast<std::int16_t>(dx + dy);
@@ -281,19 +283,24 @@ std::uint32_t Renderer::flush() {
     std::uint32_t tiles_sent = 0u;
 
     for (std::uint32_t t = 0u; t < kTileCount; ++t) {
-        if (!dirty_.is_dirty(t)) continue;
+        if (!dirty_.is_dirty(t)) {
+            continue;
+        }
 
         const std::uint16_t ty0 = static_cast<std::uint16_t>(t * kTileHeight);
-        const std::uint16_t ty1 = static_cast<std::uint16_t>(ty0 + kTileHeight - 1u);
+        const std::uint16_t ty1 =
+            static_cast<std::uint16_t>(ty0 + kTileHeight - 1u);
 
         st7789::set_window(0u, ty0,
                            static_cast<std::uint16_t>(kDisplayWidth - 1u), ty1);
-        st7789::write_pixels(buf_[0], kTileBytes);
-
+        if (!st7789::write_pixels(buf_[0], kTileBytes)) {
+            // Keep dirty for retry on the next flush.
+            continue;
+        }
+        dirty_.clear_tile(t);
         ++tiles_sent;
     }
 
-    dirty_.clear();
     return tiles_sent;
 }
 
@@ -343,6 +350,9 @@ void Renderer::flush_filtered_tile() {
     const std::uint16_t ty1 = static_cast<std::uint16_t>(ty0 + kTileHeight - 1u);
     st7789::set_window(0u, ty0,
                        static_cast<std::uint16_t>(kDisplayWidth - 1u), ty1);
-    st7789::write_pixels(buf_[0], kTileBytes);
-    dirty_.clear();
+    if (!st7789::write_pixels(buf_[0], kTileBytes)) {
+        dirty_.mark_tile(t);
+        return;
+    }
+    dirty_.clear_tile(t);
 }

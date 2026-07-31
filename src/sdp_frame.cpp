@@ -120,6 +120,7 @@ void Reassembler::reset() {
   }
   msg_len_ = 0u;
   msg_channel_ = 0u;
+  preempt_drops_ = 0u;
 }
 
 void Reassembler::reset_channel(std::uint8_t channel) {
@@ -170,6 +171,17 @@ FrameStatus Reassembler::ingest(const std::uint8_t* pkt, std::size_t len) {
   ChanState& st = ch_[channel];
 
   if (first) {
+    // Single-in-flight: buf_ is shared across channels, so a FIRST here
+    // aborts any in-flight reassembly on *other* channels before it can be
+    // silently corrupted. Protocol violation by the sender — resync to the
+    // newest message and count the abandoned one (reject-and-resync).
+    for (std::uint8_t i = 0u; i < kChannelCount; ++i) {
+      if (i != channel && ch_[i].active) {
+        reset_channel(i);
+        ++preempt_drops_;
+      }
+    }
+
     // New message — abandon any in-progress reassembly on this channel.
     st = ChanState{};
     st.saw_first = true;

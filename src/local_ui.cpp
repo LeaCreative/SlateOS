@@ -30,19 +30,42 @@ struct W {
     b(0x00u);  // literal RGB565
     u16(c);
   }
-  void text_digits(std::uint8_t x, std::uint8_t y, std::uint8_t align,
-                   const char* s) {
+  void text_big(std::uint8_t x, std::uint8_t y, std::uint8_t align,
+                std::uint8_t scale, std::uint8_t palette, const char* s) {
     const std::uint8_t len = static_cast<std::uint8_t>(std::strlen(s));
-    b(sdp::op::TEXT);
+    b(sdp::op::TEXT_SCALED);
+    u16(static_cast<std::uint16_t>(7u + len));
     b(0x00u);  // font 0
     b(x);
     b(y);
-    b(0x01u);  // palette 0
+    b(static_cast<std::uint8_t>(sdp::color_tag::PaletteMin + palette));
     b(align);
+    b(scale);
     b(len);
     for (std::uint8_t i = 0u; i < len; ++i) {
       b(static_cast<std::uint8_t>(s[i]));
     }
+  }
+  void fill(std::uint8_t x, std::uint8_t y, std::uint8_t w, std::uint8_t h,
+            std::uint16_t c) {
+    b(sdp::op::RECT);
+    b(x);
+    b(y);
+    b(w);
+    b(h);
+    rgb(c);
+    b(0x00u);  // STYLE: fill, width 0
+  }
+  void gauge(std::uint8_t x, std::uint8_t y, std::uint8_t w, std::uint8_t h,
+             std::uint8_t pct, std::uint16_t fg, std::uint16_t bg) {
+    b(sdp::op::PROGRESS_BAR);
+    b(x);
+    b(y);
+    b(w);
+    b(h);
+    b(pct > 100u ? 100u : pct);
+    rgb(fg);
+    rgb(bg);
   }
 };
 
@@ -70,24 +93,93 @@ void fmt_u32(char* o, std::size_t cap, std::uint32_t v) {
   o[i] = '\0';
 }
 
+// Temporary bring-up readout. Build with -DSLATE_DIAG_OVERLAY=0 to drop it.
+#ifndef SLATE_DIAG_OVERLAY
+#define SLATE_DIAG_OVERLAY 1
+#endif
+
+#if SLATE_DIAG_OVERLAY
+// "<reset reason>/<uptime s>/<paints>/<button>/<worst app stall ms>/<ble
+// state>.<ble rc>", decimal
+// because font 0 has no A-F glyphs (codepoints 45..58 only). Reason is the raw
+// RESETREAS bitmask: 0 power-on or brownout, 1 pin, 2 watchdog, 4 soft,
+// 8 lockup, 65536 off-wake, 1048576 VBUS; several causes sum.
+void fmt_diag(char* o, std::size_t cap, const local::State& st) {
+  char part[12];
+  std::size_t i = 0u;
+  const auto append = [&](const char* s) {
+    for (const char* p = s; *p != '\0' && i + 1u < cap; ++p) {
+      o[i++] = *p;
+    }
+  };
+  fmt_u32(part, sizeof(part), st.diag_reset_reason);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_uptime_s);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_paints);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_button);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_stall_ms);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_ble_state);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_ble_rc);
+  append(part);
+  o[i] = '\0';
+}
+#endif
+
+// Layout is fixed for the 240x240 panel. Vertical bands, top to bottom:
+//   0..7    trial-image marker (only while unconfirmed)
+//   16..25  bring-up diagnostics (SLATE_DIAG_OVERLAY)
+//   56..95  HH:MM at scale 8 (24x40 glyphs)
+//   110..124 date at scale 3
+//   136..150 steps at scale 3
+//   196..203 battery gauge
+//   212..226 battery percent, and the link indicator at the right
 std::size_t build_face(W& w, const ViewModel& vm) {
   const local::State& st = *vm.state;
   const clock::Civil c = clock::civil_now();
+
+  constexpr std::uint16_t kWhite = 0xFFFFu;
+  constexpr std::uint16_t kDim = 0x8410u;
+  constexpr std::uint16_t kAmber = 0xFD20u;
+  constexpr std::uint16_t kGreen = 0x07E0u;
+  constexpr std::uint16_t kTrack = 0x2124u;
 
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0xFFFFu);
+  w.u16(kWhite);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x01u);
-  w.u16(0x07E0u);
+  w.u16(kDim);
+
+  if (st.trial_image) {
+    w.fill(0, 0, 240, 8, kAmber);
+  }
+
+#if SLATE_DIAG_OVERLAY
+  // Scale 2 and left-aligned: four numbers can exceed 240 px at scale 3, and a
+  // centred run that wide would start at a negative x and be rejected.
+  char diag[40];
+  fmt_diag(diag, sizeof(diag), st);
+  w.text_big(4, 16, sdp::align::LEFT, 2u, 1u, diag);
+#endif
 
   char tbuf[8];
   fmt2(tbuf, c.hour);
   tbuf[2] = ':';
   fmt2(tbuf + 3, c.minute);
-  w.text_digits(120, 70, sdp::align::CENTER, tbuf);
+  w.text_big(120, 56, sdp::align::CENTER, 8u, 0u, tbuf);
 
   char dbuf[12];
   fmt2(dbuf, c.day);
@@ -96,24 +188,41 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   dbuf[5] = '-';
   // year mod 100
   fmt2(dbuf + 6, static_cast<std::uint8_t>(c.year % 100u));
-  w.text_digits(120, 100, sdp::align::CENTER, dbuf);
+  w.text_big(120, 110, sdp::align::CENTER, 3u, 1u, dbuf);
 
   char sbuf[12];
   if (st.settings.face_show_steps) {
     fmt_u32(sbuf, sizeof(sbuf), st.steps);
-    w.text_digits(120, 130, sdp::align::CENTER, sbuf);
+    w.text_big(120, 136, sdp::align::CENTER, 3u, 1u, sbuf);
   }
 
-  char bbuf[8];
-  fmt_u32(bbuf, sizeof(bbuf), st.battery_pct);
-  w.text_digits(40, 200, sdp::align::LEFT, bbuf);
+  w.gauge(20, 196, 200, 8,
+          st.battery_pct > 100u ? 0u : st.battery_pct, kWhite, kTrack);
 
-  // Link: 1 connected, 0 not — digit only (font 0).
-  const char* lnk = st.link_up ? "1" : "0";
-  w.text_digits(200, 200, sdp::align::RIGHT, lnk);
+  char bbuf[8];
+  if (st.battery_pct > 100u) {
+    bbuf[0] = '-';
+    bbuf[1] = '-';
+    bbuf[2] = '\0';
+  } else {
+    fmt_u32(bbuf, sizeof(bbuf), st.battery_pct);
+  }
+  w.text_big(20, 212, sdp::align::LEFT, 3u, 1u, bbuf);
+
+  if (st.charging) {
+    // Compact lightning bolt next to the percent (not a full-screen takeover).
+    constexpr std::uint16_t kCharge = 0x07E0u;
+    w.fill(78, 212, 3, 6, kCharge);
+    w.fill(81, 215, 8, 3, kCharge);
+    w.fill(86, 218, 3, 8, kCharge);
+    w.fill(81, 221, 8, 3, kCharge);
+  }
+
+  // Link state as a colour block: a lone 0/1 digit was unreadable and ambiguous.
+  w.fill(212, 212, 12, 12, st.link_up ? kGreen : kTrack);
 
   if (st.remote_stale) {
-    w.text_digits(120, 160, sdp::align::CENTER, "88");  // stale cue
+    w.fill(112, 176, 16, 4, kAmber);
   }
 
   w.b(sdp::op::COMMIT);
@@ -122,27 +231,32 @@ std::size_t build_face(W& w, const ViewModel& vm) {
 }
 
 std::size_t build_notifs(W& w, const ViewModel& vm) {
+  // Scale 3 body (9×15 glyphs). Header/count short enough to centre; row
+  // fields left-aligned. Six rows × ~44 B TEXT_SCALED elems fit in the
+  // 512-byte local dl_buf_ (~300 B measured worst case).
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
   w.u16(0xFFFFu);
 
-  w.text_digits(120, 8, sdp::align::CENTER, "00");  // header stand-in
+  w.text_big(120, 4, sdp::align::CENTER, 3u, 0u, "00");  // screen id
 
   const notif::Store* ns = vm.notifs;
   const std::uint8_t count = ns ? ns->count : 0u;
   char cbuf[4];
   fmt_u32(cbuf, sizeof(cbuf), count);
-  w.text_digits(120, 24, sdp::align::CENTER, cbuf);
+  w.text_big(120, 24, sdp::align::CENTER, 3u, 0u, cbuf);
 
-  const std::uint8_t row_h = 28u;
-  const std::uint8_t visible = count > 6u ? 6u : count;
+  constexpr std::uint8_t kRowH = 28u;  // scale-3 glyph 15 + margin
+  constexpr std::uint8_t kMaxVisible = 6u;
+  const std::uint8_t visible = count > kMaxVisible ? kMaxVisible : count;
   const std::uint16_t content_h =
-      static_cast<std::uint16_t>(visible == 0u ? 1u : visible * row_h);
+      static_cast<std::uint16_t>(visible == 0u ? 1u : visible * kRowH);
 
+  constexpr std::uint8_t kScrollY = 48u;
   w.b(sdp::op::SCROLL_REGION);
-  w.b(40u);   // y
+  w.b(kScrollY);
   w.b(180u);  // h
   w.u16(content_h);
 
@@ -151,25 +265,29 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
     if (e == nullptr) {
       continue;
     }
-    const std::uint8_t y = static_cast<std::uint8_t>(40u + i * row_h);
+    const std::uint8_t y =
+        static_cast<std::uint8_t>(kScrollY + i * kRowH);
     w.b(sdp::op::BEGIN_ELEM);
     w.u16(static_cast<std::uint16_t>(100u + i));
     w.b(4u);
     w.b(y);
     w.b(232u);
-    w.b(static_cast<std::uint8_t>(row_h - 2u));
+    w.b(static_cast<std::uint8_t>(kRowH - 2u));
     w.b(sdp::elem_flags::EMIT_TOUCH);
 
     char line[8];
     line[0] = e->monogram >= '0' && e->monogram <= '9' ? e->monogram : '0';
     line[1] = '\0';
-    w.text_digits(12, static_cast<std::uint8_t>(y + 8u), sdp::align::LEFT, line);
+    w.text_big(8, static_cast<std::uint8_t>(y + 6u), sdp::align::LEFT, 3u, 0u,
+               line);
 
-    // Title as digit-length cue (title_len).
+    // Title length cue (numeric only — font 0 has no letters).
     fmt_u32(line, sizeof(line), e->title_len);
-    w.text_digits(40, static_cast<std::uint8_t>(y + 8u), sdp::align::LEFT, line);
+    w.text_big(40, static_cast<std::uint8_t>(y + 6u), sdp::align::LEFT, 3u, 0u,
+               line);
     if (e->stale) {
-      w.text_digits(200, static_cast<std::uint8_t>(y + 8u), sdp::align::LEFT, "1");
+      w.text_big(200, static_cast<std::uint8_t>(y + 6u), sdp::align::LEFT, 3u,
+                 0u, "1");
     }
     w.b(sdp::op::END_ELEM);
   }
@@ -180,6 +298,7 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
 }
 
 std::size_t build_settings(W& w, const ViewModel& vm) {
+  // Body at scale 3, left-aligned (values can be multi-digit).
   const local::State& st = *vm.state;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
@@ -187,14 +306,14 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   w.b(0x00u);
   w.u16(0xFFFFu);
 
-  w.text_digits(120, 20, sdp::align::CENTER, "01");  // settings id
+  w.text_big(120, 16, sdp::align::CENTER, 3u, 0u, "01");  // settings id
   char s[4];
   fmt_u32(s, sizeof(s), st.settings.tilt_enabled);
-  w.text_digits(40, 80, sdp::align::LEFT, s);
+  w.text_big(16, 64, sdp::align::LEFT, 3u, 0u, s);
   fmt_u32(s, sizeof(s), st.settings.tilt_sensitivity);
-  w.text_digits(40, 110, sdp::align::LEFT, s);
+  w.text_big(16, 100, sdp::align::LEFT, 3u, 0u, s);
   fmt_u32(s, sizeof(s), st.settings.wake_seconds);
-  w.text_digits(40, 140, sdp::align::LEFT, s);
+  w.text_big(16, 136, sdp::align::LEFT, 3u, 0u, s);
 
   w.b(sdp::op::COMMIT);
   w.b(0x00u);
@@ -202,21 +321,13 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
 }
 
 std::size_t build_charging(W& w, const ViewModel& vm) {
-  const local::State& st = *vm.state;
-  w.b(sdp::op::CLEAR);
-  w.rgb(0x0000u);
-  w.b(sdp::op::SET_PALETTE);
-  w.b(0x00u);
-  w.u16(0x07E0u);
-  char s[8];
-  fmt_u32(s, sizeof(s), st.battery_pct);
-  w.text_digits(120, 100, sdp::align::CENTER, s);
-  w.b(sdp::op::COMMIT);
-  w.b(0x00u);
-  return w.ok ? w.n : 0u;
+  // Kept for Screen::Charging if anything still navigates there; poll_battery
+  // no longer switches to it. Same face layout with the charge icon.
+  return build_face(w, vm);
 }
 
 std::size_t build_alert(W& w, const ViewModel& vm) {
+  // Kind at clock hierarchy (scale 8); id at body (scale 3).
   const local::State& st = *vm.state;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
@@ -225,9 +336,9 @@ std::size_t build_alert(W& w, const ViewModel& vm) {
   w.u16(0xF800u);
   char s[4];
   fmt_u32(s, sizeof(s), st.alert_kind);
-  w.text_digits(120, 80, sdp::align::CENTER, s);
+  w.text_big(120, 72, sdp::align::CENTER, 8u, 0u, s);
   fmt_u32(s, sizeof(s), st.alert_id);
-  w.text_digits(120, 120, sdp::align::CENTER, s);
+  w.text_big(120, 140, sdp::align::CENTER, 3u, 0u, s);
   w.b(sdp::op::COMMIT);
   w.b(0x00u);
   return w.ok ? w.n : 0u;
@@ -239,7 +350,7 @@ std::size_t build_disconnected(W& w, const ViewModel&) {
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
   w.u16(0xFFFFu);
-  w.text_digits(120, 110, sdp::align::CENTER, "0");
+  w.text_big(120, 100, sdp::align::CENTER, 8u, 0u, "0");
   w.b(sdp::op::COMMIT);
   w.b(0x00u);
   return w.ok ? w.n : 0u;

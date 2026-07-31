@@ -61,6 +61,7 @@ public:
     void clear() { mask_ = 0u; }
     void mark_all() { mask_ = (1u << kTileCount) - 1u; }
     void mark_tile(std::uint32_t tile_row) { mask_ |= (1u << tile_row); }
+    void clear_tile(std::uint32_t tile_row) { mask_ &= ~(1u << tile_row); }
 
     // Mark every tile row that overlaps the pixel rectangle [y0, y1].
     void mark_rect(std::uint32_t y0, std::uint32_t y1) {

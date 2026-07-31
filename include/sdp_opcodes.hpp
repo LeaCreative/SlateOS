@@ -18,6 +18,9 @@ constexpr std::uint32_t kMaxHitElems   = 32u;
 // M3 registered ID ranges (until M11 asset packs expand them).
 // Runtime packs may raise these; see shared/generated/asset_ids.hpp from pack.py.
 constexpr std::uint8_t  kMaxFontId     = 0u;   // font 0 = built-in / pack
+// TEXT_SCALED multiplies each glyph pixel into a scale×scale block. 1 = native.
+constexpr std::uint8_t  kMinTextScale  = 1u;
+constexpr std::uint8_t  kMaxTextScale  = 16u;
 constexpr std::uint8_t  kMaxAtlasId    = 0u;
 constexpr std::uint8_t  kMaxAssetId    = 0u;
 constexpr std::uint16_t kMaxIconId     = 2u;   // category atlas icons 0..2
@@ -50,6 +53,9 @@ constexpr std::uint8_t PATCH_REF     = 0x51u;
 constexpr std::uint8_t HAPTIC        = 0x60u;
 constexpr std::uint8_t BACKLIGHT     = 0x61u;
 constexpr std::uint8_t EXT_MIN       = 0xE0u;
+// Length-prefixed extension: TEXT plus an integer pixel scale. Firmware that
+// predates it skips the op by its length instead of faulting (§7.2).
+constexpr std::uint8_t TEXT_SCALED   = 0xE0u;
 constexpr std::uint8_t EXT_MAX       = 0xEFu;
 constexpr std::uint8_t COMMIT        = 0xF0u;
 constexpr std::uint8_t RETAIN        = 0xF1u;
@@ -200,6 +206,12 @@ constexpr std::uint8_t SCREEN_POP     = 0x08u;  // phone → watch
 constexpr std::uint8_t SCREEN_REPLACE = 0x09u;  // phone → watch (next DISPLAY replaces)
 constexpr std::uint8_t CREDIT         = 0x0Au;  // watch → phone (free DL bytes)
 constexpr std::uint8_t GOODBYE        = 0x0Bu;  // either
+// Wall-clock sync (not GATT CTS): op + unix epoch u32 LE. Companion TimeSync.kt.
+constexpr std::uint8_t TIME_SYNC      = 0x20u;  // phone → watch
+// Trial-image confirm status (0xE0–0xEF CONTROL extension; old FW ignores).
+constexpr std::uint8_t CONFIRM_STATUS_REQUEST = 0xE0u;  // phone → watch
+constexpr std::uint8_t CONFIRM_STATUS         = 0xE1u;  // watch → phone
+// CONFIRM_STATUS payload: [op][needs_confirm:u8][dwell_ms_remaining:u32 LE]
 }  // namespace control_op
 
 constexpr std::uint16_t kProtocolVersion = 1u;

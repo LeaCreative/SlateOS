@@ -18,6 +18,8 @@ struct Hooks {
   void (*push_list)(const std::uint8_t* data, std::size_t len, void* ctx) = nullptr;
   void (*haptic)(std::uint8_t pattern, void* ctx) = nullptr;
   void (*backlight)(std::uint8_t percent, void* ctx) = nullptr;
+  // Optional: SAADC sample into battery_hw (device). Host leaves null.
+  void (*sample_battery)(void* ctx) = nullptr;
   void* ctx = nullptr;
 };
 
@@ -59,7 +61,7 @@ public:
 
 private:
   void poll_steps();
-  void poll_battery();
+  void poll_battery(std::uint32_t now_ms);
   void poll_alarms();
   void poll_tilt();
   void enter_alert(std::uint8_t kind, std::uint8_t id);
@@ -75,6 +77,7 @@ private:
   std::uint32_t wake_until_ms_ = 0u;
   std::uint32_t last_step_ms_ = 0u;
   std::uint32_t last_batt_ms_ = 0u;
+  std::uint32_t last_adc_ms_ = 0u;
   bool display_on_ = true;
 };
 

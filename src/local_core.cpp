@@ -17,7 +17,7 @@ void Core::init(const Hooks& hooks, bma::Driver* bma) {
   bma_ = bma;
   std::memset(&block_, 0, sizeof(block_));
   block_.state.screen = local::Screen::Face;
-  block_.state.battery_pct = 100u;
+  block_.state.battery_pct = battery::kPercentUnknown;
   notif::init(&notifs_);
   alarm::init(&alarms_);
   alarm::load(&alarms_);
@@ -150,22 +150,32 @@ void Core::poll_steps() {
       (raw >= local_state().steps_at_day_start) ? (raw - local_state().steps_at_day_start) : raw;
 }
 
-void Core::poll_battery() {
-  local_state().battery_pct = battery::percent();
+void Core::poll_battery(std::uint32_t now_ms) {
   const bool chg = battery::charging();
-  if (chg && !local_state().charging) {
-    local_state().charging = 1u;
-    local_state().screen = local::Screen::Charging;
-    wake_display();
+  const bool was = local_state().charging != 0u;
+  const bool edge = chg != was;
+  // InfiniTime: ReadPowerState + voltage on charging GPIOTE and on a timer.
+  // ~1 s pin poll; SAADC (≤10 ms) on edge or every 10 s steady-state.
+  if (hooks_.sample_battery != nullptr &&
+      (edge || last_adc_ms_ == 0u ||
+       static_cast<std::uint32_t>(now_ms - last_adc_ms_) >= 10000u)) {
+    hooks_.sample_battery(hooks_.ctx);
+    last_adc_ms_ = now_ms == 0u ? 1u : now_ms;
+  }
+  local_state().battery_pct = battery::percent();
+  local_state().charging = chg ? 1u : 0u;
+  if (local_state().screen == local::Screen::Charging) {
+    local_state().screen = local::Screen::Face;
     show_current();
-  } else if (!chg && local_state().charging) {
-    local_state().charging = 0u;
-    if (local_state().screen == local::Screen::Charging) {
-      local_state().screen = local::Screen::Face;
+    return;
+  }
+  if (chg && !was) {
+    wake_display();
+    if (local_state().screen == local::Screen::Face) {
       show_current();
     }
-  } else {
-    local_state().charging = chg ? 1u : 0u;
+  } else if (!chg && was && local_state().screen == local::Screen::Face) {
+    show_current();
   }
 }
 
@@ -197,6 +207,7 @@ void Core::poll_tilt() {
 }
 
 void Core::tick(std::uint32_t now_ms) {
+  // Cadences use unsigned (now - last); requires mono_ms wrap at 2^32.
   if (now_ms - last_step_ms_ >= 2000u) {
     poll_steps();
     last_step_ms_ = now_ms;
@@ -204,13 +215,15 @@ void Core::tick(std::uint32_t now_ms) {
       show_current();
     }
   }
-  if (now_ms - last_batt_ms_ >= 5000u) {
-    poll_battery();
+  if (now_ms - last_batt_ms_ >= 1000u) {
+    poll_battery(now_ms);
     last_batt_ms_ = now_ms;
   }
   poll_alarms();
   poll_tilt();
 
+  // wake_until comparison is unused today; if revived, use (now - wake) with
+  // unsigned elapsed, not raw >= across a u32 wrap.
   if (display_on_ && wake_until_ms_ != 0u && now_ms >= wake_until_ms_) {
     // Auto-dim handled by caller setting wake_until; keep simple for M10.
   }

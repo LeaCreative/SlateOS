@@ -7,7 +7,8 @@
 #include <cstddef>
 #include <cstdint>
 
-// Build local SDP display lists into a caller buffer (digits-centric font 0).
+// Build local SDP display lists into a caller buffer (font-0 digits via
+// TEXT_SCALED for arm's-length legibility).
 
 namespace slate {
 namespace ui {

@@ -11,6 +11,24 @@
 namespace slate {
 namespace session {
 
+// HELLO_OFFER worst-case encoded size — keep in sync with the layout in
+// Manager::encode_hello_offer. Fixed fields: op, fw×3, proto u16, w u16,
+// h u16, opcode bitmap, free_dl u16, profile_count, asset_pack_count, flags.
+// Per profile: id, name_len, name[≤kMaxProfileNameLen], backlight,
+// interval u16.
+constexpr std::size_t kHelloOfferFixedBytes =
+    1u + 3u + 2u + 2u + 2u + sdp::kOpcodeBitmapBytes + 2u + 1u + 1u + 1u;
+constexpr std::size_t kHelloOfferPerProfileBytes =
+    2u + sdp::kMaxProfileNameLen + 1u + 2u;
+constexpr std::size_t kHelloOfferMaxBytes =
+    kHelloOfferFixedBytes + profile::kCatalogCount * kHelloOfferPerProfileBytes;
+// Encode/TX buffer. Catalog growth must fail the build here, not overflow a
+// stack buffer on the watch (N-6).
+constexpr std::size_t kHelloOfferBufBytes = 160u;
+static_assert(kHelloOfferMaxBytes <= kHelloOfferBufBytes,
+              "profile catalog outgrew the HELLO_OFFER buffer — "
+              "bump kHelloOfferBufBytes deliberately");
+
 enum class State : std::uint8_t {
   Disconnected = 0,
   Connected,   // link up; offering / waiting for HELLO_ACCEPT

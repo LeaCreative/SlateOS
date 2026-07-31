@@ -22,7 +22,14 @@ struct RttControlBlock {
   RttBuffer down[1];
 };
 
-char up_buffer[1024];
+char up_buffer[
+#if defined(SLATE_ENABLE_RTT) && (SLATE_ENABLE_RTT == 1) && \
+    defined(SLATE_LOG_LEVEL) && (SLATE_LOG_LEVEL >= 4)
+    1024
+#else
+    256
+#endif
+];
 char down_buffer[16];
 
 RttControlBlock g_rtt __attribute__((section(".data"))) = {

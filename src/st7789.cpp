@@ -9,6 +9,13 @@
 static constexpr std::uint32_t kPinCs  = 25u;
 static constexpr std::uint32_t kPinRst = 26u;
 
+// ST7789 GRAM is 240×320. PineTime / InfiniTime address the visible 240×240 at
+// y=0 with Vertical Scroll Start = 0 (no +80 rowstart — that left the top of
+// the panel showing leftover InfiniTime pixels while fills painted below).
+static constexpr std::uint16_t kColOffset = 0u;
+static constexpr std::uint16_t kRowOffset = 0u;
+static constexpr std::uint16_t kGramHeight = 320u;
+
 // ── ST7789 command bytes ──────────────────────────────────────────────────────
 static constexpr std::uint8_t CMD_NOP      = 0x00u;
 static constexpr std::uint8_t CMD_SWRESET  = 0x01u;
@@ -20,8 +27,10 @@ static constexpr std::uint8_t CMD_DISPON   = 0x29u;
 static constexpr std::uint8_t CMD_CASET    = 0x2Au;
 static constexpr std::uint8_t CMD_RASET    = 0x2Bu;
 static constexpr std::uint8_t CMD_RAMWR    = 0x2Cu;
-static constexpr std::uint8_t CMD_COLMOD   = 0x3Au;
+static constexpr std::uint8_t CMD_VSCRDEF  = 0x33u;
 static constexpr std::uint8_t CMD_MADCTL   = 0x36u;
+static constexpr std::uint8_t CMD_VSCSAD   = 0x37u;
+static constexpr std::uint8_t CMD_COLMOD   = 0x3Au;
 static constexpr std::uint8_t CMD_PORCTRL  = 0xB2u;
 static constexpr std::uint8_t CMD_GCTRL    = 0xB7u;
 static constexpr std::uint8_t CMD_VCOMS    = 0xBBu;
@@ -37,31 +46,33 @@ static constexpr std::uint8_t CMD_NVGAMCTRL = 0xE1u;
 namespace {
 
 // Send one command byte with CS asserted, DC low (command phase).
-void send_command(std::uint8_t cmd) {
+bool send_command(std::uint8_t cmd) {
     spi::acquire();
     spi::cs_assert(kPinCs);
     spi::dc_command();
-    spi::transmit(&cmd, 1u);
+    const bool ok = spi::transmit(&cmd, 1u);
     spi::cs_deassert(kPinCs);
     spi::release();
+    return ok;
 }
 
 // Send a command byte followed immediately by data bytes in the same CS cycle.
-void send_command_data(std::uint8_t cmd,
-                       const std::uint8_t* data, std::uint32_t len) {
+bool send_command_data(std::uint8_t cmd, const std::uint8_t* data,
+                       std::uint32_t len) {
     spi::acquire();
     spi::cs_assert(kPinCs);
 
     spi::dc_command();
-    spi::transmit(&cmd, 1u);
+    bool ok = spi::transmit(&cmd, 1u);
 
-    if (len > 0u) {
+    if (ok && len > 0u) {
         spi::dc_data();
-        spi::transmit(data, len);
+        ok = spi::transmit(data, len);
     }
 
     spi::cs_deassert(kPinCs);
     spi::release();
+    return ok;
 }
 
 void gpio_output_init(std::uint32_t pin, bool initial_high) {
@@ -191,9 +202,58 @@ void init_sequence() {
     send_command(CMD_NORON);
     board::busy_wait_ms(1u);
 
+    // Reset scroll so a previous firmware’s VSCSAD cannot leave a partial view.
+    // TFA=0, VSA=320, BFA=0 — full GRAM; start address 0.
+    {
+        std::uint8_t d[] = {0x00u, 0x00u, 0x01u, 0x40u, 0x00u, 0x00u};
+        send_command_data(CMD_VSCRDEF, d, sizeof(d));
+    }
+    {
+        std::uint8_t d[] = {0x00u, 0x00u};
+        send_command_data(CMD_VSCSAD, d, sizeof(d));
+    }
+
     // Display on.
     send_command(CMD_DISPON);
     board::busy_wait_ms(20u);
+}
+
+void set_window_abs(std::uint16_t x0, std::uint16_t y0,
+                    std::uint16_t x1, std::uint16_t y1) {
+    {
+        std::uint8_t d[4] = {
+            static_cast<std::uint8_t>(x0 >> 8), static_cast<std::uint8_t>(x0),
+            static_cast<std::uint8_t>(x1 >> 8), static_cast<std::uint8_t>(x1)
+        };
+        send_command_data(CMD_CASET, d, sizeof(d));
+    }
+    {
+        std::uint8_t d[4] = {
+            static_cast<std::uint8_t>(y0 >> 8), static_cast<std::uint8_t>(y0),
+            static_cast<std::uint8_t>(y1 >> 8), static_cast<std::uint8_t>(y1)
+        };
+        send_command_data(CMD_RASET, d, sizeof(d));
+    }
+    send_command(CMD_RAMWR);
+}
+
+void clear_full_gram(std::uint16_t rgb565) {
+    alignas(4) std::uint8_t line[240 * 2];
+    const std::uint8_t hi = static_cast<std::uint8_t>(rgb565 >> 8);
+    const std::uint8_t lo = static_cast<std::uint8_t>(rgb565 & 0xFFu);
+    for (std::uint16_t x = 0; x < 240u; ++x) {
+        line[x * 2u] = hi;
+        line[x * 2u + 1u] = lo;
+    }
+    for (std::uint16_t y = 0; y < kGramHeight; ++y) {
+        set_window_abs(0, y, 239, y);
+        spi::acquire();
+        spi::cs_assert(kPinCs);
+        spi::dc_data();
+        (void)spi::transmit(line, sizeof(line));
+        spi::cs_deassert(kPinCs);
+        spi::release();
+    }
 }
 
 }  // namespace
@@ -206,6 +266,8 @@ void init() {
 
     hard_reset();
     init_sequence();
+    // Wipe all 320 GRAM rows so InfiniTime / recovery pixels cannot remain.
+    clear_full_gram(0x0000u);
 }
 
 void sleep_in() {
@@ -220,11 +282,16 @@ void sleep_out() {
 
 void set_window(std::uint16_t x0, std::uint16_t y0,
                 std::uint16_t x1, std::uint16_t y1) {
+    const std::uint16_t gx0 = static_cast<std::uint16_t>(x0 + kColOffset);
+    const std::uint16_t gx1 = static_cast<std::uint16_t>(x1 + kColOffset);
+    const std::uint16_t gy0 = static_cast<std::uint16_t>(y0 + kRowOffset);
+    const std::uint16_t gy1 = static_cast<std::uint16_t>(y1 + kRowOffset);
+
     // CASET — column address (x)
     {
         std::uint8_t d[4] = {
-            static_cast<std::uint8_t>(x0 >> 8), static_cast<std::uint8_t>(x0),
-            static_cast<std::uint8_t>(x1 >> 8), static_cast<std::uint8_t>(x1)
+            static_cast<std::uint8_t>(gx0 >> 8), static_cast<std::uint8_t>(gx0),
+            static_cast<std::uint8_t>(gx1 >> 8), static_cast<std::uint8_t>(gx1)
         };
         send_command_data(CMD_CASET, d, sizeof(d));
     }
@@ -232,8 +299,8 @@ void set_window(std::uint16_t x0, std::uint16_t y0,
     // RASET — row address (y)
     {
         std::uint8_t d[4] = {
-            static_cast<std::uint8_t>(y0 >> 8), static_cast<std::uint8_t>(y0),
-            static_cast<std::uint8_t>(y1 >> 8), static_cast<std::uint8_t>(y1)
+            static_cast<std::uint8_t>(gy0 >> 8), static_cast<std::uint8_t>(gy0),
+            static_cast<std::uint8_t>(gy1 >> 8), static_cast<std::uint8_t>(gy1)
         };
         send_command_data(CMD_RASET, d, sizeof(d));
     }
@@ -242,13 +309,14 @@ void set_window(std::uint16_t x0, std::uint16_t y0,
     send_command(CMD_RAMWR);
 }
 
-void write_pixels(const std::uint8_t* data, std::uint32_t byte_count) {
+bool write_pixels(const std::uint8_t* data, std::uint32_t byte_count) {
     spi::acquire();
     spi::cs_assert(kPinCs);
     spi::dc_data();
-    spi::transmit(data, byte_count);
+    const bool ok = spi::transmit(data, byte_count);
     spi::cs_deassert(kPinCs);
     spi::release();
+    return ok;
 }
 
 }  // namespace st7789

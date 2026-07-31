@@ -222,6 +222,138 @@ void test_resync_after_drop() {
   expect_eq("byte", r.message()[0], 0x42u);
 }
 
+// Fragment a filled test message on `channel`; every byte = `fill`.
+Collect make_pkts(std::uint8_t channel, std::size_t len, std::uint8_t fill) {
+  Collect c;
+  std::vector<std::uint8_t> msg(len, fill);
+  std::uint8_t seq = 0u;
+  expect_true("make_pkts frag",
+              sdp::frame::fragment_message(channel, 0, &seq, msg.data(), len,
+                                           collect_emit, &c));
+  return c;
+}
+
+bool all_bytes(const sdp::frame::Reassembler& r, std::size_t len,
+               std::uint8_t fill) {
+  if (r.message_len() != len) return false;
+  for (std::size_t i = 0; i < len; ++i) {
+    if (r.message()[i] != fill) return false;
+  }
+  return true;
+}
+
+// FIRST on channel B mid-reassembly of channel A: A is abandoned (preempt
+// drop), B proceeds and must deliver uncontaminated bytes; A's leftover
+// continuation is then Dropped, and a fresh A message works again.
+void test_interleave_b_preempts_a() {
+  auto a = make_pkts(sdp::frame::kChanDisplay, 400, 0xAA);
+  auto b = make_pkts(sdp::frame::kChanOta, 400, 0xBB);
+  expect_true("interleave >=2 pkts", a.pkts.size() >= 2u && b.pkts.size() >= 2u);
+
+  sdp::frame::Reassembler r;
+  auto st = r.ingest(a.pkts[0].data(), a.pkts[0].size());
+  expect_eq("A first NeedMore", static_cast<unsigned>(st),
+            static_cast<unsigned>(sdp::frame::FrameStatus::NeedMore));
+
+  // B's FIRST arrives mid-A: protocol violation → A abandoned, B accepted.
+  st = r.ingest(b.pkts[0].data(), b.pkts[0].size());
+  expect_eq("B first NeedMore", static_cast<unsigned>(st),
+            static_cast<unsigned>(sdp::frame::FrameStatus::NeedMore));
+  expect_eq("A preempt counted", static_cast<unsigned>(r.preempt_drop_count()), 1u);
+
+  // B completes first — bytes must be pure 0xBB (no 0xAA contamination).
+  sdp::frame::FrameStatus last = sdp::frame::FrameStatus::Dropped;
+  for (std::size_t i = 1; i < b.pkts.size(); ++i) {
+    last = r.ingest(b.pkts[i].data(), b.pkts[i].size());
+  }
+  expect_eq("B Ok", static_cast<unsigned>(last),
+            static_cast<unsigned>(sdp::frame::FrameStatus::Ok));
+  expect_eq("B channel", r.message_channel(), sdp::frame::kChanOta);
+  expect_true("B uncontaminated", all_bytes(r, 400, 0xBB));
+
+  // A's leftover continuation: channel state was reset → Dropped.
+  st = r.ingest(a.pkts[1].data(), a.pkts[1].size());
+  expect_eq("A leftover Dropped", static_cast<unsigned>(st),
+            static_cast<unsigned>(sdp::frame::FrameStatus::Dropped));
+
+  // Fresh A message resyncs cleanly.
+  auto a2 = make_pkts(sdp::frame::kChanDisplay, 300, 0xA2);
+  last = sdp::frame::FrameStatus::Dropped;
+  for (const auto& p : a2.pkts) {
+    last = r.ingest(p.data(), p.size());
+  }
+  expect_eq("A resync Ok", static_cast<unsigned>(last),
+            static_cast<unsigned>(sdp::frame::FrameStatus::Ok));
+  expect_true("A resync bytes", all_bytes(r, 300, 0xA2));
+}
+
+// Symmetric ordering: B starts, A preempts, A completes.
+void test_interleave_a_preempts_b() {
+  auto b = make_pkts(sdp::frame::kChanAsset, 400, 0xB1);
+  auto a = make_pkts(sdp::frame::kChanDisplay, 400, 0xA1);
+
+  sdp::frame::Reassembler r;
+  (void)r.ingest(b.pkts[0].data(), b.pkts[0].size());
+  sdp::frame::FrameStatus last = sdp::frame::FrameStatus::Dropped;
+  for (const auto& p : a.pkts) {
+    last = r.ingest(p.data(), p.size());
+  }
+  expect_eq("A over B Ok", static_cast<unsigned>(last),
+            static_cast<unsigned>(sdp::frame::FrameStatus::Ok));
+  expect_eq("A channel", r.message_channel(), sdp::frame::kChanDisplay);
+  expect_true("A uncontaminated", all_bytes(r, 400, 0xA1));
+  expect_eq("B preempt counted", static_cast<unsigned>(r.preempt_drop_count()), 1u);
+}
+
+// A single-fragment message (FIRST|LAST) mid-reassembly also writes buf_ —
+// it must abort the in-flight message, not corrupt its prefix.
+void test_single_fragment_preempts_multi() {
+  auto a = make_pkts(sdp::frame::kChanDisplay, 400, 0xAA);
+  auto ctl = make_pkts(sdp::frame::kChanControl, 4, 0xCC);
+  expect_eq("ctl single pkt", static_cast<unsigned>(ctl.pkts.size()), 1u);
+
+  sdp::frame::Reassembler r;
+  (void)r.ingest(a.pkts[0].data(), a.pkts[0].size());
+  auto st = r.ingest(ctl.pkts[0].data(), ctl.pkts[0].size());
+  expect_eq("ctl Ok", static_cast<unsigned>(st),
+            static_cast<unsigned>(sdp::frame::FrameStatus::Ok));
+  expect_true("ctl bytes", all_bytes(r, 4, 0xCC));
+  expect_eq("multi preempt counted",
+            static_cast<unsigned>(r.preempt_drop_count()), 1u);
+
+  // A can no longer complete with a clobbered prefix.
+  st = r.ingest(a.pkts[1].data(), a.pkts[1].size());
+  expect_eq("A after ctl Dropped", static_cast<unsigned>(st),
+            static_cast<unsigned>(sdp::frame::FrameStatus::Dropped));
+}
+
+// A reserved-channel frame is rejected before touching any state — the
+// in-flight reassembly must survive it untouched.
+void test_reserved_mid_reassembly_harmless() {
+  auto a = make_pkts(sdp::frame::kChanDisplay, 400, 0xAD);
+
+  sdp::frame::Reassembler r;
+  (void)r.ingest(a.pkts[0].data(), a.pkts[0].size());
+
+  std::uint8_t reserved[4] = {
+      sdp::frame::pack_byte0(sdp::frame::kChanReserved,
+                             sdp::frame::kFlagFirst | sdp::frame::kFlagLast),
+      0x00, 0xEE, 0xEE};
+  auto st = r.ingest(reserved, sizeof(reserved));
+  expect_eq("reserved reject", static_cast<unsigned>(st),
+            static_cast<unsigned>(sdp::frame::FrameStatus::ChannelReject));
+  expect_eq("no preempt on reject",
+            static_cast<unsigned>(r.preempt_drop_count()), 0u);
+
+  sdp::frame::FrameStatus last = sdp::frame::FrameStatus::Dropped;
+  for (std::size_t i = 1; i < a.pkts.size(); ++i) {
+    last = r.ingest(a.pkts[i].data(), a.pkts[i].size());
+  }
+  expect_eq("A survives reserved", static_cast<unsigned>(last),
+            static_cast<unsigned>(sdp::frame::FrameStatus::Ok));
+  expect_true("A bytes intact", all_bytes(r, 400, 0xAD));
+}
+
 }  // namespace
 
 int main() {
@@ -233,6 +365,10 @@ int main() {
   test_oversized_length();
   test_diag_channel_release();
   test_resync_after_drop();
+  test_interleave_b_preempts_a();
+  test_interleave_a_preempts_b();
+  test_single_fragment_preempts_multi();
+  test_reserved_mid_reassembly_harmless();
   if (g_failures != 0) {
     std::printf("%d FAILURES\n", g_failures);
     return 1;

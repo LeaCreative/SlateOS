@@ -8,13 +8,8 @@
 static constexpr std::uint8_t  kI2cAddr   = 0x15u;
 static constexpr std::uint32_t kPinRst    = 10u;
 static constexpr std::uint32_t kPinIrq    = 28u;
-static constexpr std::uint32_t kGpioteCh  = 0u;
 static constexpr std::uint32_t kTouchRegs = 63u;
 
-// Touch blob layout when reading from register 0 (first 63 registers):
-//   byte 1 = gesture ID (authoritative — see CLAUDE.md / roadmap M2)
-//   byte 2 = finger count (low nibble)
-//   bytes 3..6 = XH, XL, YH, YL  (12-bit coords in low 12 bits of each pair)
 static constexpr std::size_t kOffGesture = 1u;
 static constexpr std::size_t kOffFingers = 2u;
 static constexpr std::size_t kOffXh      = 3u;
@@ -40,15 +35,6 @@ void gpio_output(std::uint32_t pin, bool high) {
   }
 }
 
-void gpio_input_pullup(std::uint32_t pin) {
-  nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(pin)) =
-      nrf::gpio::PIN_CNF_DIR_INPUT |
-      nrf::gpio::PIN_CNF_INPUT_CONNECT |
-      nrf::gpio::PIN_CNF_PULLUP |
-      nrf::gpio::PIN_CNF_DRIVE_S0S1 |
-      nrf::gpio::PIN_CNF_SENSE_DISABLED;
-}
-
 void hard_reset() {
   gpio_output(kPinRst, false);
   board::busy_wait_ms(10u);
@@ -56,17 +42,30 @@ void hard_reset() {
   board::busy_wait_ms(50u);
 }
 
-void configure_irq() {
-  gpio_input_pullup(kPinIrq);
+void clear_detect_latch() {
+  // Disable SENSE, clear LATCH bit, re-enable SENSE_LOW.
+  std::uint32_t cnf = nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(kPinIrq));
+  cnf = (cnf & ~(3u << 16)) | nrf::gpio::PIN_CNF_SENSE_DISABLED;
+  nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(kPinIrq)) = cnf;
+  nrf::reg<std::uint32_t>(nrf::gpio::LATCH) = (1u << kPinIrq);  // W1C
+  cnf = (cnf & ~(3u << 16)) | nrf::gpio::PIN_CNF_SENSE_LOW;
+  nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(kPinIrq)) = cnf;
+}
 
-  // GPIOTE channel 0: event on falling edge of IRQ (touch asserts low).
-  nrf::reg<std::uint32_t>(nrf::gpiote::config(kGpioteCh)) =
-      nrf::gpiote::CONFIG_MODE_EVENT |
-      (kPinIrq << 8u) |
-      nrf::gpiote::CONFIG_POLARITY_HITOLO;
+void configure_irq_pin_sense() {
+  // Prefer PIN_CNF SENSE + GPIOTE PORT over edge-triggered IN events.
+  // Edge GPIOTE has been measured up to ~0.47 mA in some configs (§8 / M14).
+  nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(kPinIrq)) =
+      nrf::gpio::PIN_CNF_DIR_INPUT |
+      nrf::gpio::PIN_CNF_INPUT_CONNECT |
+      nrf::gpio::PIN_CNF_PULLUP |
+      nrf::gpio::PIN_CNF_DRIVE_S0S1 |
+      nrf::gpio::PIN_CNF_SENSE_LOW;
 
-  nrf::reg<std::uint32_t>(nrf::gpiote::events_in(kGpioteCh)) = 0u;
-  nrf::reg<std::uint32_t>(nrf::gpiote::INTENSET) = (1u << kGpioteCh);
+  // Disable any leftover channel EVENT config.
+  nrf::reg<std::uint32_t>(nrf::gpiote::config(0u)) = nrf::gpiote::CONFIG_MODE_DISABLED;
+  nrf::reg<std::uint32_t>(nrf::gpiote::EVENTS_PORT) = 0u;
+  nrf::reg<std::uint32_t>(nrf::gpiote::INTENSET) = (1u << 31);  // PORT
 
   nrf::nvic_clear_pending(nrf::irq::GPIOTE);
   nrf::nvic_enable_irq(nrf::irq::GPIOTE);
@@ -76,9 +75,14 @@ void configure_irq() {
 }  // namespace
 
 extern "C" void GPIOTE_IRQHandler() {
-  if (nrf::reg<std::uint32_t>(nrf::gpiote::events_in(kGpioteCh)) != 0u) {
-    nrf::reg<std::uint32_t>(nrf::gpiote::events_in(kGpioteCh)) = 0u;
+  if (nrf::reg<std::uint32_t>(nrf::gpiote::EVENTS_PORT) != 0u) {
+    nrf::reg<std::uint32_t>(nrf::gpiote::EVENTS_PORT) = 0u;
     g_irq_latched = true;
+    clear_detect_latch();
+  }
+  // Ignore legacy IN0 if somehow enabled.
+  if (nrf::reg<std::uint32_t>(nrf::gpiote::events_in(0u)) != 0u) {
+    nrf::reg<std::uint32_t>(nrf::gpiote::events_in(0u)) = 0u;
   }
 }
 
@@ -87,8 +91,7 @@ namespace cst816s {
 void init() {
   g_irq_latched = false;
   hard_reset();
-  configure_irq();
-  // Probe once — NACK here is fine (controller may already be asleep).
+  configure_irq_pin_sense();
   std::uint8_t probe = 0u;
   std::uint8_t reg0 = 0u;
   (void)twi::write_read(kI2cAddr, &reg0, 1u, &probe, 1u, 2000u);
@@ -106,17 +109,14 @@ TouchSample poll() {
   }
 
   alignas(4) std::uint8_t data[kTouchRegs] = {};
-  // EasyDMA TX source must live in RAM for the whole transfer.
   static std::uint8_t reg0 = 0u;
   const twi::Status st =
       twi::write_read(kI2cAddr, &reg0, 1u, data, kTouchRegs, 3000u);
 
   if (st == twi::Status::AddressNack) {
-    // Controller asleep — normal.  No new sample.
     return sample;
   }
   if (st != twi::Status::Ok) {
-    // Bus glitch — recovered inside twi::; treat as no sample.
     return sample;
   }
 

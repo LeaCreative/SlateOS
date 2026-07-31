@@ -1,7 +1,6 @@
 package slate.app.link
 
 import android.util.Log
-import slate.frame.SdpFrame
 import slate.uuid.SlateUuids
 import java.util.UUID
 
@@ -31,15 +30,4 @@ object SlateGattIds {
     val TX: UUID = SlateUuids.TX
     val STATUS: UUID = SlateUuids.STATUS
     val CCCD: UUID = SlateUuids.CCCD
-}
-
-/** Per-channel TX sequence (matches firmware). */
-class ChannelSeq {
-    private val seq = IntArray(8)
-    fun nextFragments(channel: Int, msg: ByteArray): List<ByteArray> {
-        val holder = intArrayOf(seq[channel])
-        val pkts = SdpFrame.fragmentMessage(channel, msg, holder)
-        seq[channel] = holder[0]
-        return pkts
-    }
 }
