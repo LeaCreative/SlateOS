@@ -317,6 +317,14 @@ static void on_app_message(std::uint8_t channel, const std::uint8_t* msg,
 // Liveness beat: app_loop increments every iteration; tick hook only measures
 // stalls into g_max_stall_ms for diag_stall_ms. It must NOT pet the WDT —
 // InfiniTime feeds the dog from SystemTask only, so a wedged main task reboots.
+// RTC1 tick catch-up counter (port_rtc_tick.c); 0 on builds without the port.
+#if defined(SLATE_FREERTOS_RTC_TICK) && (SLATE_FREERTOS_RTC_TICK == 1)
+extern "C" std::uint32_t slate_rtc_tick_catchup(void);
+static std::uint32_t tick_catchup_count() { return slate_rtc_tick_catchup(); }
+#else
+static std::uint32_t tick_catchup_count() { return 0u; }
+#endif
+
 volatile std::uint32_t g_app_beat = 0u;
 volatile std::uint32_t g_max_stall_ms = 0u;
 
@@ -388,6 +396,7 @@ static void app_loop() {
       st.diag_button = board::button_raw() ? 1u : 0u;
       st.diag_stall_ms = g_max_stall_ms;
       ble::bringup_snapshot(&st.diag_ble_state, &st.diag_ble_rc);
+      st.diag_tick_catchup = tick_catchup_count();
       g_core.show_current();
     }
 #endif

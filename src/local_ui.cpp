@@ -100,7 +100,7 @@ void fmt_u32(char* o, std::size_t cap, std::uint32_t v) {
 
 #if SLATE_DIAG_OVERLAY
 // "<reset reason>/<uptime s>/<paints>/<button>/<worst app stall ms>/<ble
-// state>.<ble rc>", decimal
+// state>.<ble rc>/<recovered ticks>", decimal
 // because font 0 has no A-F glyphs (codepoints 45..58 only). Reason is the raw
 // RESETREAS bitmask: 0 power-on or brownout, 1 pin, 2 watchdog, 4 soft,
 // 8 lockup, 65536 off-wake, 1048576 VBUS; several causes sum.
@@ -131,6 +131,9 @@ void fmt_diag(char* o, std::size_t cap, const local::State& st) {
   append(part);
   append(".");
   fmt_u32(part, sizeof(part), st.diag_ble_rc);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_tick_catchup);
   append(part);
   o[i] = '\0';
 }

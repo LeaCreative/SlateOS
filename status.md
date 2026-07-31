@@ -7,23 +7,28 @@ then this file for where things stand *right now*.
 ## Where we are
 
 The sealed PineTime was recovered (I-1), and today's work flashed and
-field-debugged the first post-recovery Slate images. **The current staged
-package is `build/dfu/slate-dfu.zip`, SHA-256 prefix `4324FC495E0C`** —
-it contains the N-9 fix (see below) and is **awaiting on-watch
+field-debugged five post-recovery Slate images. **The current staged
+package is `build/dfu/slate-dfu.zip`, SHA-256 prefix `C3AE3F15E408`** —
+it contains the N-10 + N-11 fixes (see below) and is **awaiting on-watch
 verification**. That verification is the immediate next step.
 
-### Expected outcome when the user flashes `4324FC495E0C`
+N-9 (silent radio) is **resolved and verified on hardware**: advertising is
+up, nRF Connect sees "SLATE" at `E8:01:34:22:08:89` and connects.
 
-- Diag overlay (top line of the watch face) 6th field should read `7.0`
-  → advertising up, "Slate" visible in nRF Connect.
+### Expected outcome when the user flashes `C3AE3F15E408`
+
+- No more watchdog reboots (~30 s cycle on the previous image). Reset
+  reason drops back to `4` (soft) — it is a raw RESETREAS bitmask and
+  **accumulates**, so bit 2 (=`6`) means the dog bit.
+- Paints should track uptime ÷ 0.32 s (previous image: 3 paints in 22 s —
+  the tick was ~20x slow). 7th field (recovered ticks) climbing is the
+  proof N-10 was real; it quantifies time that used to vanish.
 - Then: keep any central connected ~10 s → amber trial bar clears →
   `IMAGE_OK` confirmed. This would be the first durable Slate install.
-- If instead the field reads something else, decode via
-  `ble::bringup_snapshot` in `include/ble_gatt.hpp`: 1–6 = bring-up stage
-  reached, 90–95 = named failure with rc appended (`state.rc`).
-- Diag overlay full format:
-  `reset_reason/uptime_s/paints/button/worst_stall_ms/ble_state.rc`
-  (see `fmt_diag` in `src/local_ui.cpp`).
+- Diag overlay full format (see `fmt_diag` in `src/local_ui.cpp`):
+  `reset/uptime_s/paints/button/worst_stall_ms/ble_state.rc/recovered_ticks`
+  BLE state 7 = advertising; 1–6 = stage reached; 90–95 = failure with rc
+  (map in `ble::bringup_snapshot`, `include/ble_gatt.hpp`).
 
 ## What was done this session (all verified, host tests green)
 
@@ -32,7 +37,9 @@ verification**. That verification is the immediate next step.
 | N-4 | Resolved | Single-in-flight frame reassembly: a FIRST on any channel aborts an in-flight message on another channel (shared buffer, reject-and-resync, `preempt_drop_count()`). Companion: new `SdpWriteQueue` (sdp-core) enqueues each message's fragments atomically; `SdpReassembler.kt` mirrors the rule. Spec added to roadmap §4.2. |
 | N-8 | Resolved | ARM link had been broken since N-1 (+4.1 KiB AppInbox pushed heap past MSP stack reserve, 3,600 B over). Fix: `AppInbox` is now **zero-copy** — borrows the reassembler buffer, `Link::on_rx_write` gates ALL ingest (incl. DIAG) while a message is pending. RAM back to 60,944 B (92.99 %), 496 B below `__StackLimit`. |
 | N-6 | Resolved | `encode_hello_offer` hardened: capacity-checked `push`/`push_u16`/`push_bytes`, overflow → return 0; `static_assert` (`kHelloOfferMaxBytes` ≤ `kHelloOfferBufBytes`, `session.hpp`) so catalog growth fails the build. Byte-exact 84-B golden pinned on BOTH sides: `test_session.cpp` and Kotlin `HelloOfferGoldenTest` (fixture + `parseHelloOffer`). |
-| N-9 | Fix staged | Flashed Slate had a silent radio. Telemetry image read `93.21` = `ble_gap_adv_start` → `BLE_HS_ENOADDR`: no identity address configured (nRF52 has no public addr; standalone port never set the FICR static-random identity — same gap class as the missing `ble_ll_init` sysinit). Fix in `on_sync`: static-random addr from `FICR.DEVICEADDR` (stable across boots for CDM/bonds), `ble_hs_id_set_rnd` + `ble_hs_id_infer_auto`; both adv starts use the inferred type. BLE bring-up telemetry is permanent (diag field 6). |
+| N-11 | Fix staged | **The tick IRQ ran at priority 0.** `NVIC_SetPriority(RTC1, configKERNEL_INTERRUPT_PRIORITY)` double-shifted: CMSIS shifts internally and that macro is already the shifted register form, so `(7<<5)<<5 & 0xFF` = 0. The tick sat above the radio (5) and above `configMAX_SYSCALL` (3), so `portENTER_CRITICAL`'s BASEPRI couldn't mask it and `xTaskIncrementTick` could corrupt kernel lists inside a task's critical section. Latent since the port was written; found because N-10's catch-up added the first self-validating FromISR call (cyan `port.c:890`). Fixed by passing the raw priority + `_Static_assert`. |
+| N-10 | Fix staged | With the radio live, the watch watchdog-rebooted every ~30 s. The RTC1 tick ISR runs at the lowest IRQ priority, below NimBLE's RADIO (5); TICK events coalesce while it is held off, and this port had **no catch-up**, so the FreeRTOS clock free-ran ~20x slow. Tick-scheduled work (incl. `app_loop`'s 20 ms wait → the WDT pet cadence) stretched past the bootloader's real-time 7 s dog. Fix: restore InfiniTime's `(COUNTER − tickCount)` catch-up with hard guards (tick-ahead → step 1, never ~16M; ≤128 ticks/ISR). Recovered ticks shown as diag field 7. |
+| N-9 | **Resolved, verified on hardware** | Flashed Slate had a silent radio. Telemetry image read `93.21` = `ble_gap_adv_start` → `BLE_HS_ENOADDR`: no identity address configured (nRF52 has no public addr; standalone port never set the FICR static-random identity — same gap class as the missing `ble_ll_init` sysinit). Fix in `on_sync`: static-random addr from `FICR.DEVICEADDR` (stable across boots for CDM/bonds), `ble_hs_id_set_rnd` + `ble_hs_id_infer_auto`; both adv starts use the inferred type. BLE bring-up telemetry is permanent (diag field 6). |
 
 Hardware findings today (worth knowing):
 - Button-hold revert **works on hardware** — first field proof of the

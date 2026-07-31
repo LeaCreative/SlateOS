@@ -29,18 +29,19 @@ at the SDP / companion JS display-list layer.
 - **Area:** Firmware packaging
 - **Impact:** Blocks return to Slate bring-up until flashed
 - **Artifact:** `build/dfu/slate-dfu.zip`
-  - **SHA-256:** `4324FC495E0CBD4B48AFA57157FBF76019C128591A6F4B46AF65F1E81E6A5D25`
-  - **SHA-256 prefix (12):** `4324FC495E0C`
+  - **SHA-256:** `C3AE3F15E40888309733311C2697B14BFEC3CEF67BBCF5465967573D1415A8C3`
+  - **SHA-256 prefix (12):** `C3AE3F15E408`
   - Built 2026-07-31 (night): `BOOTLOADER_PRESENT=ON`, `SLATE_HAS_NIMBLE=ON`,
     `imgtool create --slot-size 475136` (InfiniTime contract, unsigned)
   - Includes N-1 link→app handoff (zero-copy per N-8), N-4 single-in-flight
-    framing, N-6 HELLO_OFFER hardening, N-9 BLE telemetry **and fix**
-    (static-random identity from FICR; adv with inferred own-addr type)
-  - Link map: FLASH ~121496 B / 475104 B; RAM ~60944 B / 64 KB
+    framing, N-6 HELLO_OFFER hardening, N-9 BLE identity fix (verified on
+    hardware), N-10 RTC1 tick catch-up, N-11 tick IRQ priority fix
+  - Link map: FLASH ~121608 B / 475104 B; RAM ~60944 B / 64 KB
     (`__heap_end__` 496 B below `__StackLimit`)
-  - Supersedes `2284BA304B8F` (telemetry build that diagnosed N-9: read
-    `93.21` = adv_start ENOADDR), `D7E86854B9D3` (radio silent, no diag),
-    `8B2D9054E9E7` (pre-N-1 tree, never flashed)
+  - Supersedes `E95E6CD9676B` (catch-up alone → cyan assert `port.c:890`,
+    which exposed N-11), `4324FC495E0C` (N-9 verified, then N-10 reboot),
+    `2284BA304B8F` (telemetry build that diagnosed N-9 via `93.21`),
+    `D7E86854B9D3` (radio silent, no diag), `8B2D9054E9E7` (pre-N-1 tree)
 - **Fix asserts (all pass):**
   - (a) `src/wdt.cpp` — `pet()` returns before RR0 write when `button_raw()`
   - (b) `button.cpp` “Enable stays high” + `board::button_hw_init` OUTSET enable
@@ -69,9 +70,77 @@ at the SDP / companion JS display-list layer.
   `__heap_end__` 0x2000EE10 → 496 B below `__StackLimit`. Host:
   `test_ble_app_inbox` (incl. new busy-window resync case).
 
+### N-11 — FreeRTOS tick IRQ ran at priority 0 (double-shifted priority)
+
+- **Status:** Fix staged (`C3AE3F15E408`); awaiting on-watch verification
+- **Area:** `port/nrf52/src/port_rtc_tick.c` `vPortSetupTimerInterrupt`
+- **Impact:** Latent since the RTC1 tick port was written; the most likely
+  true cause of the N-10 reboot loop (and a plausible contributor to older
+  "unexplained" instability). Found when the N-10 build painted **cyan
+  `397105A1` / `0000037A`** = `port.c:890`,
+  `configASSERT(ucCurrentPriority >= ucMaxSysCallPriority)` — the N-10
+  catch-up added `xTaskGetTickCountFromISR()`, the first self-validating
+  FromISR call in that handler, which immediately reported the bad priority.
+- **Root cause:** `NVIC_SetPriority(portNRF_RTC_IRQn,
+  configKERNEL_INTERRUPT_PRIORITY)`. CMSIS shifts internally
+  (`p << (8 − __NVIC_PRIO_BITS)`), but `configKERNEL_INTERRUPT_PRIORITY` is
+  the **already-shifted** register form FreeRTOS writes straight into SHPR
+  (`7 << 5` = 224). Shifted twice: `(224 << 5) & 0xFF` = **0**. So the tick
+  ran at priority 0 — above NimBLE's RADIO (5) and above
+  `configMAX_SYSCALL_INTERRUPT_PRIORITY` (3). `portENTER_CRITICAL` raises
+  BASEPRI to 3, which cannot mask priority 0, so `xTaskIncrementTick()`
+  could mutate the delayed-task lists **inside another task's critical
+  section** — matching the observed late/never-scheduled app task
+  (~460 ms iterations) better than tick coalescing did.
+- **Fix:** pass the raw number (`configLIBRARY_LOWEST_INTERRUPT_PRIORITY`,
+  7) plus a `_Static_assert` that the argument is a raw priority, so this
+  cannot regress. Tick now sits at priority 7 as intended — which is also
+  what makes N-10's catch-up genuinely necessary (below RADIO at 5, TICK
+  events really can coalesce). Both fixes ship together.
+- **Audited:** the only other `NVIC_SetPriority` in Slate code is via
+  `nrfx_glue` (unused); GPIOTE (`cst816s.cpp`) runs at default priority 0
+  but only sets a flag and clears events — no FreeRTOS API calls, so it is
+  safe, though worth revisiting under I-9 since it can pre-empt the radio.
+
+### N-10 — FreeRTOS tick loses time under BLE load → watchdog reboot loop
+
+- **Status:** Fix staged (`C3AE3F15E408`, with N-11); awaiting verification
+- **Area:** `port/nrf52/src/port_rtc_tick.c` (RTC1 tick), mirror-rule gap
+- **Impact:** With the radio finally live (N-9), the watch reboots every
+  ~30 s. Diag read `6/22/3/0/940/7.0`: reset reason **6 = soft|watchdog**
+  (bit 2 set for the first time), advertising healthy, but only **3 paints
+  in 22 s of real time** — the app loop's `pdMS_TO_TICKS(20)` wait was
+  taking ~460 ms, i.e. the FreeRTOS tick running ~20x slow. nRF Connect
+  sees the watch, connects, then `GATT CONN TIMEOUT (0x8)` ~37 s later —
+  that is the watch rebooting under it, not a GATT fault.
+- **Root cause:** the RTC1 handler runs at kernel (lowest) interrupt
+  priority, below NimBLE's RADIO ISR (priority 5) and level with its
+  RTC0/TIMER0 ISRs, so once the radio is live it is regularly held off past
+  the 0.98 ms tick period. RTC TICK events **coalesce** (the peripheral just
+  re-sets one flag), so "one increment per TICK event" silently drops time
+  and the FreeRTOS clock free-runs slow. Everything scheduled in ticks
+  stretches in real time — including `app_loop`'s 20 ms wait and therefore
+  the WDT pet cadence — until the bootloader's real-time 7 s dog bites.
+  `mono_ms()` reads the RTC1 COUNTER directly, which is why uptime looked
+  sane while tick-scheduled work crawled.
+- **Fix:** restore InfiniTime's catch-up (`diff = (COUNTER −
+  xTaskGetTickCount()) & MAXTICKS`, stock `port_cmsis_systick.c`
+  behaviour — the mirror-rule default) with the hard guards the file header
+  demanded: diff in the top half of the range = tick is ahead (step once,
+  never ~16M — the original underflow-spin regression), diff 0 = step once,
+  and ≤128 ticks stepped per ISR so the handler stays short. Recovered
+  ticks are counted and shown as the diag overlay's **7th field**.
+- **Verify:** overlay is now
+  `reset/uptime/paints/button/stall/ble.rc/recovered_ticks`. Expect no
+  watchdog resets (reset reason back to 4), paints ≈ uptime ÷ 0.32, and a
+  climbing recovered-ticks value quantifying what used to be lost. Tickless
+  (I-3) inherits this fix — note it in the I-9 parity table as aligned.
+
 ### N-9 — Slate up but radio silent: advertising never starts on hardware
 
-- **Status:** Fix staged (`4324FC495E0C`); awaiting on-watch verification
+- **Status:** **Resolved — verified on hardware.** Diag read `7.0`,
+  nRF Connect sees "SLATE" at `E8:01:34:22:08:89` (static-random, top bits
+  `11` as required) and connects. Reboot loop that followed is N-10.
 - **Area:** `ble_nimble` / NimBLE port bring-up
 - **Impact:** No BLE at all on `D7E86854B9D3`/`2284BA304B8F`: nothing in
   nRF Connect, CDM finds nothing, IMAGE_OK cannot confirm. UI healthy;

@@ -15,14 +15,23 @@ pinecone blue/red → InfiniTime → fixed Slate).
 | `8B2D9054E9E7` | Superseded (2026-07-31 morning) — WDT withhold + RTC tick, tickless off; predates N-1/N-4/N-6/N-8 |
 | `D7E86854B9D3` | Superseded (2026-07-31) — first N-4/N-6/N-8 build; boots + paints but radio silent (N-9), no BLE diag readout |
 | `2284BA304B8F` | Superseded (2026-07-31) — added BLE telemetry; on hardware read `93.21` = adv_start BLE_HS_ENOADDR (no identity address — N-9 root cause) |
-| `4324FC495E0C` | **Good (2026-07-31)** — N-9 fix: static-random identity from FICR.DEVICEADDR, adv with inferred own-addr type; `build/dfu/slate-dfu.zip` |
+| `4324FC495E0C` | Superseded (2026-07-31) — N-9 fixed (advertising verified on hardware) but watchdog reboot loop every ~30 s (N-10) |
+| `E95E6CD9676B` | Superseded (2026-07-31) — catch-up alone; painted cyan `397105A1`/`37A` = `port.c:890`, exposing N-11 |
+| `C3AE3F15E408` | **Good (2026-07-31)** — N-10 catch-up + N-11 tick IRQ priority fix; `build/dfu/slate-dfu.zip` |
 
 Full good SHA-256:
-`4324FC495E0CBD4B48AFA57157FBF76019C128591A6F4B46AF65F1E81E6A5D25`.
+`C3AE3F15E40888309733311C2697B14BFEC3CEF67BBCF5465967573D1415A8C3`.
+
+Cyan screen = `configASSERT`. Top hex is FNV-1a of the source basename, bottom
+is the line number; decode with the helper in `src/boot_diag.cpp` (`file_hash`).
+`397105A1` = `port.c`.
 Diag overlay format:
-`reset/uptime s/paints/button/worst stall ms/BLE state.rc` — BLE state 7 =
-advertising; 1–6 = bring-up stage reached (see `ble::bringup_snapshot` in
-`include/ble_gatt.hpp`); 90–94 = failure at that stage with `rc`.
+`reset/uptime s/paints/button/worst stall ms/BLE state.rc/recovered ticks`.
+BLE state 7 = advertising; 1–6 = bring-up stage reached (see
+`ble::bringup_snapshot` in `include/ble_gatt.hpp`); 90–95 = failure at that
+stage with `rc`. Reset reason is the raw RESETREAS bitmask and **accumulates**
+(2 = watchdog, 4 = soft). Recovered ticks = FreeRTOS ticks the RTC1 catch-up
+put back (N-10); healthy paints ≈ uptime ÷ 0.32 s.
 After flash: amber bar → any BLE central for `kConfirmDwellMs` (10 s) → `IMAGE_OK`.
 
 ## Build the DFU zip

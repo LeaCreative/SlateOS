@@ -53,6 +53,10 @@ struct State {
   // the overlay is the only way to see where the radio died.
   std::uint8_t diag_ble_state = 0u;
   std::uint16_t diag_ble_rc = 0u;
+  // FreeRTOS ticks recovered by the RTC1 catch-up (N-10). 0 = the tick never
+  // fell behind COUNTER; a climbing value is the time that used to be lost
+  // silently while the radio held off the tick ISR.
+  std::uint32_t diag_tick_catchup = 0u;
   // Repaint counter. Driven by app-loop iterations rather than the clock, so a
   // climbing paint count next to a frozen uptime means the timebase died while
   // the loop lived, and both frozen means the loop itself stopped.

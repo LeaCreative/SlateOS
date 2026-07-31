@@ -12,8 +12,25 @@
  * without a hard cap. After tickless vTaskStepTick the freeRTOS tick can sit
  * slightly ahead of COUNTER; the 24-bit subtract then underflows to ~16M and
  * the ISR spins until the bootloader WDT reverts (~7 s). That was the first
- * RTC-tick regression. One increment per TICK event is enough while awake;
- * tickless correction is handled only in vPortSuppressTicksAndSleep.
+ * RTC-tick regression, and the guards below exist to make catch-up safe:
+ * a diff in the top half of the range means "tick is ahead", never a huge
+ * catch-up, and each ISR steps at most kMaxCatchUp ticks.
+ *
+ * Catch-up itself is REQUIRED (N-10). This handler runs at the kernel (lowest)
+ * interrupt priority, below NimBLE's RADIO ISR (priority 5) and level with its
+ * RTC0/TIMER0 ISRs, so once the radio is live the handler is regularly held off
+ * for longer than the 0.98 ms tick period. RTC TICK events coalesce — the
+ * peripheral just re-sets one event flag — so "one increment per event" loses
+ * time permanently and the FreeRTOS clock free-runs slow. Everything scheduled
+ * in ticks then stretches in real time, including app_loop's 20 ms wait and
+ * therefore the WDT pet cadence, until the bootloader's real-time 7 s dog
+ * bites. InfiniTime's stock port (src/FreeRTOS/port_cmsis_systick.c,
+ * FREERTOS_USE_RTC) corrects from COUNTER for exactly this reason; under the
+ * mirror rule that is the default.
+ *
+ * See also the priority note in vPortSetupTimerInterrupt (N-11): until that
+ * was fixed this handler ran at priority 0, so it was never held off at all —
+ * and could pre-empt task critical sections instead.
  */
 
 #include "FreeRTOS.h"
@@ -29,6 +46,19 @@
 
 /* wall_clock overflow counter — implemented in rtc_hw.cpp */
 void slate_rtc1_on_overflow(void);
+
+/* Ticks recovered by catch-up since boot, i.e. TICK events that coalesced
+ * while this handler was held off. Surfaced in the sealed diag overlay: 0
+ * means the tick never fell behind, a climbing value quantifies the loss
+ * that used to go silently missing (N-10). */
+static volatile uint32_t s_catchup_ticks = 0u;
+
+uint32_t slate_rtc_tick_catchup(void) { return s_catchup_ticks; }
+
+/* Bound the worst-case time spent in one ISR. Anything beyond this is
+ * recovered on following TICK events (one every ~0.98 ms), so a large gap
+ * still closes quickly without a long interrupt. */
+#define kMaxCatchUp 128u
 
 #define portNRF_RTC_REG        NRF_RTC1
 #define portNRF_RTC_IRQn       RTC1_IRQn
@@ -52,7 +82,18 @@ void vPortSetupTimerInterrupt(void) {
   portNRF_RTC_REG->EVENTS_OVRFLW = 0u;
   portNRF_RTC_REG->EVENTS_COMPARE[0] = 0u;
 
-  NVIC_SetPriority(portNRF_RTC_IRQn, configKERNEL_INTERRUPT_PRIORITY);
+  /* Raw priority number, NOT configKERNEL_INTERRUPT_PRIORITY (N-11).
+   * CMSIS NVIC_SetPriority shifts internally — (p << (8 - __NVIC_PRIO_BITS)) —
+   * while configKERNEL_INTERRUPT_PRIORITY is the ALREADY-shifted register form
+   * that FreeRTOS pokes straight into SHPR. Passing it here shifted twice:
+   * (7 << 5) << 5 & 0xFF == 0, so the tick ran at priority 0, above the NimBLE
+   * radio (5) and above configMAX_SYSCALL_INTERRUPT_PRIORITY (3) — meaning
+   * portENTER_CRITICAL's BASEPRI could not mask it and xTaskIncrementTick
+   * could mutate kernel lists inside another task's critical section. */
+  _Static_assert(configLIBRARY_LOWEST_INTERRUPT_PRIORITY <
+                     (1u << __NVIC_PRIO_BITS),
+                 "pass NVIC_SetPriority a raw priority, not a shifted one");
+  NVIC_SetPriority(portNRF_RTC_IRQn, configLIBRARY_LOWEST_INTERRUPT_PRIORITY);
   NVIC_ClearPendingIRQ(portNRF_RTC_IRQn);
   NVIC_EnableIRQ(portNRF_RTC_IRQn);
 
@@ -76,9 +117,31 @@ void RTC1_IRQHandler(void) {
   }
   portNRF_RTC_REG->EVENTS_TICK = 0u;
 
-  /* One FreeRTOS tick per RTC TICK — never catch up from COUNTER here. */
   portDISABLE_INTERRUPTS();
-  if (xTaskIncrementTick() != pdFALSE) {
+
+  /* Advance to wherever COUNTER actually is (see header). Guards, in order:
+   * a diff in the top half of the 24-bit range means the tick sits AHEAD of
+   * COUNTER (only reachable via tickless vTaskStepTick) — step once, never
+   * ~16M; diff 0 means the event beat the counter read — step once; and the
+   * catch-up is capped so the ISR stays short. */
+  uint32_t diff = (portNRF_RTC_REG->COUNTER - (uint32_t)xTaskGetTickCountFromISR()) &
+                  portNRF_RTC_MAXTICKS;
+  if (diff > (portNRF_RTC_MAXTICKS >> 1) || diff == 0u) {
+    diff = 1u;
+  } else if (diff > kMaxCatchUp) {
+    diff = kMaxCatchUp;
+  }
+  if (diff > 1u) {
+    s_catchup_ticks += diff - 1u;
+  }
+
+  BaseType_t switch_req = pdFALSE;
+  while (diff-- > 0u) {
+    if (xTaskIncrementTick() != pdFALSE) {
+      switch_req = pdTRUE;
+    }
+  }
+  if (switch_req != pdFALSE) {
     SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
     __SEV();
   }
