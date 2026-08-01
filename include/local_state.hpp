@@ -57,6 +57,18 @@ struct State {
   // fell behind COUNTER; a climbing value is the time that used to be lost
   // silently while the radio held off the tick ISR.
   std::uint32_t diag_tick_catchup = 0u;
+  // Slowest app_loop phase since boot and how long it took (N-13 bring-up):
+  // 1 drain, 2 input, 3 session/core tick, 4 paint, 5 battery/BAS,
+  // 6 the notify wait itself (= the task was not scheduled, not slow work).
+  std::uint8_t diag_phase = 0u;
+  std::uint32_t diag_phase_ms = 0u;
+  // Raw SAADC count and converted millivolts, so the battery curve can be
+  // checked against a multimeter without SWD (I-5 / N-12).
+  std::uint16_t diag_adc_raw = 0u;
+  std::uint16_t diag_mv = 0u;
+  // Worst single local display-list render and parse, in ms (N-13).
+  std::uint32_t diag_render_ms = 0u;
+  std::uint32_t diag_parse_ms = 0u;
   // Repaint counter. Driven by app-loop iterations rather than the clock, so a
   // climbing paint count next to a frozen uptime means the timebase died while
   // the loop lived, and both frozen means the loop itself stopped.

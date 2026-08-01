@@ -47,6 +47,12 @@ volatile std::uint8_t g_bringup_state = 0u;
 volatile std::uint16_t g_bringup_rc = 0u;
 
 void bringup_mark(std::uint8_t state, int rc = 0) {
+  // Failures (>= 90) are sticky: a later progress mark must not erase them.
+  // start_stack records a registration failure and keeps going, so without
+  // this the subsequent "advertising" mark hid it.
+  if (g_bringup_state >= 90u && state < 90u) {
+    return;
+  }
   g_bringup_state = state;
   g_bringup_rc = static_cast<std::uint16_t>(rc);
 }
@@ -181,6 +187,11 @@ void hook_read_conn(std::uint16_t* iv, std::uint16_t* lat, std::uint16_t* to) {
   if (to) *to = 400u;
 }
 
+// Peripheral-driven MTU/DLE/PHY/param negotiation. NOT run on connect any
+// more (N-15) — it is kept because the throughput/RTT/render gates (roadmap
+// A/B/D) need those parameters actively raised. Call it deliberately, from
+// the app task, once the central has finished discovery — never from inside
+// a GAP callback.
 void run_negotiate() {
   ConnHooks hooks;
   hooks.request_mtu = hook_mtu;
@@ -217,9 +228,7 @@ void run_negotiate() {
   rtt::write(" iv=0x");
   rtt::write_hex(n.conn_interval_units);
   rtt::write_line("");
-
-  // Confirm-on-BLE: only after a real central + negotiation.
-  notify_session_up();
+  // Session-up is signalled from the connect event now (N-15), not here.
 }
 
 static int rx_access(std::uint16_t conn, std::uint16_t attr,
@@ -299,18 +308,59 @@ static int dfu_pkt_access(std::uint16_t, std::uint16_t,
   return 0;
 }
 
+// N-17: these bytes are the little-endian (fully reversed) form of the text
+// UUIDs. They previously used the Microsoft GUID mixed-endian layout, so the
+// watch published f378f04c-6ee9-62a9-44fa-0000e979acfb and no central looking
+// for the real service could match — while uuid_dfu_* below, written as a
+// correct full reversal, worked fine. The static_asserts bind these to
+// include/slate_uuids.hpp so the two definitions can never drift again;
+// tests/host/test_uuids.cpp pins that header to the canonical strings, which
+// the companion (SlateUuids.kt) also hard-codes.
 static const ble_uuid128_t uuid_svc = BLE_UUID128_INIT(
-    0xfb, 0xac, 0x79, 0xe9, 0x00, 0x00, 0xfa, 0x44, 0xa9, 0x62, 0xe9, 0x6e,
-    0x4c, 0xf0, 0x78, 0xf3);
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x00, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
 static const ble_uuid128_t uuid_rx = BLE_UUID128_INIT(
-    0xfb, 0xac, 0x79, 0xe9, 0x01, 0x00, 0xfa, 0x44, 0xa9, 0x62, 0xe9, 0x6e,
-    0x4c, 0xf0, 0x78, 0xf3);
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x01, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
 static const ble_uuid128_t uuid_tx = BLE_UUID128_INIT(
-    0xfb, 0xac, 0x79, 0xe9, 0x02, 0x00, 0xfa, 0x44, 0xa9, 0x62, 0xe9, 0x6e,
-    0x4c, 0xf0, 0x78, 0xf3);
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x02, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
 static const ble_uuid128_t uuid_status = BLE_UUID128_INIT(
-    0xfb, 0xac, 0x79, 0xe9, 0x03, 0x00, 0xfa, 0x44, 0xa9, 0x62, 0xe9, 0x6e,
-    0x4c, 0xf0, 0x78, 0xf3);
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x03, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
+
+namespace {
+constexpr ble_uuid128_t kUuidSvcCheck = BLE_UUID128_INIT(
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x00, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
+constexpr ble_uuid128_t kUuidRxCheck = BLE_UUID128_INIT(
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x01, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
+constexpr ble_uuid128_t kUuidTxCheck = BLE_UUID128_INIT(
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x02, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
+constexpr ble_uuid128_t kUuidStatusCheck = BLE_UUID128_INIT(
+    0xf3, 0x78, 0xf0, 0x4c, 0x6e, 0xe9, 0x62, 0xa9, 0x03, 0x00, 0x38, 0xc3,
+    0xfb, 0xac, 0x79, 0xe9);
+
+constexpr bool uuid_matches(const std::uint8_t (&a)[16],
+                            const std::uint8_t (&b)[16]) {
+  for (int i = 0; i < 16; ++i) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+static_assert(uuid_matches(kUuidSvcCheck.value, slate::uuid::kService),
+              "service UUID differs from include/slate_uuids.hpp");
+static_assert(uuid_matches(kUuidRxCheck.value, slate::uuid::kRx),
+              "RX UUID differs from include/slate_uuids.hpp");
+static_assert(uuid_matches(kUuidTxCheck.value, slate::uuid::kTx),
+              "TX UUID differs from include/slate_uuids.hpp");
+static_assert(uuid_matches(kUuidStatusCheck.value, slate::uuid::kStatus),
+              "STATUS UUID differs from include/slate_uuids.hpp");
+}  // namespace
 static const ble_uuid128_t uuid_dfu_svc = BLE_UUID128_INIT(
     0x23, 0xd1, 0xbc, 0xea, 0x5f, 0x78, 0x23, 0x15, 0xde, 0xef, 0x12, 0x12,
     0x30, 0x15, 0x00, 0x00);
@@ -398,8 +448,15 @@ int gap_event(struct ble_gap_event* event, void* arg) {
     case BLE_GAP_EVENT_CONNECT:
       if (event->connect.status == 0) {
         g_conn_handle = event->connect.conn_handle;
-        rtt::log(rtt::Level::Info, "BLE: connected — starting negotiation");
-        run_negotiate();
+        // Mirror InfiniTime (N-15): a peripheral records the connection and
+        // then reacts. It does NOT drive MTU exchange, DLE, 2M PHY and a
+        // connection-parameter update from inside this callback. Doing all
+        // four at once, while the central is still discovering services,
+        // is what made the link collapse right after MTU reached 247.
+        // The preferred MTU is published once at sync, so the central's own
+        // exchange lands at 247 and arrives as BLE_GAP_EVENT_MTU below.
+        rtt::log(rtt::Level::Info, "BLE: connected — awaiting central");
+        notify_session_up();
       } else if (gap_adv::should_resume(
                      gap_adv::connect_event(event->connect.status))) {
         // InfiniTime OnGAPEvent: failed connect must restart advertising or a
@@ -421,6 +478,24 @@ int gap_event(struct ble_gap_event* event, void* arg) {
       rtt::write("BLE: MTU event mtu=0x");
       rtt::write_hex(event->mtu.value);
       rtt::write_line("");
+      // Record whatever the central negotiated so STATUS reports the truth.
+      g_last_nego.att_mtu = event->mtu.value;
+      g_last_nego.mtu_ok = event->mtu.value >= kTargetAttMtu;
+      if (g_gatt != nullptr) {
+        g_gatt->refresh_status(g_last_nego, true);
+      }
+      break;
+    case BLE_GAP_EVENT_CONN_UPDATE:
+      // The central owns connection parameters; just record the result.
+      if (event->conn_update.status == 0) {
+        struct ble_gap_conn_desc desc;
+        if (ble_gap_conn_find(g_conn_handle, &desc) == 0) {
+          g_last_nego.conn_interval_units = desc.conn_itvl;
+          if (g_gatt != nullptr) {
+            g_gatt->refresh_status(g_last_nego, true);
+          }
+        }
+      }
       break;
     case BLE_GAP_EVENT_PHY_UPDATE_COMPLETE:
       if (event->phy_updated.status == 0) {
@@ -490,6 +565,12 @@ void on_sync() {
     }
   }
 
+  // Publish the preferred ATT MTU once, the way a mirrored peripheral does:
+  // the central's exchange then lands at 247 without us initiating anything
+  // (N-15). SLATE_BLE_ATT_PREFERRED_MTU / MYNEWT_VAL_BLE_ATT_PREFERRED_MTU
+  // already size the mbuf pool for it.
+  (void)ble_att_set_preferred_mtu(kTargetAttMtu);
+
   ble_svc_gap_device_name_set("Slate");
   if (g_gatt != nullptr && g_gatt->caps().device_info) {
     ble_svc_dis_manufacturer_name_set("Slate");
@@ -502,17 +583,26 @@ void on_sync() {
     }
   }
 
-  int rc = ble_gatts_count_cfg(g_svcs);
-  if (rc != 0) {
-    rtt::log(rtt::Level::Error, "BLE: gatts_count_cfg failed");
-    bringup_mark(90u, rc);
-    return;
-  }
-  rc = ble_gatts_add_svcs(g_svcs);
-  if (rc != 0) {
-    rtt::log(rtt::Level::Error, "BLE: gatts_add_svcs failed");
-    bringup_mark(91u, rc);
-    return;
+  // Services are registered in start_stack, before the host runs (N-16) —
+  // ble_hs_start() calls ble_gatts_start() and only then fires this sync
+  // callback, so anything queued here would never enter the attribute table.
+  //
+  // Self-check: by now the table is built, so ask the host whether the Slate
+  // service is actually in it rather than assuming. State 96 means it is
+  // not — which is exactly the condition a central reports as "service not
+  // found", and it distinguishes a firmware fault from a stale GATT cache
+  // on the phone.
+  {
+    std::uint16_t svc_handle = 0u;
+    const int rc_find = ble_gatts_find_svc(&uuid_svc.u, &svc_handle);
+    if (rc_find != 0) {
+      rtt::log(rtt::Level::Error, "BLE: Slate service NOT in GATT table");
+      bringup_mark(96u, rc_find);
+    } else {
+      rtt::write("BLE: Slate service registered, handle=0x");
+      rtt::write_hex(svc_handle);
+      rtt::write_line("");
+    }
   }
 
   // Advertise Slate 128-bit service UUID so companions can filter without connect.
@@ -524,7 +614,7 @@ void on_sync() {
   fields.uuids128 = &uuid_svc;
   fields.num_uuids128 = 1;
   fields.uuids128_is_complete = 1;
-  rc = ble_gap_adv_set_fields(&fields);
+  int rc = ble_gap_adv_set_fields(&fields);
   if (rc != 0) {
     rtt::log(rtt::Level::Error, "BLE: adv_set_fields failed");
     bringup_mark(92u, rc);
@@ -617,6 +707,29 @@ void start_stack(GattServer* gatt, SessionProfile profile) {
     ble_svc_dis_init();
   }
 
+  // Register Slate's own services HERE, alongside the stock ones and before
+  // the host task starts (N-16). ble_hs_start() calls ble_gatts_start(),
+  // which is what actually builds the attribute table from everything queued
+  // by ble_gatts_add_svcs(); the sync callback runs afterwards. Registering
+  // in on_sync silently queued the services and never registered them, so
+  // the Slate service (and the DFU service beside it) were advertised but
+  // absent from the GATT table — centrals reported "service not found".
+  // InfiniTime likewise registers everything up front and starts GATT
+  // explicitly before use.
+  {
+    const int rc_cfg = ble_gatts_count_cfg(g_svcs);
+    if (rc_cfg != 0) {
+      rtt::log(rtt::Level::Error, "BLE: gatts_count_cfg failed");
+      bringup_mark(90u, rc_cfg);
+    } else {
+      const int rc_add = ble_gatts_add_svcs(g_svcs);
+      if (rc_add != 0) {
+        rtt::log(rtt::Level::Error, "BLE: gatts_add_svcs failed");
+        bringup_mark(91u, rc_add);
+      }
+    }
+  }
+
   nimble_port_freertos_init(host_task);
   bringup_mark(4u);
   rtt::log(rtt::Level::Info, "BLE: NimBLE host started (Slate + BAS/DIS + legacy DFU)");
@@ -636,6 +749,13 @@ void update_battery_level(std::uint8_t percent) {
 }
 
 bool central_connected() { return g_conn_handle != BLE_HS_CONN_HANDLE_NONE; }
+
+void negotiate_now() {
+  if (g_conn_handle == BLE_HS_CONN_HANDLE_NONE) {
+    return;
+  }
+  run_negotiate();
+}
 
 bool request_conn_interval(std::uint16_t interval_units) {
   if (g_conn_handle == BLE_HS_CONN_HANDLE_NONE) {

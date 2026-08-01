@@ -17,10 +17,49 @@ pinecone blue/red → InfiniTime → fixed Slate).
 | `2284BA304B8F` | Superseded (2026-07-31) — added BLE telemetry; on hardware read `93.21` = adv_start BLE_HS_ENOADDR (no identity address — N-9 root cause) |
 | `4324FC495E0C` | Superseded (2026-07-31) — N-9 fixed (advertising verified on hardware) but watchdog reboot loop every ~30 s (N-10) |
 | `E95E6CD9676B` | Superseded (2026-07-31) — catch-up alone; painted cyan `397105A1`/`37A` = `port.c:890`, exposing N-11 |
-| `C3AE3F15E408` | **Good (2026-07-31)** — N-10 catch-up + N-11 tick IRQ priority fix; `build/dfu/slate-dfu.zip` |
+| `C3AE3F15E408` | Good (2026-07-31) — N-10 + N-11; **first confirmed durable install** (amber cleared, `IMAGE_OK`) |
+| `E54859689936` | Good (2026-07-31) — N-12 battery fix verified (3895 mV); its instrumentation diagnosed N-13 |
+| `DFD04D130924` | Superseded (2026-08-01) — N-13 fix, but exposed N-14: torn face and unmaintainable link on reconnect |
+| `D98B9C174EB1` | Superseded (2026-08-01) — N-14 fixed the tearing; link still dropped after MTU 247 (N-15) |
+| `10F1FEF97FD8` | Superseded (2026-08-01) — N-15 got MTU to 247; exposed N-16 (“Slate service not found”) |
+| `F27CF0DD8D5A` | Superseded (2026-08-01) — N-16 registration fix; confirmed `IMAGE_OK` and association, but the phone still reported "service not found" (stale Android GATT cache suspected) |
+| `0B8109A23AFA` | Superseded (2026-08-01) — GATT self-check + sticky failure codes |
+| `FAE65071E5A7` | Superseded (2026-08-01) — fixed `slate_uuids.hpp` only; `ble_nimble.cpp` had its own hardcoded copy, so the wire was unchanged |
+| `B7A58CFAC9B6` | **Good (2026-08-01)** — N-17 fixed at the definition the radio actually uses; `static_assert` binds both copies, `test_uuids` pins the strings |
 
 Full good SHA-256:
-`C3AE3F15E40888309733311C2697B14BFEC3CEF67BBCF5465967573D1415A8C3`.
+`B7A58CFAC9B6CBC61DA55CD7D7C5D801337C374623B94106644DB76EECD9E28E`.
+
+Verify after flashing: nRF Connect should show the 128-bit service as
+`e979acfb-c338-0000-a962-e96e4cf078f3`. If it still reads `f378f04c-…`, use
+the app's ⋮ → refresh-cache first; nRF Connect caches tables per address too.
+
+**If a central reports "service not found":** Android caches the GATT
+database per device address. Forget the watch in Bluetooth settings, remove
+the CDM association, then re-pair — otherwise the phone keeps serving the
+cached table. Check the overlay first: BLE state **96** means the service
+really is missing on the watch; state **7** means it is present and the
+problem is phone-side.
+
+**This bites on every InfiniTime ↔ Slate transition.** The device address is
+derived from FICR and is therefore identical across both firmwares, while
+the service tables are completely different. So after any flash that swaps
+firmware, the phone's cached table describes the *previous* firmware. Clear
+it **after** the flash and before connecting, not just once at the start:
+
+1. Watch on InfiniTime → clear cache → flash the Slate zip over InfiniTime's
+   DFU service.
+2. Watch reboots into Slate (**new service table, same address**) → clear the
+   cache again → then associate / connect.
+
+Skipping step 2 makes a perfectly good Slate image look like it has no
+services. Hold-to-blue at the bootloader reverts to the previous image even
+when the current one was validated, so a bad flash is always recoverable.
+
+Second diag line:
+`<worst loop phase>.<ms>/<adc raw>/<battery mV>/<parse ms>.<render ms>`.
+Phases: 1 drain, 2 input, 3 session/core tick, 4 paint, 5 battery, 6 the
+notify wait (6 = the app task was starved, not slow), 7 link transition.
 
 Cyan screen = `configASSERT`. Top hex is FNV-1a of the source basename, bottom
 is the line number; decode with the helper in `src/boot_diag.cpp` (`file_hash`).

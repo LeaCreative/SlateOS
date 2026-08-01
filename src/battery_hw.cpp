@@ -40,6 +40,8 @@ void init() {
 
 void set_adc_raw(int raw) { g_last_adc = raw; }
 
+int last_adc_raw() { return g_last_adc; }
+
 void sample_now() { set_adc_raw(power::sample_battery_adc()); }
 
 }  // namespace battery_hw

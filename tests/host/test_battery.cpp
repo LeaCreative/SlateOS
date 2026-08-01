@@ -20,10 +20,10 @@ void expect(const char* name, bool ok) {
 int read_adc(void*) { return g_adc; }
 bool is_charging(void*) { return g_charging; }
 
-// Invert Slate mV = adc * 2000 / 1241.
+// Invert Slate mV = adc * 4800 / 1024 (InfiniTime 10-bit, gain 1/4 — N-12).
 int adc_for_mv(std::uint16_t mv) {
-  return static_cast<int>((static_cast<std::uint32_t>(mv) * 1241u + 999u) /
-                          2000u);
+  return static_cast<int>((static_cast<std::uint32_t>(mv) * 1024u + 4799u) /
+                          4800u);
 }
 
 void reset_hooks() {

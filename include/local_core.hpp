@@ -44,6 +44,10 @@ public:
 
   void on_link_up();
   void on_link_down();
+
+  /** True once since the last call if the face needs a deferred repaint. */
+  bool take_paint_pending();
+  void mark_paint_pending() { paint_pending_ = true; }
   void set_remote_stale(bool stale);
 
   void on_system_message(const std::uint8_t* msg, std::size_t len);
@@ -77,6 +81,9 @@ private:
   std::uint32_t wake_until_ms_ = 0u;
   std::uint32_t last_step_ms_ = 0u;
   std::uint32_t last_batt_ms_ = 0u;
+  // Minute shown by the last face repaint; 0xFF forces the first paint.
+  std::uint8_t last_painted_minute_ = 0xFFu;
+  bool paint_pending_ = false;
   std::uint32_t last_adc_ms_ = 0u;
   bool display_on_ = true;
 };

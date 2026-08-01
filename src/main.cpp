@@ -147,14 +147,31 @@ static bool ota_send(const std::uint8_t* msg, std::size_t len, void* ctx) {
 
 static std::uint32_t now_ms();
 
+// Link state published by the NimBLE host task, applied by the app task
+// (N-14). These hooks run in the GAP event path on the host task, and the
+// work behind them — session transitions, HELLO_OFFER, and a full face
+// repaint — must not run there: the repaint takes ~1.2 s, which both blocks
+// all ATT traffic and drives the interpreter/renderer concurrently with the
+// app task, tearing the screen. Same rule as N-1's message path: the host
+// task publishes, the app task acts. Flapping collapses to the latest state.
+static volatile std::uint8_t g_link_state = 0u;
+static volatile std::uint32_t g_link_seq = 0u;
+#if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
+static void wake_app_task();
+#else
+static void wake_app_task() {}
+#endif
+
 static void on_ble_session_up(void*) {
-  g_session.on_link_up(now_ms());
-  g_core.on_link_up();
+  g_link_state = 1u;
+  ++g_link_seq;
+  wake_app_task();
 }
 
 static void on_ble_session_down(void*) {
-  g_session.on_link_down(now_ms());
-  g_core.on_link_down();
+  g_link_state = 0u;
+  ++g_link_seq;
+  wake_app_task();
 }
 
 static std::uint32_t now_ms() { return slate::time::mono_ms(); }
@@ -180,7 +197,10 @@ static void show_watch_face(bool stale, void*) {
   g_core.set_remote_stale(stale);
   g_local_owns_screen = true;
   g_core.local_state().screen = slate::local::Screen::Face;
-  g_core.show_current();
+  // Deferred (N-15): session link-up calls this and then Core::on_link_up,
+  // which used to be two full repaints back to back inside the connect path.
+  // app_loop coalesces them into one.
+  g_core.mark_paint_pending();
 }
 
 static void apply_profile(const slate::profile::Desc& desc, void*) {
@@ -239,8 +259,21 @@ static void do_haptic(std::uint8_t pattern, void*) {
   board::pulse_motor(ms);
 }
 
+// Worst local render since boot, in ms — the display list is re-parsed once
+// per tile, so this is the cost that used to dominate the loop (N-13).
+static std::uint32_t g_max_render_ms = 0u;
+static std::uint32_t g_max_parse_ms = 0u;
+
 static void core_push_list(const std::uint8_t* data, std::size_t len, void*) {
-  (void)g_interp.push_list(data, len);
+  const sdp::PushStats s = g_interp.push_list(data, len);
+  // Split so the next reading says whether the cost is the 33 list parses or
+  // the 30 rasterise+SPI tile passes (N-13 follow-up).
+  if (s.parse_us / 1000u > g_max_parse_ms) {
+    g_max_parse_ms = s.parse_us / 1000u;
+  }
+  if (s.render_us / 1000u > g_max_render_ms) {
+    g_max_render_ms = s.render_us / 1000u;
+  }
   g_input.set_hits(g_interp.hit_rects(), g_interp.hit_count());
 }
 
@@ -336,6 +369,25 @@ static void app_loop() {
   bool smoke_logged = false;
   std::uint32_t iters = 0u;
   std::uint32_t paints = 0u;
+  std::uint32_t last_diag = now_ms();
+  std::uint32_t link_seq_seen = g_link_seq;
+  bool link_applied = false;
+
+  // Bring-up instrumentation (N-13): which part of the loop actually consumes
+  // the iteration. board::micros() is TIMER1 real time, so this is immune to
+  // the tick problems that made earlier numbers unreadable; u32 deltas are
+  // mod-2^32 safe across its ~71.6 min wrap.
+  std::uint8_t worst_phase = 0u;
+  std::uint32_t worst_phase_us = 0u;
+  const auto note_phase = [&worst_phase, &worst_phase_us](std::uint8_t id,
+                                                          std::uint32_t t0) {
+    const std::uint32_t dt = board::micros() - t0;
+    if (dt > worst_phase_us) {
+      worst_phase_us = dt;
+      worst_phase = id;
+    }
+  };
+
   while (true) {
     ++iters;
     ++g_app_beat;
@@ -349,8 +401,35 @@ static void app_loop() {
     // N-1 / I-10 stage 1: link→app handoff. Drain GATT-reassembled SDP here so
     // session + interpreter + SPI never run on the NimBLE host task. CREDIT is
     // emitted from session::on_display after this deferred apply.
+    // Apply any link transition published by the host task (N-14) before
+    // draining messages, so session state is current when they arrive.
+    std::uint32_t t_phase = board::micros();
+    if (g_link_seq != link_seq_seen) {
+      link_seq_seen = g_link_seq;
+      const bool up = g_link_state != 0u;
+      const std::uint32_t tnow = now_ms();
+      if (up != link_applied) {
+        link_applied = up;
+        if (up) {
+          g_session.on_link_up(tnow);
+          g_core.on_link_up();
+        } else {
+          g_session.on_link_down(tnow);
+          g_core.on_link_down();
+        }
+      }
+    }
+    // One coalesced repaint for whatever the transition changed, outside the
+    // GAP callback and after the state settles.
+    if (g_core.take_paint_pending()) {
+      g_core.show_current();
+    }
+    note_phase(7u, t_phase);
+
+    t_phase = board::micros();
     while (g_link.drain_app_messages()) {
     }
+    note_phase(1u, t_phase);
     if (!smoke_logged && freertos_smoke::finished()) {
       smoke_logged = true;
       if (freertos_smoke::result() == freertos_smoke::Result::Pass) {
@@ -359,7 +438,9 @@ static void app_loop() {
         rtt::log(rtt::Level::Error, "M5a smoke FAIL (STATUS[11]=2)");
       }
     }
+    t_phase = board::micros();
     const input::Event ev = input::poll();
+    note_phase(2u, t_phase);
     if (ev.type != input::EventType::None) {
       if (g_local_owns_screen || g_session.remote_depth() == 0u) {
         if (ev.type == input::EventType::Button) {
@@ -380,16 +461,20 @@ static void app_loop() {
       send_confirm_status();
     }
     if (t - last_tick >= 200u) {
+      t_phase = board::micros();
       g_session.tick(t);
       g_core.set_remote_stale(g_session.stale());
       g_core.tick(t);
+      note_phase(3u, t_phase);
       last_tick = t;
     }
 #if !defined(SLATE_DIAG_OVERLAY) || (SLATE_DIAG_OVERLAY == 1)
-    // Repaint every 16 loop iterations (~0.3 s with the 20 ms delay). A 2048
-    // threshold needed ~40 s for the first update and the bootloader WDT kills
-    // the watch at ~7 s, so paints stayed at 0 even while the loop was alive.
-    if ((iters & 0xFu) == 0u) {
+    // Time-based, not every N iterations (N-13): a full repaint costs
+    // hundreds of ms, so tying it to iteration count made the overlay the
+    // dominant CPU consumer as soon as the loop sped up. 2 s keeps it useful
+    // for bring-up while bounding the render load.
+    if (t - last_diag >= 2000u) {
+      last_diag = t;
       auto& st = g_core.local_state();
       st.diag_uptime_s = t / 1000u;
       st.diag_paints = ++paints;
@@ -397,14 +482,26 @@ static void app_loop() {
       st.diag_stall_ms = g_max_stall_ms;
       ble::bringup_snapshot(&st.diag_ble_state, &st.diag_ble_rc);
       st.diag_tick_catchup = tick_catchup_count();
+      st.diag_phase = worst_phase;
+      st.diag_phase_ms = worst_phase_us / 1000u;
+      const int adc_raw = slate::battery_hw::last_adc_raw();
+      st.diag_adc_raw =
+          adc_raw < 0 ? 0u : static_cast<std::uint16_t>(adc_raw);
+      st.diag_mv = slate::battery::millivolts();
+      st.diag_render_ms = g_max_render_ms;
+      st.diag_parse_ms = g_max_parse_ms;
+      t_phase = board::micros();
       g_core.show_current();
+      note_phase(4u, t_phase);
     }
 #endif
     if (t - last_batt >= 10000u) {
       // ADC refresh lives in Core::poll_battery (charge edge + 10 s). BAS only.
+      t_phase = board::micros();
       if (slate::battery::percent_valid()) {
         ble::update_battery_level(slate::battery::percent());
       }
+      note_phase(5u, t_phase);
       last_batt = t;
     }
     const bool ambient =
@@ -413,12 +510,19 @@ static void app_loop() {
     if (ambient && slate::power::current() != slate::power::State::Ambient) {
       slate::power::enter(slate::power::State::Ambient);
     }
+    // Phase 6 is the wait itself. A 20 ms request that measures far longer
+    // means the app task was ready but not scheduled (something above it is
+    // hogging the CPU) rather than any loop work being slow.
+    t_phase = board::micros();
 #if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
     // Wake from Link::set_app_wake short-circuits this wait when a message lands.
     (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(ambient ? 200u : 20u));
 #else
     slate::power::sleep_ms(ambient ? 200u : 20u);
 #endif
+    if (!ambient) {
+      note_phase(6u, t_phase);
+    }
   }
 }
 
@@ -430,6 +534,8 @@ static void app_wake_from_link(void*) {
     (void)xTaskNotifyGive(g_app_task);
   }
 }
+
+static void wake_app_task() { app_wake_from_link(nullptr); }
 
 static void app_task(void*) { app_loop(); }
 
@@ -626,7 +732,16 @@ extern "C" int main() {
 #endif
   // 768 words (3 KiB): leaves FreeRTOS heap for NimBLE event queues. 1024-word
   // app + 14 KiB heap exhausted xQueueCreate → NULL → queue.c configASSERT.
-  if (xTaskCreate(app_task, "app", 768, nullptr, tskIDLE_PRIORITY + 2,
+  //
+  // Priority is idle+1 — the SAME as the NimBLE host task, not above it
+  // (N-13). A full-face render blocks this task for hundreds of ms, and at
+  // idle+2 that starved the host task, so ATT requests went unanswered: MTU
+  // exchange never completed, service discovery never finished, and the
+  // central dropped the link on supervision timeout. Equal priority plus
+  // FreeRTOS time slicing interleaves them per tick. This also mirrors
+  // InfiniTime, where MAIN and DisplayApp sit at or below the BLE host.
+  // The LL task stays highest; do not raise this above the host again.
+  if (xTaskCreate(app_task, "app", 768, nullptr, tskIDLE_PRIORITY + 1,
                   &g_app_task) != pdPASS) {
     // Heap exhausted before the scheduler even starts — same cause as a
     // malloc-failed hook, so use the same colour. Never pet forever here.

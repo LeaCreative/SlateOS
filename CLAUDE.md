@@ -14,7 +14,12 @@
 - HR: HRS3300, I2C. Enabled at power-on — write 0x00 to PDRIVER (0x0C) to sleep it.
 - Button: P0.15 enable + P0.13 sense (active-high, pulldown). Match InfiniTime: leave
   enable high (~34 µA). Do not invent a strobe-only scheme that breaks WDT-hold reset.
-- Battery: ADC AIN7 (P0.31). mV = adc * 2000 / 1241. Charge indicator P0.12 (low = charging).
+- Battery: ADC AIN7 (P0.31), 1:2 divider. Sample as InfiniTime does — SAADC
+  10-bit, gain 1/4, internal 0.6V ref (full scale 2.4V pin = 4.8V battery) —
+  then mV = raw * 8 * 600 / 1024. The config and the formula are one unit:
+  change `power.cpp::sample_battery_adc` and `battery.cpp::millivolts`
+  together. (The old `adc * 2000 / 1241` matched no working config; see N-12.)
+  Charge indicator P0.12 (low = charging).
 - NFC unavailable: P0.10 is the touch reset, so UICR NFCPINS must select GPIO.
 
 ## Stack

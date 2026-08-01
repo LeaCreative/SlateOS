@@ -73,6 +73,13 @@ target_include_directories(test_sdp_parser PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_sdp_parser PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_sdp_parser sdp_parser)
 
+add_executable(test_uuids
+  test_uuids.cpp
+)
+target_include_directories(test_uuids PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_uuids PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_uuids uuids)
+
 add_executable(test_sdp_frame
   test_sdp_frame.cpp
   "${SLATE_ROOT}/src/sdp_frame.cpp"

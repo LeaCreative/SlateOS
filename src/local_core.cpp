@@ -60,6 +60,11 @@ void Core::save_settings() {
                       sizeof(local_state().settings));
 }
 
+// Link transitions only mark the face stale (N-15). A repaint costs hundreds
+// of ms, and painting synchronously on connect/disconnect put that cost right
+// where the central is discovering services. InfiniTime's BLE layer likewise
+// posts a message and lets the display task redraw on its own schedule; the
+// next scheduled paint picks the new state up.
 void Core::on_link_up() {
   local_state().link_up = 1u;
   local_state().remote_stale = 0u;
@@ -67,16 +72,19 @@ void Core::on_link_up() {
   if (local_state().screen == local::Screen::Disconnected) {
     local_state().screen = local::Screen::Face;
   }
-  show_current();
+  paint_pending_ = true;
 }
 
 void Core::on_link_down() {
   local_state().link_up = 0u;
   notif::mark_all_stale(&notifs_, true);
-  if (local_state().screen == local::Screen::Face) {
-    // Keep face; disconnected digit shows via link_up==0.
-  }
-  show_current();
+  paint_pending_ = true;
+}
+
+bool Core::take_paint_pending() {
+  const bool p = paint_pending_;
+  paint_pending_ = false;
+  return p;
 }
 
 void Core::set_remote_stale(bool stale) {
@@ -209,9 +217,19 @@ void Core::poll_tilt() {
 void Core::tick(std::uint32_t now_ms) {
   // Cadences use unsigned (now - last); requires mono_ms wrap at 2^32.
   if (now_ms - last_step_ms_ >= 2000u) {
+    const std::uint32_t steps_before = local_state().steps;
     poll_steps();
     last_step_ms_ = now_ms;
-    if (local_state().screen == local::Screen::Face) {
+    // Repaint only when something on the face actually changed (N-13). A full
+    // face render costs hundreds of ms — the display list is re-parsed once
+    // per tile — so repainting every 2 s regardless burned most of the app
+    // loop and starved the BLE host. Steps or the displayed minute changing
+    // are the only reasons the face differs.
+    const std::uint8_t minute_now = clock::civil_now().minute;
+    const bool changed = local_state().steps != steps_before ||
+                         minute_now != last_painted_minute_;
+    if (local_state().screen == local::Screen::Face && changed) {
+      last_painted_minute_ = minute_now;
       show_current();
     }
   }

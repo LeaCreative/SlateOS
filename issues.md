@@ -13,7 +13,8 @@ at the SDP / companion JS display-list layer.
 
 ### I-1 — Sealed watch soft-brick (no BLE, no InfiniTime)
 
-- **Status:** Open (field recovery); **runbook + regression fence done**
+- **Status:** **Resolved** — watch recovered and running a confirmed Slate
+  image; runbook and regression fence in tree, button-hold reset proven
 - **Area:** Firmware / sealed DFU
 - **Impact:** Watch unusable over the air until recovered
 - **Notes:** After RTC-tick DFU (`slate-dfu.zip` SHA prefix `790822E97A78`; earlier
@@ -25,23 +26,24 @@ at the SDP / companion JS display-list layer.
 
 ### I-2 — Fixed Slate DFU package (post-recovery flash)
 
-- **Status:** Package ready; **awaiting on-device flash** (after I-1 recovery)
+- **Status:** **Resolved** — flashed and confirmed on 31 July; the amber trial
+  bar cleared, so `IMAGE_OK` is written and the install survives reset. This
+  entry now just tracks the current staged package.
 - **Area:** Firmware packaging
-- **Impact:** Blocks return to Slate bring-up until flashed
 - **Artifact:** `build/dfu/slate-dfu.zip`
-  - **SHA-256:** `C3AE3F15E40888309733311C2697B14BFEC3CEF67BBCF5465967573D1415A8C3`
-  - **SHA-256 prefix (12):** `C3AE3F15E408`
+  - **SHA-256:** `B7A58CFAC9B6CBC61DA55CD7D7C5D801337C374623B94106644DB76EECD9E28E`
+  - **SHA-256 prefix (12):** `B7A58CFAC9B6`
   - Built 2026-07-31 (night): `BOOTLOADER_PRESENT=ON`, `SLATE_HAS_NIMBLE=ON`,
     `imgtool create --slot-size 475136` (InfiniTime contract, unsigned)
-  - Includes N-1 link→app handoff (zero-copy per N-8), N-4 single-in-flight
-    framing, N-6 HELLO_OFFER hardening, N-9 BLE identity fix (verified on
-    hardware), N-10 RTC1 tick catch-up, N-11 tick IRQ priority fix
-  - Link map: FLASH ~121608 B / 475104 B; RAM ~60944 B / 64 KB
-    (`__heap_end__` 496 B below `__StackLimit`)
-  - Supersedes `E95E6CD9676B` (catch-up alone → cyan assert `port.c:890`,
-    which exposed N-11), `4324FC495E0C` (N-9 verified, then N-10 reboot),
-    `2284BA304B8F` (telemetry build that diagnosed N-9 via `93.21`),
-    `D7E86854B9D3` (radio silent, no diag), `8B2D9054E9E7` (pre-N-1 tree)
+  - Built 2026-08-01: everything verified to date (N-1/N-4/N-6/N-8, N-9
+    identity, N-10/N-11 tick, N-12 battery) plus the **N-13 fix**: app task
+    at BLE-host priority, repaint only on change, time-based diag cadence
+  - Link map: FLASH ~122104 B / 475104 B; RAM ~60952 B / 64 KB
+    (`__heap_end__` ~488 B below `__StackLimit`)
+  - Supersedes `E54859689936` (N-12 verified, N-13 diagnosed from it),
+    `C3AE3F15E408` (first confirmed durable install), and the earlier
+    bring-up images `E95E6CD9676B`, `4324FC495E0C`, `2284BA304B8F`,
+    `D7E86854B9D3`, `8B2D9054E9E7`
 - **Fix asserts (all pass):**
   - (a) `src/wdt.cpp` — `pet()` returns before RR0 write when `button_raw()`
   - (b) `button.cpp` “Enable stays high” + `board::button_hw_init` OUTSET enable
@@ -70,9 +72,208 @@ at the SDP / companion JS display-list layer.
   `__heap_end__` 0x2000EE10 → 496 B below `__StackLimit`. Host:
   `test_ble_app_inbox` (incl. new busy-window resync case).
 
+### N-12 — Battery always reads 0 %: SAADC gain and resolution mis-set
+
+- **Status:** **Resolved — verified on hardware.** Overlay read `831/3895`:
+  831 × 4800/1024 = 3895 mV, a plausible cell voltage, and the displayed
+  percentage tracks it. Multimeter cross-check still worth doing once (I-5).
+- **Area:** `power.cpp::sample_battery_adc`, `battery.cpp::millivolts`
+- **Impact:** Battery shows `0` (a *valid* 0, not `--`) on a charged cell.
+  Also blocks I-13: SDP OTA and sealed DFU both gate on ≥30 % battery.
+- **Root cause:** two independent register bugs.
+  1. `CH0_CONFIG` GAIN field held **5**, which is gain **1**, not the 1/6 the
+     comment claimed (encoding: 0=1/6 … 5=1). With the internal 0.6 V
+     reference that puts full scale at 0.6 V while the divided battery pin
+     sits near 2.0 V — every sample rails.
+  2. `RESOLUTION` was set from a constant named `RES_12BIT` whose value was
+     **1**, which is 10-bit (encoding: 0=8, 1=10, 2=12, 3=14). The name was
+     wrong by 4x and silently agreed with nothing.
+  The `adc * 2000 / 1241` conversion matched neither configuration, so the
+  railed count converted to ~1.6 V and `percent_from_mv` floored it at 0.
+- **Fix (mirror InfiniTime):** gain 1/4 + internal reference (full scale
+  2.4 V on the pin = 4.8 V of battery through the 1:2 divider), 10-bit, and
+  InfiniTime's `mV = raw * 8 * 600 / 1024`. Constants renamed so the
+  encodings are written down. Host `test_battery` inverts the new formula.
+- **Verify:** the diag overlay's new second line ends `/<adc raw>/<mV>`. A
+  healthy cell should land ~3700–4200 mV; compare against a multimeter
+  before trusting the curve breakpoints (the open item in I-5).
+
+### N-17 — Slate service UUID published byte-scrambled
+
+- **Status:** Fix staged (`B7A58CFAC9B6`). **First attempt `FAE65071E5A7`
+  changed nothing on the wire** — `include/slate_uuids.hpp` is not what the
+  radio uses. `src/ble_nimble.cpp` carried its own hardcoded
+  `BLE_UUID128_INIT` bytes (line ~311), so fixing the header alone was
+  invisible. Both are now corrected and bound together by `static_assert`,
+  and the built binary is verified to contain the corrected bytes and none
+  of the old ones.
+- **Duplicate-definition tell:** in the *same file*, `uuid_dfu_*` was written
+  as a correct full reversal while `uuid_svc`/`rx`/`tx`/`status` used the
+  mixed-endian layout. That is exactly why the Nordic DFU service always
+  worked and Slate's own service never did — the strongest possible hint,
+  sitting twenty lines apart, unnoticed until the byte-level comparison.
+- **Area:** `include/slate_uuids.hpp`
+- **Impact:** **This is why "Slate service not found" survived N-16.** The
+  service was in the GATT table all along after that fix — under the wrong
+  UUID, so no central filtering on the real one could match it. It also
+  explains why the *advertisement* carried a UUID the companion ignored.
+- **Proof:** nRF Connect listed the 128-bit service as
+  `f378f04c-6ee9-62a9-44fa-0000e979acfb`. Reversing the shipped `kService`
+  array reproduces that string exactly.
+- **Root cause:** NimBLE stores a 128-bit UUID as the text form reversed **in
+  full** — byte 0 is the last byte of the string. The arrays reversed only
+  *within* each group (`time_low`, `time_mid`, …), which is the Microsoft
+  GUID mixed-endian convention, not NimBLE's. The comment even claimed
+  "little-endian byte order for NimBLE", so the intent was right and the
+  layout was wrong — invisible to review because the bytes *look* plausible.
+- **Fix:** all four arrays rewritten as full reversals of their canonical
+  strings, with the discriminant in bytes 8–9. New host test `test_uuids`
+  formats each array back to text and pins it to the same string the
+  companion hard-codes (`SlateUuids.kt`), and fails explicitly if the
+  mixed-endian layout ever returns.
+- **Note:** the DFU and stock services were unaffected (16-bit or supplied by
+  NimBLE), which is exactly why everything *except* Slate's own service
+  appeared to work.
+
+### N-16 — GATT services registered too late; never in the attribute table
+
+- **Status:** Fix staged (`0B8109A23AFA`, adds an on-device self-check);
+  first attempt `F27CF0DD8D5A` still reported "service not found" from the
+  companion, but see the Android GATT cache note below — the phone caches
+  the service list per bonded device, and it had cached a database with no
+  Slate service in it. **Forget the watch in Android Bluetooth settings and
+  remove the CDM association before retrying**, or the phone will keep
+  serving the stale table no matter what the firmware does.
+- **Area:** `ble_nimble.cpp` `on_sync` / `start_stack`
+- **Impact:** **The Slate service has never been discoverable.** With N-15
+  clearing the way, the companion finally got far enough to say so:
+  `ATT MTU: 247 (target 247)`, `MTU event: 247 status=0`, then
+  `Error: Slate service not found`. The watch advertised the 128-bit service
+  UUID while the GATT table did not contain it — so every session, every
+  benchmark and every OTA attempt was doomed regardless of the link.
+- **Root cause:** `ble_gatts_count_cfg` / `ble_gatts_add_svcs` for `g_svcs`
+  (the Slate service **and** the Nordic DFU service beside it) ran inside the
+  `on_sync` callback. `ble_hs_start()` calls `ble_gatts_start()` and *then*
+  syncs, and per `ble_gatt.h`, queued services "get registered when
+  `ble_gatts_start()` is called". Registering after that point queues them
+  into a table that is never built again. The stock services (GAP, GATT, BAS,
+  DIS) were unaffected because their `*_init()` calls already ran in
+  `start_stack`, before the host — which is exactly why discovery appeared to
+  work while our own service was missing.
+- **Fix:** register `g_svcs` in `start_stack`, alongside the stock service
+  inits and before `nimble_port_freertos_init`, so `ble_gatts_start()` builds
+  the table from everything. `on_sync` now only sets identity and starts
+  advertising. Failure codes 90/91 still report a registration problem.
+- **On-device proof:** `on_sync` now calls `ble_gatts_find_svc()` on the
+  Slate UUID after the table is built and reports **state 96** if it is
+  absent. That separates "firmware still broken" from "phone cached the old
+  table". Bring-up failure codes are now sticky, too — a registration
+  failure in `start_stack` was previously overwritten by the later
+  "advertising" mark, so the overlay could not have shown it.
+- **Android GATT cache:** Android caches the discovered service database per
+  bonded device and will keep returning the cached one after the peripheral
+  changes. Because the watch genuinely had no Slate service until now, that
+  stale cache is the expected state. Clearing it needs the device forgotten
+  in Bluetooth settings (plus the CDM association removed), or a Bluetooth
+  off/on. Worth surfacing in the companion under I-15 as an explicit
+  remediation, since any firmware GATT change can trigger it.
+- **Lesson for I-9:** this is the third defect in code that had never run.
+  Init **ordering** against the stock NimBLE/InfiniTime sequence is its own
+  audit axis — not just what we call, but when.
+
+### N-15 — Mirror InfiniTime's connect path (stop driving negotiation)
+
+- **Status:** Fix staged (`10F1FEF97FD8`); awaiting on-watch verification
+- **Area:** `ble_nimble.cpp` GAP path, `local_core.cpp` link transitions
+- **Impact:** With N-14 in place the tearing stopped, but the link still could
+  not be held: MTU reached 247 for a moment, then the connection dropped, and
+  association never completed. Overlay read `7.1873/820/3843/0.630` — worst
+  phase **7** (link transition) at **1873 ms**, parse **0 ms**, render
+  **630 ms**. So a single connect cost ~1.9 s of repainting (two to three
+  full frames: `session.on_link_up` → `show_watch_face`, then
+  `Core::on_link_up`), landing exactly while the central was discovering.
+- **Root cause — a Slate invention at the mirror layer:** `run_negotiate()`
+  ran **synchronously inside the `BLE_GAP_EVENT_CONNECT` callback**, issuing
+  an ATT MTU exchange, a DLE request, a 2M PHY request and a connection
+  parameter update, all at once, from the peripheral, while the central was
+  mid-discovery. A mirrored peripheral does none of that: it publishes a
+  preferred MTU and reacts to what the central does.
+- **Fix:**
+  - `ble_att_set_preferred_mtu(247)` once at sync; the central's own
+    exchange then lands at 247 and arrives as `BLE_GAP_EVENT_MTU`, which is
+    now recorded into STATUS. `BLE_GAP_EVENT_CONN_UPDATE` likewise records
+    the interval the central chose.
+  - The connect handler records the handle and signals session-up. Nothing
+    else.
+  - `run_negotiate()` is kept and exposed as `ble::negotiate_now()` for the
+    roadmap A/B/D gates, which do need those parameters actively raised —
+    but it must be called from the app task after discovery settles, never
+    from a GAP callback.
+  - Link transitions no longer repaint. `Core::on_link_up/on_link_down` and
+    `show_watch_face` mark the face pending; `app_loop` coalesces them into
+    one repaint outside the callback.
+- **Note:** `parse = 0 ms` disproves the earlier "33 display-list parses"
+  theory — the whole 630 ms is rasterise + SPI push. That is the next target
+  (see N-13 follow-up and the parity row on `SpiMaster`).
+
+### N-14 — Session hooks render on the NimBLE host task (tearing, dropped link)
+
+- **Status:** Fix staged (`D98B9C174EB1`); awaiting on-watch verification
+- **Area:** `main.cpp` session hooks, `ble_nimble.cpp` GAP event path
+- **Impact:** On `DFD04D130924`: torn/corrupt face during reconnect, the
+  companion showing `Connected: true` for a split second before dropping,
+  association impossible. Looks like an N-13 regression; it is not — it is a
+  pre-existing bug that the N-13 priority change exposed.
+- **Root cause:** `notify_session_up()` / `notify_session_down()` are called
+  from the GAP event path **on the NimBLE host task**
+  (`ble_nimble.cpp:222` and the DISCONNECT case). The hooks ran
+  `g_session.on_link_*()` and `g_core.on_link_*()` directly, and both end in
+  `show_current()` → a full ~1.2 s parse+render. So every connect and
+  disconnect did a 1.2 s blocking render on the host task, which (a) stalled
+  all ATT traffic exactly when the central was negotiating, and (b) drove the
+  interpreter and renderer concurrently with the app task's own repaint —
+  hence the tearing. N-1 moved the *message* path off the host task but left
+  these two hooks behind; with the app task previously at a higher priority
+  the collisions were rarer, and equal priority made them constant.
+- **Fix:** the hooks now only publish `{state, seq}` and wake the app task;
+  `app_loop` applies the transition (loop phase 7) before draining messages,
+  so session work, HELLO_OFFER and repaints all happen on the app task.
+  Rapid flapping collapses to the latest state. Same rule as N-1.
+- **Note:** the DIAG bench render callback has the same shape and also runs
+  on the host task. It is inert in release (`SLATE_BLE_DIAG=0`) but should be
+  moved before diag builds are used again.
+
+### N-13 — App loop iterates ~30x slower than designed → BLE unusable
+
+- **Status:** **Diagnosed on hardware; fix staged (`DFD04D130924`)**
+- **Diagnosis:** overlay read `3.1236` — worst phase **3** (session/core
+  tick) at **1236 ms**, not phase 6. So the app task was never starved; it
+  was doing over a second of blocking work. Two causes:
+  1. `Interpreter::render_retained_to_display` re-parses the **entire**
+     display list once per tile — 30 tiles, plus the validate, side-effect
+     and meta passes: 33 full parses and 30 rasterise+SPI passes per
+     repaint. `Core::tick` triggered that unconditionally every 2 s, and
+     the diag overlay triggered another every 16 iterations.
+  2. The app task ran at `tskIDLE_PRIORITY + 2`, **above** the NimBLE host
+     task at +1. That render therefore blocked all ATT traffic, which is
+     why MTU stayed at 23, service discovery never completed, the link
+     dropped on supervision timeout, and every benchmark failed to send
+     (`THRU_START send failed — is GATT ready?`).
+- **Fix:** app task moved to `tskIDLE_PRIORITY + 1`, equal to the NimBLE
+  host, so time slicing interleaves them (and mirroring InfiniTime, where
+  MAIN/DisplayApp sit at or below the BLE host); `Core::tick` repaints only
+  when the step count or the displayed minute actually changed; the diag
+  overlay repaint is time-based (2 s) instead of per-16-iterations. Worst
+  parse+render is now surfaced as the overlay's 4th second-line field.
+- **Follow-up (not done):** the per-tile re-parse is the underlying cost and
+  wants dirty-rect rendering so an unchanged region is not re-rasterised 30
+  times. Do that under I-10 rather than blind — it needs the renderer's
+  dirty tracking to be trustworthy first.
+
 ### N-11 — FreeRTOS tick IRQ ran at priority 0 (double-shifted priority)
 
-- **Status:** Fix staged (`C3AE3F15E408`); awaiting on-watch verification
+- **Status:** **Resolved — verified on hardware** (reset reason back to 4, no
+  watchdog resets, recovered-ticks 0, no cyan asserts)
 - **Area:** `port/nrf52/src/port_rtc_tick.c` `vPortSetupTimerInterrupt`
 - **Impact:** Latent since the RTC1 tick port was written; the most likely
   true cause of the N-10 reboot loop (and a plausible contributor to older
@@ -104,7 +305,9 @@ at the SDP / companion JS display-list layer.
 
 ### N-10 — FreeRTOS tick loses time under BLE load → watchdog reboot loop
 
-- **Status:** Fix staged (`C3AE3F15E408`, with N-11); awaiting verification
+- **Status:** **Resolved — verified on hardware** (recovered-ticks reads 0, so
+  with N-11 fixed the tick no longer falls behind; the catch-up remains as
+  insurance and for the tickless path, I-3)
 - **Area:** `port/nrf52/src/port_rtc_tick.c` (RTC1 tick), mirror-rule gap
 - **Impact:** With the radio finally live (N-9), the watch reboots every
   ~30 s. Diag read `6/22/3/0/940/7.0`: reset reason **6 = soft|watchdog**

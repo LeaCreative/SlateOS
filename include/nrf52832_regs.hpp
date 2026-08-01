@@ -329,7 +329,16 @@ constexpr std::uintptr_t RESULT_PTR = SAADC_BASE + 0x62Cu;
 constexpr std::uintptr_t RESULT_MAXCNT = SAADC_BASE + 0x630u;
 constexpr std::uint32_t ENABLE_ON = 1u;
 constexpr std::uint32_t PSELP_AIN7 = 8u;  // P0.31
-constexpr std::uint32_t RES_12BIT = 1u;
+// RESOLUTION.VAL: 0=8bit, 1=10bit, 2=12bit, 3=14bit. The old name for value 1
+// claimed 12-bit and was wrong by 4x (N-12); InfiniTime samples at 10-bit.
+constexpr std::uint32_t RES_10BIT = 1u;
+constexpr std::uint32_t RES_12BIT_ACTUAL = 2u;
+// CH[n].CONFIG GAIN field (bits 8-10): 0=1/6, 1=1/5, 2=1/4, 3=1/3, 4=1/2,
+// 5=1, 6=2, 7=4. InfiniTime uses 1/4 with the internal 0.6 V reference, which
+// puts full scale at 2.4 V on the pin = 4.8 V of battery through the 1:2
+// divider — headroom over a full 4.2 V cell.
+constexpr std::uint32_t GAIN_1_4 = 2u;
+constexpr std::uint32_t REFSEL_INTERNAL = 0u;
 }  // namespace saadc
 
 // ── RTC2 — unused (FreeRTOS tick + wall clock share RTC1; NimBLE uses RTC0) ──

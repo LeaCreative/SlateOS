@@ -38,8 +38,12 @@ std::uint16_t millivolts() {
   if (adc < 0) {
     return 0u;
   }
-  return static_cast<std::uint16_t>((static_cast<std::uint32_t>(adc) * 2000u) /
-                                    1241u);
+  // InfiniTime BatteryController: mV = raw * 8 * 600 / 1024, i.e. the 10-bit
+  // count scaled by the internal 0.6 V reference over gain 1/4 (2.4 V full
+  // scale) and doubled for the 1:2 divider. Matches the SAADC setup in
+  // power.cpp::sample_battery_adc — change the two together (N-12).
+  return static_cast<std::uint16_t>((static_cast<std::uint32_t>(adc) * 4800u) /
+                                    1024u);
 }
 
 std::uint8_t percent_from_mv(std::uint16_t mv) {

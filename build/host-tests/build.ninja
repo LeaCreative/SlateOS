@@ -128,6 +128,41 @@ build test_sdp_parser.exe: CXX_EXECUTABLE_LINKER__test_sdp_parser_ CMakeFiles/te
   TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
 
 # =============================================================================
+# Object build statements for EXECUTABLE target test_uuids
+
+
+#############################################
+# Order-only phony target for test_uuids
+
+build cmake_object_order_depends_target_test_uuids: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_uuids.dir/test_uuids.cpp.obj: CXX_COMPILER__test_uuids_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_uuids.cpp || cmake_object_order_depends_target_test_uuids
+  DEP_FILE = CMakeFiles\test_uuids.dir\test_uuids.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_uuids.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_uuids.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_uuids.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_uuids
+
+
+#############################################
+# Link the executable test_uuids.exe
+
+build test_uuids.exe: CXX_EXECUTABLE_LINKER__test_uuids_ CMakeFiles/test_uuids.dir/test_uuids.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_uuids.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_uuids.exe
+  TARGET_IMPLIB = libtest_uuids.dll.a
+  TARGET_PDB = test_uuids.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_uuids.dir
+
+# =============================================================================
 # Object build statements for EXECUTABLE target test_sdp_frame
 
 
@@ -1034,6 +1069,8 @@ build test_session: phony test_session.exe
 
 build test_spi_timeout: phony test_spi_timeout.exe
 
+build test_uuids: phony test_uuids.exe
+
 build test_wdt_app_pet: phony test_wdt_app_pet.exe
 
 build test_wdt_hold: phony test_wdt_hold.exe
@@ -1046,7 +1083,7 @@ build test_wdt_hold: phony test_wdt_hold.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_spi_timeout.exe
+build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_uuids.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_spi_timeout.exe
 
 # =============================================================================
 # Built-in targets

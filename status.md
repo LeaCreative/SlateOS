@@ -8,9 +8,20 @@ then this file for where things stand *right now*.
 
 The sealed PineTime was recovered (I-1), and today's work flashed and
 field-debugged five post-recovery Slate images. **The current staged
-package is `build/dfu/slate-dfu.zip`, SHA-256 prefix `C3AE3F15E408`** —
-it contains the N-10 + N-11 fixes (see below) and is **awaiting on-watch
-verification**. That verification is the immediate next step.
+package is `build/dfu/slate-dfu.zip`, SHA-256 prefix `B7A58CFAC9B6`** —
+N-13/N-14/N-15, plus **N-16** (the Slate GATT service was registered after
+`ble_gatts_start()`, so it was never in the attribute table) and **N-17**
+(the service UUID byte array used the Microsoft GUID mixed-endian layout
+instead of NimBLE's full reversal, so the service was published as
+`f378f04c-6ee9-62a9-44fa-0000e979acfb` — proven with nRF Connect). Verified on hardware so far: the install is confirmed and durable
+(`IMAGE_OK` written), the tick is correct (N-10/N-11), the radio advertises
+(N-9), and the battery reads true (N-12: raw 831 → 3895 mV).
+
+N-13 was diagnosed from the overlay (`3.1236` = 1236 ms in the session/core
+tick): a full face render re-parses the display list once per tile, and the
+app task outranked the NimBLE host, so that render blocked ATT — which is
+why MTU stayed 23, discovery never finished, the link dropped, and the
+benchmarks could not send. Fix staged; **verifying it is the next step.**
 
 N-9 (silent radio) is **resolved and verified on hardware**: advertising is
 up, nRF Connect sees "SLATE" at `E8:01:34:22:08:89` and connects.
@@ -64,9 +75,13 @@ Companion APK: `companion/app/build/outputs/apk/debug/app-debug.apk`
 
 ## Remaining open issues (see `issues.md` for detail)
 
-N-9 verification → then I-7/I-8 (companion DFU UX), I-15, I-13 (OTA proof
-on hardware), I-3 (tickless soak), I-9/I-14 (ongoing audit/RAM watch),
-I-10 rest, I-11, I-12. `docs/issue-prompts.md` has agent-ready prompts.
+**`docs/issue-prompts-open.docx` is the current register** — 13 agent-ready
+prompts covering the 14 open issues, consolidating the still-open audit
+items with the hardware findings, plus an overlap map of work that must not
+be done twice. It supersedes `docs/issue-prompts.docx` (morning audit;
+DONE items removed) and rewrites I-3, I-9, I-10, I-13 and I-14, whose
+premises tonight's findings invalidated — do not work from the old copies.
+`issues.md` remains the live status register.
 
 ## Environment gotchas (Windows)
 

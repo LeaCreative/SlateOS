@@ -142,14 +142,19 @@ int sample_battery_adc() {
   buses_wake();
 
   nrf::reg<std::uint32_t>(nrf::saadc::ENABLE) = 0u;
-  nrf::reg<std::uint32_t>(nrf::saadc::RESOLUTION) = nrf::saadc::RES_12BIT;
+  nrf::reg<std::uint32_t>(nrf::saadc::RESOLUTION) = nrf::saadc::RES_10BIT;
   nrf::reg<std::uint32_t>(nrf::saadc::OVERSAMPLE) = 0u;
   nrf::reg<std::uint32_t>(nrf::saadc::SAMPLERATE) = 0u;
   nrf::reg<std::uint32_t>(nrf::saadc::CH0_PSELP) = nrf::saadc::PSELP_AIN7;
   nrf::reg<std::uint32_t>(nrf::saadc::CH0_PSELN) = 0u;
-  // Gain 1/6, ref internal, TACQ 10us, single-ended.
+  // Gain 1/4 + internal 0.6 V ref (InfiniTime's BatteryController settings),
+  // TACQ 10us, single-ended. The GAIN field previously held 5, which is gain
+  // *1* — full scale 0.6 V against ~2.0 V on the divided pin, so every sample
+  // railed and the battery always read 0 % (N-12).
   nrf::reg<std::uint32_t>(nrf::saadc::CH0_CONFIG) =
-      (0u << 0) | (5u << 8) | (0u << 12) | (2u << 16) | (0u << 20) | (0u << 24);
+      (0u << 0) | (nrf::saadc::GAIN_1_4 << 8) |
+      (nrf::saadc::REFSEL_INTERNAL << 12) | (2u << 16) | (0u << 20) |
+      (0u << 24);
   nrf::reg<std::uint32_t>(nrf::saadc::RESULT_PTR) =
       reinterpret_cast<std::uint32_t>(&result);
   nrf::reg<std::uint32_t>(nrf::saadc::RESULT_MAXCNT) = 1u;

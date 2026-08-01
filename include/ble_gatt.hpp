@@ -81,13 +81,25 @@ bool central_connected();
 bool request_conn_interval(std::uint16_t interval_units);
 
 /**
+ * Actively raise ATT MTU / DLE / 2M PHY / connection interval.
+ *
+ * Not run on connect (N-15): a mirrored peripheral lets the central drive,
+ * and issuing all four inside the GAP connect callback collapsed the link.
+ * Call this only from the app task, and only once the central has settled
+ * (the throughput/RTT gates need it; ordinary sessions do not).
+ */
+void negotiate_now();
+
+/**
  * Sealed-watch BLE bring-up telemetry (no SWD on sealed units — the diag
  * overlay is the only window). state: 0 stack not started, 1 start_stack
  * entered, 2 port+LL init done, 3 eventqs verified, 4 FreeRTOS host/LL tasks
  * created, 5 host task running, 6 controller synced (on_sync), 7 advertising.
  * Failures: 90 gatts_count_cfg, 91 gatts_add_svcs, 92 adv_set_fields,
- * 93 adv_start, 94 host reset, 95 identity address config. rc: the failing
- * call's return code (or reset reason for 94); 0 when healthy.
+ * 93 adv_start, 94 host reset, 95 identity address config, 96 Slate service
+ * absent from the built GATT table. rc: the failing call's return code (or
+ * reset reason for 94); 0 when healthy. Failure codes are sticky — a later
+ * progress mark cannot overwrite one.
  */
 void bringup_snapshot(std::uint8_t* state, std::uint16_t* rc);
 

@@ -137,6 +137,38 @@ void fmt_diag(char* o, std::size_t cap, const local::State& st) {
   append(part);
   o[i] = '\0';
 }
+
+// Second bring-up line:
+// "<worst phase>.<its ms>/<adc raw>/<battery mV>/<parse ms>.<render ms>".
+// Phase ids in local_state.hpp; 6 (the notify wait) running long means the app
+// task was starved rather than slow.
+void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
+  char part[12];
+  std::size_t i = 0u;
+  const auto append = [&](const char* s) {
+    for (const char* p = s; *p != '\0' && i + 1u < cap; ++p) {
+      o[i++] = *p;
+    }
+  };
+  fmt_u32(part, sizeof(part), st.diag_phase);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_phase_ms);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_adc_raw);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_mv);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_parse_ms);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_render_ms);
+  append(part);
+  o[i] = '\0';
+}
 #endif
 
 // Layout is fixed for the 240x240 panel. Vertical bands, top to bottom:
@@ -176,6 +208,9 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   char diag[40];
   fmt_diag(diag, sizeof(diag), st);
   w.text_big(4, 16, sdp::align::LEFT, 2u, 1u, diag);
+  // Band 28..37 — still clear of the clock at y=56.
+  fmt_diag2(diag, sizeof(diag), st);
+  w.text_big(4, 28, sdp::align::LEFT, 2u, 1u, diag);
 #endif
 
   char tbuf[8];
