@@ -31,6 +31,11 @@ public:
 
   std::uint16_t focus_id() const { return focus_id_; }
 
+  /** True if (x,y) lands on a registered element. Diagnostics only. */
+  bool has_hit(std::uint16_t x, std::uint16_t y) const {
+    return find_hit(x, y) != nullptr;
+  }
+
 private:
   void emit(const std::uint8_t* msg, std::size_t len);
   const input::HitRect* find_hit(std::uint16_t x, std::uint16_t y) const;

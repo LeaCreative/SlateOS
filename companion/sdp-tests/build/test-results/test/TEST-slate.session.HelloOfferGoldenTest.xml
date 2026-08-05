@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.session.HelloOfferGoldenTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-07-31T12:59:10.067Z" hostname="DAN01" time="0.013">
+<testsuite name="slate.session.HelloOfferGoldenTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:55.485Z" hostname="DAN01" time="0.008">
   <properties/>
-  <testcase name="sessionClientDecodesFirmwareGolden()" classname="slate.session.HelloOfferGoldenTest" time="0.009"/>
-  <testcase name="fixtureEncoderMatchesFirmwareGolden()" classname="slate.session.HelloOfferGoldenTest" time="0.004"/>
+  <testcase name="sessionClientDecodesFirmwareGolden()" classname="slate.session.HelloOfferGoldenTest" time="0.007"/>
+  <testcase name="fixtureEncoderMatchesFirmwareGolden()" classname="slate.session.HelloOfferGoldenTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

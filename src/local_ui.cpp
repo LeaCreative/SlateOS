@@ -1,6 +1,7 @@
 #include "local_ui.hpp"
 
 #include "sdp_opcodes.hpp"
+#include "slate_version.hpp"
 #include "wall_clock.hpp"
 
 #include <cstring>
@@ -121,16 +122,11 @@ void fmt_diag(char* o, std::size_t cap, const local::State& st) {
   fmt_u32(part, sizeof(part), st.diag_paints);
   append(part);
   append("/");
-  fmt_u32(part, sizeof(part), st.diag_button);
-  append(part);
-  append("/");
+  // Dropped: raw button level and the BLE bring-up stage/rc. Both were
+  // bring-up instruments — the button reads 0 except while held, and the BLE
+  // pair has read 7.0 on every build since N-17. Freed room for the SDP
+  // counters on line 3, which earn their space.
   fmt_u32(part, sizeof(part), st.diag_stall_ms);
-  append(part);
-  append("/");
-  fmt_u32(part, sizeof(part), st.diag_ble_state);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_ble_rc);
   append(part);
   append("/");
   fmt_u32(part, sizeof(part), st.diag_tick_catchup);
@@ -156,9 +152,9 @@ void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
   fmt_u32(part, sizeof(part), st.diag_phase_ms);
   append(part);
   append("/");
-  fmt_u32(part, sizeof(part), st.diag_adc_raw);
-  append(part);
-  append("/");
+  // ADC raw dropped: line 2 outgrew the 240 px panel once the dl/touch/face
+  // counters were added. Millivolts is the derived value that actually gets
+  // checked against a multimeter; the raw count can come back if needed.
   fmt_u32(part, sizeof(part), st.diag_mv);
   append(part);
   append("/");
@@ -166,6 +162,75 @@ void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
   append(part);
   append(".");
   fmt_u32(part, sizeof(part), st.diag_render_ms);
+  append(part);
+  o[i] = '\0';
+}
+
+// Third line — the SDP path end to end, so a lost display list can be placed
+// exactly:
+//   "<frame>.<inbox>/<applied>.<rejected>.<dropped>.<state>/<touch>.<hit>"
+//
+// Read left to right it follows the message: frame reassembly, then the app
+// inbox, then the session, then the interpreter. The first non-zero drop
+// counter is where it died. Split out of line 2, which ran off the panel.
+void fmt_diag3(char* o, std::size_t cap, const local::State& st) {
+  char part[12];
+  std::size_t i = 0u;
+  const auto append = [&](const char* s2) {
+    for (const char* p2 = s2; *p2 != '\0' && i + 1u < cap; ++p2) {
+      o[i++] = *p2;
+    }
+  };
+  fmt_u32(part, sizeof(part), st.diag_frame_drop);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_inbox_drop);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_dl_ok);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_dl_rej);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_dl_drop);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_sess_state);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_touch_irq);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_touch_readfail);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_touch);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_touch_hit);
+  append(part);
+  o[i] = '\0';
+}
+
+// OTA line: "<percent>/<last nak reason>/<nak count>" (I-13). Reasons are the
+// slate::ota::NakReason values — 0 ok, 1 busy, 2 bad message, 3 hash fail,
+// 4 too large, 5 no storage, 6 low battery, 7 yield, 8 image unconfirmed.
+void fmt_diag_ota(char* o, std::size_t cap, const local::State& st) {
+  char part[12];
+  std::size_t i = 0u;
+  const auto append = [&](const char* s) {
+    for (const char* p = s; *p != '\0' && i + 1u < cap; ++p) {
+      o[i++] = *p;
+    }
+  };
+  fmt_u32(part, sizeof(part), st.diag_ota_pct);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_ota_nak);
+  append(part);
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_ota_naks);
   append(part);
   o[i] = '\0';
 }
@@ -211,6 +276,48 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   // Band 28..37 — still clear of the clock at y=56.
   fmt_diag2(diag, sizeof(diag), st);
   w.text_big(4, 28, sdp::align::LEFT, 2u, 1u, diag);
+  // SDP path counters get their own band; combined with line 2 they overran
+  // the 240 px panel and the right-hand fields were simply invisible.
+  fmt_diag3(diag, sizeof(diag), st);
+  w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
+  // Band 40..49 — OTA only, and only once a transfer has been begun or
+  // refused, so the idle face keeps its cheaper repaint (I-13).
+  if (st.diag_ota_shown) {
+    fmt_diag_ota(diag, sizeof(diag), st);
+    w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
+  }
+  // Which image is actually running. A sealed watch has no SWD, so without
+  // this the only way to tell one flash from the next is to infer it from
+  // behaviour — which is exactly how we mis-attributed N-23 and N-24.
+  {
+    char ver[40];
+    std::size_t vi = 0u;
+    const auto put = [&](const char* s) {
+      for (const char* p = s; *p != '\0' && vi + 1u < sizeof(ver); ++p) {
+        ver[vi++] = *p;
+      }
+    };
+    put(slate::version::kVersion);
+    put(" ");
+    // "Mmm dd yyyy" -> "Mmm dd", then HH:MM from "hh:mm:ss".
+    for (std::size_t k = 0u; k < 6u && slate::version::kBuildDate[k] != '\0';
+         ++k) {
+      if (vi + 1u < sizeof(ver)) {
+        ver[vi++] = slate::version::kBuildDate[k];
+      }
+    }
+    put(" ");
+    for (std::size_t k = 0u; k < 5u && slate::version::kBuildTime[k] != '\0';
+         ++k) {
+      if (vi + 1u < sizeof(ver)) {
+        ver[vi++] = slate::version::kBuildTime[k];
+      }
+    }
+    ver[vi] = '\0';
+    // Scale 2, matching the diag lines — scale 1 is legible on a bench but
+    // not on a wrist or in a photograph.
+    w.text_big(4, 178, sdp::align::LEFT, 2u, 1u, ver);
+  }
 #endif
 
   char tbuf[8];
@@ -258,6 +365,23 @@ std::size_t build_face(W& w, const ViewModel& vm) {
 
   // Link state as a colour block: a lone 0/1 digit was unreadable and ambiguous.
   w.fill(212, 212, 12, 12, st.link_up ? kGreen : kTrack);
+
+  // Display-list activity, left of the link block. Red the moment the
+  // interpreter rejects one — a rejected list and one that never arrived look
+  // identical otherwise, and that is the difference between a parser bug and a
+  // transport bug. Green alternates shade per applied list, so a phone that is
+  // pushing shows a blink rather than a static square.
+  {
+    constexpr std::uint16_t kRed = 0xF800u;
+    constexpr std::uint16_t kDimGreen = 0x03E0u;
+    std::uint16_t dl_colour = kTrack;
+    if (st.diag_dl_rej > 0u) {
+      dl_colour = kRed;
+    } else if (st.diag_dl_ok > 0u) {
+      dl_colour = (st.diag_dl_ok & 1u) ? kGreen : kDimGreen;
+    }
+    w.fill(190, 212, 12, 12, dl_colour);
+  }
 
   if (st.remote_stale) {
     w.fill(112, 176, 16, 4, kAmber);
@@ -395,6 +519,44 @@ std::size_t build_disconnected(W& w, const ViewModel&) {
 }
 
 }  // namespace
+
+// Deliberately NOT a full screen: no CLEAR, and everything lands inside one
+// 240x40 band. The renderer culls tiles with no content (N-18), so this costs
+// ~5 tile passes instead of 30 — cheap enough to draw during a transfer, when
+// the app task is otherwise standing back off the SPI bus (N-22).
+std::size_t build_ota_banner(std::uint8_t* out, std::size_t cap,
+                             std::uint8_t pct) {
+  if (out == nullptr || cap < 8u) {
+    return 0u;
+  }
+  W w;
+  w.p = out;
+  w.cap = cap;
+
+  // Lower status bar, in the band between the version line and the battery
+  // gauge. A bar plus a glyph that alternates every repaint: the bar says how
+  // far along, the blink says it is still moving. A stalled transfer is then
+  // obvious at a glance, which a percentage alone does not give you.
+  // y=154: the gap between the step count (136..150) and the version line
+  // (178..192). The band this used to occupy, 186..195, is now under the
+  // scale-2 version line — so the banner was drawing into occupied pixels.
+  constexpr std::uint8_t kY = 154u;
+  constexpr std::uint16_t kGreen = 0x07E0u;
+  constexpr std::uint16_t kTrack = 0x2124u;
+
+  w.fill(0, kY, 240, 10, 0x0000u);
+  w.gauge(20, kY + 2u, 180, 6, pct > 100u ? 100u : pct, kGreen, kTrack);
+  // Parity of the percentage drives the blink — the banner repaints every 2%.
+  w.fill(210, kY + 2u, 8, 6, ((pct / 2u) & 1u) ? kGreen : kTrack);
+
+  // Without COMMIT the interpreter parses the list and never presents it, so
+  // the banner was built correctly and drawn nowhere — which is why it never
+  // appeared however the transfer was started.
+  w.b(sdp::op::COMMIT);
+  w.b(0x00u);
+
+  return w.ok ? w.n : 0u;
+}
 
 std::size_t build_screen(const ViewModel& vm, std::uint8_t* out, std::size_t cap) {
   if (vm.state == nullptr || out == nullptr || cap < 8u) {

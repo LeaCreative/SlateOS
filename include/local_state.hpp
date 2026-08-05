@@ -69,6 +69,36 @@ struct State {
   // Worst single local display-list render and parse, in ms (N-13).
   std::uint32_t diag_render_ms = 0u;
   std::uint32_t diag_parse_ms = 0u;
+  // OTA progress line (I-13), rendered only once a transfer has been begun or
+  // refused: percent complete, last NAK reason, and how many NAKs.
+  // Display lists applied vs rejected by the interpreter. Without this a
+  // rejected list is indistinguishable from one that never arrived — the
+  // difference between a parser bug and a transport bug (N-28 follow-up).
+  std::uint16_t diag_dl_ok = 0u;
+  std::uint16_t diag_dl_rej = 0u;
+  // Touch events seen by the app loop, and taps that matched a hit rect.
+  // "Nothing happens on tap" has three possible causes — no touch at all, a
+  // touch that hit nothing, or a hit whose event never reached the phone —
+  // and they need different fixes.
+  std::uint16_t diag_touch_irq = 0u;
+  std::uint16_t diag_touch_readfail = 0u;
+  std::uint16_t diag_touch = 0u;
+  std::uint16_t diag_touch_hit = 0u;
+  // How many times the local face took the screen back from a remote screen,
+  // and the last caller to do it. Three fixes have each gated a different
+  // path and a fourth still exists; guessing again is not the way to find it.
+  std::uint16_t diag_face_restores = 0u;
+  std::uint8_t diag_face_last_src = 0u;
+  std::uint16_t diag_dl_drop = 0u;
+  std::uint8_t diag_sess_state = 0u;
+  // Earlier still: frames rejected by the reassembler, and messages dropped
+  // because the single-slot inbox was busy.
+  std::uint16_t diag_frame_drop = 0u;
+  std::uint16_t diag_inbox_drop = 0u;
+  std::uint8_t diag_ota_shown = 0u;
+  std::uint8_t diag_ota_pct = 0u;
+  std::uint8_t diag_ota_nak = 0u;
+  std::uint32_t diag_ota_naks = 0u;
   // Repaint counter. Driven by app-loop iterations rather than the clock, so a
   // climbing paint count next to a frozen uptime means the timebase died while
   // the loop lived, and both frozen means the loop itself stopped.

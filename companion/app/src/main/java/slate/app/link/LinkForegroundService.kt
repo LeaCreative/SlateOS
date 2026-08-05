@@ -266,6 +266,12 @@ class LinkForegroundService : Service() {
     }
 
     private fun startRtt() {
+        // Disabled by default. Production firmware builds with
+        // SLATE_BLE_DIAG=0, so every one of these was rejected by the watch's
+        // reassembler and counted as a frame drop — ~750 pings produced the
+        // 538 "frame drops" that looked like a transport fault and were
+        // nothing of the kind. Use the "Ping RTT" button for a one-off probe.
+        if (!RTT_PING_ENABLED) return
         if (rttJob?.isActive == true) return
         rttJob = scope.launch {
             while (isActive) {
@@ -322,6 +328,10 @@ class LinkForegroundService : Service() {
     }
 
     companion object {
+        /** Periodic DIAG ping. Off: the watch rejects DIAG unless built with
+         *  SLATE_BLE_DIAG=1, and each rejection counts as a frame drop. */
+        private const val RTT_PING_ENABLED = false
+
         const val CHANNEL_ID = "slate_link"
         const val NOTIF_ID = 41
         const val ACTION_CONNECT = "slate.app.CONNECT"

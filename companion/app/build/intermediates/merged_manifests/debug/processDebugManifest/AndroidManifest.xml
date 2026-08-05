@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="slate.app.debug"
-    android:versionCode="1"
-    android:versionName="0.1.0-m16" >
+    android:versionCode="14"
+    android:versionName="0.2.3-p13" >
 
     <uses-sdk
         android:minSdkVersion="30"
@@ -93,6 +93,37 @@
             android:name="slate.app.link.TroubleshootingActivity"
             android:exported="false"
             android:label="Troubleshooting" />
+        <activity
+            android:name="slate.app.link.LogActivity"
+            android:exported="false"
+            android:label="Log" />
+
+        <!--
+             Sideload a JS sub-app by opening its .zip on the phone, so
+             iterating on sub-apps does not require reinstalling the APK.
+        -->
+        <activity
+            android:name="slate.app.repo.SideloadActivity"
+            android:exported="true"
+            android:label="Install Slate sub-app" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="application/zip" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name="slate.app.link.LinkForegroundService"

@@ -99,12 +99,23 @@ void init(const Hooks& hooks) {
 }
 
 void buses_idle() {
-  if (spi::is_acquired()) {
-    return;
-  }
+  // N-21: `is_acquired()` is not a lock. xt25::wait_ready() releases the bus
+  // between status polls, so during a sector erase — hundreds of ms — it reads
+  // false most of the time. This runs on the app task while Nordic DFU drives
+  // the same flash from the NimBLE host task, so the old check let us disable
+  // SPIM0 out from under an in-flight write: the next transfer hit the 5 ms
+  // EVENTS_END timeout, xt25::write_page returned false, and the watch
+  // answered the DFU with OPERATION FAILED part-way through the upload.
+  //
+  // Take the bus mutex instead. sleep_flash() drives the bus itself, so it has
+  // to run before we hold it, and acquire() blocks until any transfer in
+  // flight — on either task — has finished.
+  slate::fs::sleep_flash();
+  spi::acquire();
   nrf::reg<std::uint32_t>(nrf::spim0::ENABLE) = nrf::spim0::DISABLE;
   nrf::reg<std::uint32_t>(nrf::twim1::ENABLE) = nrf::twim1::DISABLE;
-  slate::fs::sleep_flash();
+  // release() re-deasserts both CS lines; the next acquire() re-enables SPIM.
+  spi::release();
 }
 
 void buses_wake() {

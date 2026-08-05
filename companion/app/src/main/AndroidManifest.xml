@@ -81,6 +81,32 @@
             android:exported="false"
             android:label="Troubleshooting" />
 
+        <activity
+            android:name=".link.LogActivity"
+            android:exported="false"
+            android:label="Log" />
+
+        <!-- Sideload a JS sub-app by opening its .zip on the phone, so
+             iterating on sub-apps does not require reinstalling the APK. -->
+        <activity
+            android:name=".repo.SideloadActivity"
+            android:exported="true"
+            android:label="Install Slate sub-app">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/zip" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".link.LinkForegroundService"
             android:exported="false"

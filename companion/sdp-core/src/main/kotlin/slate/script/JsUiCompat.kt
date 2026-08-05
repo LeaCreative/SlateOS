@@ -1,6 +1,7 @@
 package slate.script
 
 import slate.dsl.displayList
+import slate.generated.SdpWire
 import slate.wire.Align
 import slate.wire.Colors
 import slate.wire.Style
@@ -21,6 +22,27 @@ object JsUiScenes {
             rectRound(40, 160, 160, 40, r = 8, color = pal(2), style = Style.FILL)
             text(font = 0, x = 120, y = 172, align = Align.CENTER, color = pal(0), text = btn)
         }
+        commit()
+    }
+
+    /**
+     * The TestApp reference screen — a CLEAR, a plain rect inside an element
+     * carrying EMIT_TOUCH, and text.
+     *
+     * `timerFace` exercises `element()` only with default flags, so the flags
+     * byte was never compared between the two builders. Since EMIT_TOUCH is
+     * what makes the watch report a tap at all, a divergence there would show
+     * up as "taps do nothing" rather than as a rendering fault.
+     */
+    fun testAppFace(taps: Int): ByteArray = displayList {
+        palette(0, Colors.BLACK)
+        palette(1, Colors.WHITE)
+        clear(pal(0))
+        text(font = 0, x = 120, y = 40, align = Align.CENTER, color = pal(1), text = "TestApp")
+        element(id = 1, x = 40, y = 96, w = 160, h = 64, flags = SdpWire.ElemFlags.EMIT_TOUCH) {
+            rect(x = 40, y = 96, w = 160, h = 64, color = pal(1))
+        }
+        text(font = 0, x = 120, y = 180, align = Align.CENTER, color = pal(1), text = taps.toString())
         commit()
     }
 }

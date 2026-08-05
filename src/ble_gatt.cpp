@@ -117,6 +117,8 @@ void bringup_snapshot(std::uint8_t* state, std::uint16_t* rc) {
   if (rc != nullptr) *rc = 0u;
 }
 
+bool dfu_busy() { return false; }
+
 #endif
 
 }  // namespace ble

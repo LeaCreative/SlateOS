@@ -24,34 +24,14 @@ void request_reboot() {}
 namespace slate {
 namespace ota_slot {
 
-void init() {
-  xt25::wake();
-}
+namespace {
+// Bytes from the start of the slot known to be erased. Sectors are erased
+// lazily as writes advance (N-20) — see erase_all().
+std::uint32_t g_erased_upto = 0u;
 
-bool erase_all() {
-  xt25::wake();
-  for (std::uint32_t off = 0u; off < flash_map::kSecondarySize;
-       off += xt25::kSectorSize) {
-    // Secondary is ~464 KiB / 4 KiB ≈ 116 sector erases. Each can take hundreds
-    // of ms; without a pet between them a single BEGIN can exceed the ~7 s
-    // bootloader WDT even though xt25::wait_ready also pets.
-    slate::wdt::pet();
-    if (!xt25::erase_sector(flash_map::kSecondaryOffset + off)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-bool write(std::uint32_t offset, const std::uint8_t* data, std::size_t len) {
-  if (data == nullptr || len == 0u) {
-    return false;
-  }
-  if (offset > flash_map::kSecondarySize ||
-      len > flash_map::kSecondarySize - offset) {
-    return false;
-  }
-  xt25::wake();
+// Page-program without any erase bookkeeping. Callers must have ensured the
+// target sector is erased.
+bool write_raw(std::uint32_t offset, const std::uint8_t* data, std::size_t len) {
   std::uint32_t addr = flash_map::kSecondaryOffset + offset;
   const std::uint8_t* p = data;
   std::size_t left = len;
@@ -67,6 +47,66 @@ bool write(std::uint32_t offset, const std::uint8_t* data, std::size_t len) {
     left -= n;
   }
   return true;
+}
+
+/** Erase forward until `end` is covered. Sequential writes touch each
+ *  sector exactly once, so this costs one sector erase per 4 KiB. */
+bool ensure_erased(std::uint32_t end) {
+  if (end > flash_map::kSecondarySize) {
+    return false;
+  }
+  while (g_erased_upto < end) {
+    slate::wdt::pet();
+    if (!xt25::erase_sector(flash_map::kSecondaryOffset + g_erased_upto)) {
+      return false;
+    }
+    g_erased_upto += xt25::kSectorSize;
+  }
+  return true;
+}
+}  // namespace
+
+void init() {
+  xt25::wake();
+  g_erased_upto = 0u;
+}
+
+/**
+ * Arm the slot for a new image — deliberately does NOT erase 116 sectors here.
+ *
+ * It used to (N-20). At the XT25's 300 ms worst-case sector erase that is up
+ * to ~35 s of a fully blocked caller, and both update paths call it from a
+ * context that cannot afford to disappear: Nordic DFU runs in the GATT
+ * callback on the NimBLE **host task**, so the link itself died — nRF Connect
+ * logged 29.4 s of silence after the size packet, then a disconnect. SDP OTA
+ * calls it from the app task at BEGIN, which starved the drain and dropped
+ * every chunk that arrived meanwhile.
+ *
+ * Erasing lazily spreads the same work across the transfer: one ~60–300 ms
+ * sector erase per 4 KiB written, which fits comfortably inside a single
+ * chunk write. Both writers are strictly sequential from offset 0, so each
+ * sector is still erased exactly once, before anything is written to it.
+ */
+bool erase_all() {
+  xt25::wake();
+  g_erased_upto = 0u;
+  return true;
+}
+
+bool write(std::uint32_t offset, const std::uint8_t* data, std::size_t len) {
+  if (data == nullptr || len == 0u) {
+    return false;
+  }
+  if (offset > flash_map::kSecondarySize ||
+      len > flash_map::kSecondarySize - offset) {
+    return false;
+  }
+  xt25::wake();
+  // Erase forward to cover this write before touching the flash (N-20).
+  if (!ensure_erased(offset + static_cast<std::uint32_t>(len))) {
+    return false;
+  }
+  return write_raw(offset, data, len);
 }
 
 bool read(std::uint32_t offset, std::uint8_t* dst, std::size_t len) {
@@ -93,7 +133,21 @@ bool write_infinitime_pending_magic() {
   };
   const std::uint32_t off =
       flash_map::kSecondarySize - static_cast<std::uint32_t>(sizeof(magic));
-  return write(off, reinterpret_cast<const std::uint8_t*>(magic), sizeof(magic));
+  // The trailer sits in the last sector, far beyond the image end. Erase that
+  // one sector directly instead of letting ensure_erased() walk the whole gap
+  // — on a 133 KiB image into a 464 KiB slot that gap is ~83 sectors, which
+  // would reintroduce exactly the multi-second stall N-20 removed.
+  xt25::wake();
+  const std::uint32_t sector_base =
+      (off / xt25::kSectorSize) * xt25::kSectorSize;
+  if (sector_base >= g_erased_upto) {
+    slate::wdt::pet();
+    if (!xt25::erase_sector(flash_map::kSecondaryOffset + sector_base)) {
+      return false;
+    }
+  }
+  return write_raw(off, reinterpret_cast<const std::uint8_t*>(magic),
+                   sizeof(magic));
 }
 
 void request_reboot() {

@@ -74,6 +74,9 @@ public:
   void set_diag_available(bool on) { diag_available_ = on; }
 
   State state() const { return state_; }
+
+  /** Display lists dropped before apply_list ran (wrong state / no hook). */
+  std::uint16_t display_drops() const { return display_drops_; }
   std::uint8_t remote_depth() const { return remote_depth_; }
   bool stale() const { return stale_; }
   std::uint8_t profile_id() const { return profile_id_; }
@@ -118,6 +121,7 @@ private:
 
   Hooks hooks_{};
   State state_ = State::Disconnected;
+  std::uint16_t display_drops_ = 0u;
   PendingDisplay pending_ = PendingDisplay::Replace;
   std::uint8_t remote_depth_ = 0u;
   std::uint8_t profile_id_ = profile::kIdActive;

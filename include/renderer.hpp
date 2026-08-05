@@ -90,6 +90,44 @@ class Renderer {
 public:
     Renderer();
 
+    // ── Tile-band culling (N-18) ─────────────────────────────────────────────
+    //
+    // A full repaint renders every op once per tile row and let put_pixel()
+    // discard the ~29/30 of pixels outside the active tile — about 1.7 million
+    // rejected calls per frame for a full-screen CLEAR alone, which is where
+    // the ~611 ms went. Draw ops now ask these first and either skip entirely
+    // or clamp their row loop to the visible band. Behaviour is unchanged:
+    // put_pixel still enforces the filter, so culling is a pure fast path.
+
+    /** True when `tile_filter_` is set and rows [y0,y1] lie outside it. */
+    bool tile_rejects_rows(std::int32_t y0, std::int32_t y1) const {
+        if (tile_filter_ < 0) return false;
+        const std::int32_t ty0 =
+            static_cast<std::int32_t>(tile_filter_) * static_cast<std::int32_t>(kTileHeight);
+        const std::int32_t ty1 = ty0 + static_cast<std::int32_t>(kTileHeight) - 1;
+        return y1 < ty0 || y0 > ty1;
+    }
+
+    /** First display row worth drawing (tile top, or 0 when unfiltered). */
+    std::int32_t tile_first_row() const {
+        if (tile_filter_ < 0) return 0;
+        return static_cast<std::int32_t>(tile_filter_) * static_cast<std::int32_t>(kTileHeight);
+    }
+
+    /** Source-relative row span of a blit that can land in the active tile. */
+    struct RowRange {
+        std::uint16_t first;
+        std::uint16_t last;
+        bool empty;
+    };
+    RowRange visible_rows(std::uint16_t y, std::uint16_t h) const;
+
+    /** Last display row worth drawing (tile bottom, or the screen bottom). */
+    std::int32_t tile_last_row() const {
+        if (tile_filter_ < 0) return static_cast<std::int32_t>(kDisplayHeight) - 1;
+        return tile_first_row() + static_cast<std::int32_t>(kTileHeight) - 1;
+    }
+
     // Mark the entire display dirty and fill every pixel with `colour`.
     void fill_screen(std::uint16_t colour);
 
@@ -149,6 +187,9 @@ public:
 
     // Clear the active tile buffer to `colour` (does not transmit).
     void clear_tile_buffer(std::uint16_t colour);
+
+    /** Active tile buffer, for host tests that verify culling output. */
+    const std::uint8_t* tile_buffer() const { return buf_[0]; }
 
     // Transmit only the currently filtered tile from buf_[0].
     // Requires set_tile_filter(t) with t >= 0.

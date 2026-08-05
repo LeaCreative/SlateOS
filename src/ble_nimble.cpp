@@ -455,8 +455,8 @@ int gap_event(struct ble_gap_event* event, void* arg) {
         // is what made the link collapse right after MTU reached 247.
         // The preferred MTU is published once at sync, so the central's own
         // exchange lands at 247 and arrives as BLE_GAP_EVENT_MTU below.
+        // Session-up waits for the TX subscription, not this event (N-23).
         rtt::log(rtt::Level::Info, "BLE: connected — awaiting central");
-        notify_session_up();
       } else if (gap_adv::should_resume(
                      gap_adv::connect_event(event->connect.status))) {
         // InfiniTime OnGAPEvent: failed connect must restart advertising or a
@@ -472,6 +472,24 @@ int gap_event(struct ble_gap_event* event, void* arg) {
       notify_session_down();
       if (gap_adv::should_resume(gap_adv::EventKind::Disconnect)) {
         resume_advertising();
+      }
+      break;
+    case BLE_GAP_EVENT_SUBSCRIBE:
+      // The SDP session starts here, when the central subscribes to TX — not
+      // on connect (N-23). HELLO_OFFER is a notification, and NimBLE drops
+      // notifications to a client that has not written the CCCD. Firing
+      // session-up on connect emitted the offer ~1.3 s before the central
+      // subscribed, so it was silently discarded: the companion never
+      // negotiated, never reached Ready, and therefore never sent CONTROL
+      // traffic at all — which is why the watch clock stayed at 1970.
+      if (event->subscribe.attr_handle == g_attr_tx) {
+        if (event->subscribe.cur_notify) {
+          rtt::log(rtt::Level::Info, "BLE: TX subscribed — session up");
+          notify_session_up();
+        } else {
+          rtt::log(rtt::Level::Info, "BLE: TX unsubscribed — session down");
+          notify_session_down();
+        }
       }
       break;
     case BLE_GAP_EVENT_MTU:
@@ -749,6 +767,8 @@ void update_battery_level(std::uint8_t percent) {
 }
 
 bool central_connected() { return g_conn_handle != BLE_HS_CONN_HANDLE_NONE; }
+
+bool dfu_busy() { return g_dfu.state() != slate::dfu::State::Idle; }
 
 void negotiate_now() {
   if (g_conn_handle == BLE_HS_CONN_HANDLE_NONE) {

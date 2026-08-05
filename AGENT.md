@@ -12,12 +12,28 @@
   0x05 single-tap, 0x0B double-tap, 0x0C long-press.
 - Accel: BMA421 (pre-Jul-2021) or BMA425 (after), I2C 0x18, IRQ=P0.08. Detect at runtime.
 - HR: HRS3300, I2C. Enabled at power-on — write 0x00 to PDRIVER (0x0C) to sleep it.
-- Button: drive P0.15 high to read P0.13; costs 34uA if left high — strobe it.
-- Battery: ADC AIN7 (P0.31). mV = adc * 2000 / 1241. Charge indicator P0.12 (low = charging).
+- Button: P0.15 enable + P0.13 sense (active-high, pulldown). Match InfiniTime: leave
+  enable high (~34 µA). Do not invent a strobe-only scheme that breaks WDT-hold reset.
+- Battery: ADC AIN7 (P0.31), 1:2 divider. Sample as InfiniTime does — SAADC
+  10-bit, gain 1/4, internal 0.6V ref (full scale 2.4V pin = 4.8V battery) —
+  then mV = raw * 8 * 600 / 1024. The config and the formula are one unit:
+  change `power.cpp::sample_battery_adc` and `battery.cpp::millivolts`
+  together. (The old `adc * 2000 / 1241` matched no working config; see N-12.)
+  Charge indicator P0.12 (low = charging).
 - NFC unavailable: P0.10 is the touch reset, so UICR NFCPINS must select GPIO.
 
 ## Stack
 FreeRTOS + NimBLE + LittleFS + MCUBoot. C++17. No LVGL — custom tile renderer.
+
+**Task topology (current):** one FreeRTOS **app** task (former main loop: UI, WDT,
+session/core tick, SDP drain) plus NimBLE **ll** / **ble** host tasks and the
+FreeRTOS timer daemon. GATT RX only reassembles + publishes into `ble::AppInbox`
+(zero-copy: the inbox borrows the reassembler buffer; ingest is gated while a
+message is pending, CREDIT withheld until apply);
+the app task drains (`Link::drain_app_messages`) and owns interpreter/renderer —
+InfiniTime-style link→app handoff (N-1 / I-10 stage 1). Full roadmap §3.1
+`display` / `link` / `sensors` / `system` split remains **deferred**. M5a
+scheduler proof is `freertos_smoke` (2-task + queue, then self-delete).
 
 ## Hard constraints
 - RAM: total static + heap under 54KB, >=6KB slack. CI enforces.
@@ -38,14 +54,26 @@ Thin client. The phone pushes display lists; the watch renders and returns eleme
 input events. A resilient local core (watch face, steps, alarms, retained screens) works
 with no phone. Protocol in slate-implementation-roadmap.md (§4).
 
+## InfiniTime parity (low-level) vs Slate (high-level)
+**Mirror InfiniTime** for boot, MCUBoot/DFU, flash map, WDT/button reset, BLE radio
+bring-up, and other sealed-watch recovery paths
+(https://github.com/InfiniTimeOrg/InfiniTime). Prefer their proven behaviour over
+Slate-invented alternatives when both solve the same hardware problem.
+
+**Differ on purpose** only above that: SDP display lists, local UI tiles, companion
+JS apps telling the watch what to draw, and phone-side bridge/host/client logic.
+
+Concrete example: WDT reload is withheld while the side button is held (same as
+InfiniTime `SystemTask`), and the FreeRTOS **tick/idle hooks do not pet at all** —
+only the app task loop (plus bounded flash helpers and future tickless
+`POST_SLEEP`). A wedged app starves the bootloader dog within ~7 s.
+
 ## Conventions
 - Drivers are C++ classes, no dynamic allocation after init.
 - All tasks document their stack size; check high-water marks in debug builds.
 - Anything BLE-facing gets a host-side unit test that runs on desktop.
 - SDP framing (§4.2) lives in `sdp_frame.hpp` / `sdp_frame.cpp`; BLE link/GATT in
-  `ble_*.hpp`. UUID base and mbuf math: `docs/ble.md`. DIAG benchmark ops: `sdp_diag.hpp`,
-  `docs/benchmark.md`. Session + input (M7): `session.hpp`, `input_router.hpp`,
-  `docs/session.md`. Compositor + app host (M8): `docs/compositor.md`.
+  `ble_*.hpp`. UUID base and mbuf math: `docs/ble.md`.
 
 # Project: Slate companion — Android bridge, script host and app repository client
 
@@ -78,3 +106,47 @@ CompanionDeviceManager with the `watch` device profile.
 
 ## Protocol
 SDP, defined in slate-implementation-roadmap.md (§4). Encoder must match the firmware exactly.
+
+## Mirroring InfiniTime is the DEFAULT for low-level code
+
+The owner has stated this repeatedly: for hardware-level behaviour, mirror
+InfiniTime unless there is a written reason not to. Reference tree:
+`C:\Users\highj\Documents\Projects\InfiniTime-main`.
+
+**Five defects in one session were divergences** — battery ADC (N-12), touch
+read shape, touch controller config, touch IRQ trigger, and blocking
+vibration. Each cost a build-and-flash cycle to find. Check InfiniTime FIRST
+when touching a driver; do not debug outwards from the symptom.
+
+Audit status and file pairs: `docs/infinitime-parity.md`.
+
+The four axes where the defects actually were:
+1. **Initialisation ordering** — what is configured, and in what order.
+2. **Who initiates** — watch or phone, driver or caller.
+3. **Worst-case duration inside a callback or ISR** — InfiniTime uses FreeRTOS
+   timers where Slate has busy-waits.
+4. **Who writes peripheral ENABLE registers**, and what that costs elsewhere.
+
+## Working practice (added 5 Aug 2026)
+
+- **`docs/issue-prompts-open.md` is the single point of truth** for open work
+  and current state. `issues.md` is historical and partial; where they
+  disagree, the prompts doc wins. Update it as work proceeds, not in a batch
+  at the end.
+- **The operator's observation outranks the agent's inference.** They can see
+  the hardware; the agent cannot. If they report something is not on screen,
+  that is the fact to work from — do not argue it from code reading.
+- **Verify before claiming.** For the companion, `adb shell uiautomator dump`
+  gives element bounds — presence in the view hierarchy is not visibility
+  (`targetSdk 35` forces edge-to-edge, so content can render under the system
+  bars). For the watch, ask; there is no way to see it otherwise.
+- **Bump `versionCode` in `companion/app/build.gradle.kts` on every build that
+  gets installed.** A static version makes the on-screen version useless.
+- **Guard at the choke point.** `Core::show_current()` has twelve internal
+  callers — a rule about when the local face may paint belongs inside it, not
+  at each call site.
+- **Instrument before theorising.** Diag line 3 exists because guessing at the
+  SDP path cost several build-and-flash cycles. Add a counter, take one
+  reading, then fix.
+- **Every handover states what changed**, including incidental edits, since
+  each flash costs the operator real time.

@@ -23,7 +23,11 @@ class ClockApp : KotlinSlateApp() {
         version = "1.0.0",
         minProtocolVersion = 1,
         defaultPriority = PriorityClass.AMBIENT,
-        refresh = RefreshPolicy.Periodic(60_000L),
+        // Manual: an AMBIENT app re-renders while buried at a 1/min quota, so
+        // this clock repainted over whatever sub-app was focused a moment
+        // after it appeared (N-34). It stays as the stack base, but it now
+        // draws only when it actually has focus.
+        refresh = RefreshPolicy.Manual,
     )
 
     private val fmt = DateTimeFormatter.ofPattern("HH:mm")

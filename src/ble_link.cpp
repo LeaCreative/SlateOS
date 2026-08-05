@@ -90,7 +90,11 @@ void Link::on_rx_write(const std::uint8_t* data, std::size_t len) {
       return;
     case sdp::frame::FrameStatus::Dropped:
     case sdp::frame::FrameStatus::ChannelReject:
-      ++drops_;
+      // Counted apart from real drops: a disabled channel (DIAG when built
+      // without SLATE_BLE_DIAG) is a configuration fact, not a lost message.
+      // Folding the two together made routine DIAG rejections look like a
+      // transport fault and cost several build cycles chasing it.
+      ++channel_rejects_;
       return;
     case sdp::frame::FrameStatus::Ok:
       break;

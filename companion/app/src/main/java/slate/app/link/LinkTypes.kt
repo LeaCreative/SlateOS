@@ -6,9 +6,45 @@ import java.util.UUID
 
 object LinkLog {
     const val TAG = "SlateLink"
-    fun i(msg: String) = Log.i(TAG, msg)
-    fun w(msg: String) = Log.w(TAG, msg)
-    fun e(msg: String, t: Throwable? = null) = Log.e(TAG, msg, t)
+
+    /**
+     * In-app ring buffer mirroring what goes to logcat.
+     *
+     * Field debugging happens with the watch in one hand and the phone in the
+     * other, usually nowhere near adb, so the log has to be readable and
+     * shareable from the app itself.
+     */
+    private const val CAPACITY = 1000
+    private val buffer = ArrayDeque<String>(CAPACITY)
+    private val stamp = java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.US)
+
+    @Synchronized
+    private fun record(level: String, msg: String) {
+        if (buffer.size >= CAPACITY) buffer.removeFirst()
+        buffer.addLast("${stamp.format(java.util.Date())} $level $msg")
+    }
+
+    /** Newest last, ready to render or share. */
+    @Synchronized
+    fun snapshot(): List<String> = buffer.toList()
+
+    @Synchronized
+    fun clear() = buffer.clear()
+
+    fun i(msg: String) {
+        record("I", msg)
+        Log.i(TAG, msg)
+    }
+
+    fun w(msg: String) {
+        record("W", msg)
+        Log.w(TAG, msg)
+    }
+
+    fun e(msg: String, t: Throwable? = null) {
+        record("E", if (t != null) "$msg: ${t.message}" else msg)
+        Log.e(TAG, msg, t)
+    }
 }
 
 data class LinkMetrics(

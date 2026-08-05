@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.repo.IndexAndSigningTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:55.091Z" hostname="DAN01" time="0.095">
+  <properties/>
+  <testcase name="ed25519RoundTripAndSha256Package()" classname="slate.repo.IndexAndSigningTest" time="0.074"/>
+  <testcase name="packageZipRoundTrip()" classname="slate.repo.IndexAndSigningTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -60,6 +60,9 @@ public:
 
   // Includes reassemblies abandoned by the single-in-flight rule (§4.2).
   std::uint32_t drop_count() const { return drops_ + reasm_.preempt_drop_count(); }
+
+  /** Frames refused because their channel is disabled — not a fault. */
+  std::uint32_t channel_reject_count() const { return channel_rejects_; }
   std::uint32_t loopback_count() const { return loopbacks_; }
   std::uint32_t handoff_drop_count() const { return inbox_.drop_count(); }
   bool inbox_busy() const { return inbox_.busy(); }
@@ -83,6 +86,7 @@ private:
   StatusSnapshot status_{};
   bool diag_allowed_ = false;
   std::uint32_t drops_ = 0u;
+  std::uint32_t channel_rejects_ = 0u;
   std::uint32_t loopbacks_ = 0u;
   sdp::diag::Bench* diag_bench_ = nullptr;
 };

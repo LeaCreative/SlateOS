@@ -106,3 +106,47 @@ CompanionDeviceManager with the `watch` device profile.
 
 ## Protocol
 SDP, defined in slate-implementation-roadmap.md (§4). Encoder must match the firmware exactly.
+
+## Mirroring InfiniTime is the DEFAULT for low-level code
+
+The owner has stated this repeatedly: for hardware-level behaviour, mirror
+InfiniTime unless there is a written reason not to. Reference tree:
+`C:\Users\highj\Documents\Projects\InfiniTime-main`.
+
+**Five defects in one session were divergences** — battery ADC (N-12), touch
+read shape, touch controller config, touch IRQ trigger, and blocking
+vibration. Each cost a build-and-flash cycle to find. Check InfiniTime FIRST
+when touching a driver; do not debug outwards from the symptom.
+
+Audit status and file pairs: `docs/infinitime-parity.md`.
+
+The four axes where the defects actually were:
+1. **Initialisation ordering** — what is configured, and in what order.
+2. **Who initiates** — watch or phone, driver or caller.
+3. **Worst-case duration inside a callback or ISR** — InfiniTime uses FreeRTOS
+   timers where Slate has busy-waits.
+4. **Who writes peripheral ENABLE registers**, and what that costs elsewhere.
+
+## Working practice (added 5 Aug 2026)
+
+- **`docs/issue-prompts-open.md` is the single point of truth** for open work
+  and current state. `issues.md` is historical and partial; where they
+  disagree, the prompts doc wins. Update it as work proceeds, not in a batch
+  at the end.
+- **The operator's observation outranks the agent's inference.** They can see
+  the hardware; the agent cannot. If they report something is not on screen,
+  that is the fact to work from — do not argue it from code reading.
+- **Verify before claiming.** For the companion, `adb shell uiautomator dump`
+  gives element bounds — presence in the view hierarchy is not visibility
+  (`targetSdk 35` forces edge-to-edge, so content can render under the system
+  bars). For the watch, ask; there is no way to see it otherwise.
+- **Bump `versionCode` in `companion/app/build.gradle.kts` on every build that
+  gets installed.** A static version makes the on-screen version useless.
+- **Guard at the choke point.** `Core::show_current()` has twelve internal
+  callers — a rule about when the local face may paint belongs inside it, not
+  at each call site.
+- **Instrument before theorising.** Diag line 3 exists because guessing at the
+  SDP path cost several build-and-flash cycles. Add a counter, take one
+  reading, then fix.
+- **Every handover states what changed**, including incidental edits, since
+  each flash costs the operator real time.

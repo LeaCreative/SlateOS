@@ -22,10 +22,10 @@
       b.palette(1, 0xffff);
       b.palette(2, 0x07e0);
       b.clear(slate.PAL(0));
-      b.text(0, 120, 80, 'CENTER', slate.PAL(1), label);
+      b.textScaled(0, 120, 70, 'CENTER', slate.PAL(1), 6, label);
       b.element(1, 40, 160, 160, 40, function () {
         b.rectRound(40, 160, 160, 40, 8, slate.PAL(2), slate.FILL);
-        b.text(0, 120, 172, 'CENTER', slate.PAL(0), btn);
+        b.textScaled(0, 120, 168, 'CENTER', slate.PAL(0), 3, btn);
       });
       b.commit();
     });

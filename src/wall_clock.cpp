@@ -18,6 +18,10 @@ constexpr std::uint64_t kTicksPerSec = 1024u;  // RTC1 PRESCALER=31
 constexpr std::uint64_t kTicksPerSec = 32768u;  // RTC1 PRESCALER=0
 #endif
 
+// Residual above which a sync is treated as a step (timezone/DST/manual set)
+// rather than crystal drift, and the drift estimate is left untouched.
+constexpr std::int64_t kMaxDriftErrorSec = 120;
+
 std::uint32_t crc32(const std::uint8_t* p, std::size_t n) {
   std::uint32_t c = 0xFFFFFFFFu;
   for (std::size_t i = 0u; i < n; ++i) {
@@ -86,7 +90,15 @@ void apply_cts_sync(std::uint32_t unix_epoch_sec) {
     const std::int64_t phone_elapsed =
         static_cast<std::int64_t>(unix_epoch_sec) -
         static_cast<std::int64_t>(g_blob.epoch_at_sync);
-    if (corrected > 30 && phone_elapsed > 30) {
+    // TIME_SYNC carries local wall-clock, so a DST boundary or a flight
+    // arrives as a step of whole minutes, not as drift. Feeding that to the
+    // estimator would poison ppm for the rest of the session; re-anchor
+    // instead. A real crystal is worth a few thousand ppm at worst, so an
+    // error this large is never drift.
+    const std::int64_t residual = phone_elapsed - corrected;
+    const std::int64_t abs_residual = residual < 0 ? -residual : residual;
+    const bool step_change = abs_residual > kMaxDriftErrorSec;
+    if (corrected > 30 && phone_elapsed > 30 && !step_change) {
       // ppm = (phone - local) / local * 1e6, clamped.
       const std::int64_t err = phone_elapsed - corrected;
       std::int64_t ppm = (err * 1000000) / corrected;

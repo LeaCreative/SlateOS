@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.frame.SdpWriteQueueTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:54.776Z" hostname="DAN01" time="0.022">
+  <properties/>
+  <testcase name="concurrentEnqueuesNeverInterleave()" classname="slate.frame.SdpWriteQueueTest" time="0.013"/>
+  <testcase name="clearDropsPacketsButKeepsSequence()" classname="slate.frame.SdpWriteQueueTest" time="0.0"/>
+  <testcase name="perChannelSequencesMatchChannelSeqBehaviour()" classname="slate.frame.SdpWriteQueueTest" time="0.0"/>
+  <testcase name="endsMessageMarksOnlyTheFinalFragment()" classname="slate.frame.SdpWriteQueueTest" time="0.007"/>
+  <testcase name="sequentialMessagesStayContiguous()" classname="slate.frame.SdpWriteQueueTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

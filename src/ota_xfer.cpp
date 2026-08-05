@@ -44,6 +44,8 @@ void Receiver::reset() {
   credit_ = kWindowBytes;
   std::memset(expect_sha_, 0, sizeof(expect_sha_));
   hash_inited_ = false;
+  // last_nak_/nak_count_/touched_ deliberately survive a reset: they exist to
+  // explain a failure after the transfer state is gone.
 }
 
 bool Receiver::battery_ok() const {
@@ -81,6 +83,10 @@ void Receiver::send_ack() {
 }
 
 void Receiver::send_nak(NakReason reason) {
+  // Record before the send so a refusal is visible even with no TX path.
+  last_nak_ = reason;
+  ++nak_count_;
+  touched_ = true;
   if (hooks_.send == nullptr) {
     return;
   }
@@ -97,6 +103,14 @@ void Receiver::on_message(const std::uint8_t* msg, std::size_t len) {
       // BEGIN: id:u16, total:u32, sha256[32], version:u32  (+ op)
       if (len < 43u) {
         send_nak(NakReason::BadMessage);
+        return;
+      }
+      // Refuse while the running image is still on trial (I-13). Otherwise a
+      // revert would land on firmware that was never validated, throwing away
+      // the known-good fallback — the whole point of the confirm dwell.
+      if (hooks_.image_confirmed != nullptr &&
+          !hooks_.image_confirmed(hooks_.ctx)) {
+        send_nak(NakReason::Unconfirmed);
         return;
       }
       if (!battery_ok()) {
@@ -138,6 +152,8 @@ void Receiver::on_message(const std::uint8_t* msg, std::size_t len) {
       sha256::init(hash_);
       hash_inited_ = true;
       active_ = true;
+      touched_ = true;
+      last_nak_ = NakReason::Ok;
       send_credit();
       send_ack();
       break;
@@ -158,7 +174,11 @@ void Receiver::on_message(const std::uint8_t* msg, std::size_t len) {
         send_nak(NakReason::Yield);
       }
       if (off != received_) {
+        // Out of step — tell the sender where we actually are, and what the
+        // window really is (N-19). Without the credit the sender can rewind
+        // its offset but still believe it has no room, and both sides wait.
         send_ack();
+        send_credit();
         return;
       }
       if (received_ + data_len > total_) {
@@ -167,6 +187,7 @@ void Receiver::on_message(const std::uint8_t* msg, std::size_t len) {
       }
       if (data_len > credit_) {
         send_nak(NakReason::Busy);
+        send_credit();
         return;
       }
       if (hooks_.write_slot == nullptr ||
@@ -179,12 +200,19 @@ void Receiver::on_message(const std::uint8_t* msg, std::size_t len) {
         sha256::update(hash_, msg + 7, data_len);
       }
       received_ += static_cast<std::uint32_t>(data_len);
-      credit_ = static_cast<std::uint16_t>(credit_ - data_len);
-      if (credit_ < kWindowBytes / 4u) {
-        credit_ = kWindowBytes;
-        send_credit();
-      }
+      // The chunk is written and hashed, so the slot is free again: restore
+      // the full window rather than draining it toward a threshold (N-19).
+      // With a one-chunk window that makes every ACK carry permission for
+      // exactly the next chunk, which is what the single-slot inbox can hold.
+      credit_ = kWindowBytes;
+      // ACK first so the sender fixes its offset, then re-advertise the
+      // window on every chunk (N-19). The link legitimately drops messages
+      // while the app task is busy — the zero-copy inbox holds exactly one —
+      // so a sender that only decrements its own credit drifts out of sync
+      // and both sides wait forever. Making the watch's credit authoritative
+      // once per round trip lets the transfer self-heal after any drop.
       send_ack();
+      send_credit();
       break;
     }
     case kOpAbort: {

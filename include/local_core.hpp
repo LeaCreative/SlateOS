@@ -60,7 +60,16 @@ public:
   void on_button_press();
   void on_tap_elem(std::uint16_t elem_id);
 
+  /** False while a phone-pushed screen owns the panel; blocks local repaints. */
+  void set_local_owns_screen(bool owns) { local_owns_screen_ = owns; }
+
+  /** True while firmware is being received; blocks local repaints entirely. */
+  void set_updating(bool updating) { updating_ = updating; }
+
   void show_current();
+
+  /** Band-only "UPDATING nn%" repaint, safe to call during a transfer. */
+  void show_ota_progress(std::uint8_t pct);
   void wake_display();
 
 private:
@@ -77,6 +86,8 @@ private:
   local::ScreenBlock block_{};
   notif::Store notifs_{};
   alarm::Table alarms_{};
+  bool local_owns_screen_ = true;
+  bool updating_ = false;
   std::uint8_t dl_buf_[512] = {};
   std::uint32_t wake_until_ms_ = 0u;
   std::uint32_t last_step_ms_ = 0u;

@@ -25,10 +25,41 @@ pinecone blue/red → InfiniTime → fixed Slate).
 | `F27CF0DD8D5A` | Superseded (2026-08-01) — N-16 registration fix; confirmed `IMAGE_OK` and association, but the phone still reported "service not found" (stale Android GATT cache suspected) |
 | `0B8109A23AFA` | Superseded (2026-08-01) — GATT self-check + sticky failure codes |
 | `FAE65071E5A7` | Superseded (2026-08-01) — fixed `slate_uuids.hpp` only; `ble_nimble.cpp` had its own hardcoded copy, so the wire was unchanged |
-| `B7A58CFAC9B6` | **Good (2026-08-01)** — N-17 fixed at the definition the radio actually uses; `static_assert` binds both copies, `test_uuids` pins the strings |
+| `B7A58CFAC9B6` | Good (2026-08-01) — N-17 fixed; **SDP link verified end-to-end** (MTU 247, service correct, ready to push) |
+| `B875E4F60ADC` | Good (2026-08-01) — N-18 tile-band culling; repaint 611 ms → 199 ms, verified |
+| `EFBBB8606B39` | Superseded (2026-08-01) — I-13 prep; the first OTA run stalled at 512 B (N-19) |
+| `66D6CB890F74` | Superseded (2026-08-02) — credit re-advertised on ACK, but the window was still 4x the link's capacity |
+| `47A3FA74D258` | Superseded (2026-08-02) — N-19 lock-step window, but the slot erase still blocked both update paths |
+| `7CBF667524F2` | Superseded (2026-08-02) — N-20 lazy erase; upload then ran at 71 kB/s but failed at 11 % (N-21) |
+| `9B814EBDE85B` | Superseded (2026-08-02) — N-21 SPI mutex fix; the transfer then completed but hung silently at 100 % (N-22) |
+| `AFECC55F505D` | Good (2026-08-03) — N-22 app task stands back during transfers; flashed successfully from InfiniTime |
+| `EB591620B5B0` | Good (2026-08-03) — N-23 session starts on TX subscribe; **first image delivered by companion SDP OTA**, confirmed IMAGE_OK |
+| `E43C26CBE325` | Good (2026-08-03) — N-25 time-sync retry; watch shows its version and live OTA progress; clock ran in UTC |
+| `CFEDE90DE7F4` | Good (2026-08-03) — N-26: TIME_SYNC carries local wall-clock, so the face shows local time |
+| `5904578362CC` | **Untested (2026-08-03)** — N-27 return-to-face + TestApp round-trip (P-1). Pair with companion `0.1.0-m16` TestApp build |
+
+**Flashing this one needs a working DFU.** The stall it fixes is what breaks
+DFU, so use the bootloader route if nRF Connect keeps disconnecting: hold the
+button through the pinecone to **red** for recovery firmware, or **blue** to
+roll back, then flash from there.
 
 Full good SHA-256:
-`B7A58CFAC9B6CBC61DA55CD7D7C5D801337C374623B94106644DB76EECD9E28E`.
+`CFEDE90DE7F41212AC57F4676E1AA8ABB68D8A89C625243F3DCF01AB4E9A9779`.
+
+**Slate→Slate SDP OTA is the primary update path since 3 Aug** (I-13, proven
+twice on hardware). Booting to InfiniTime to flash is now a fallback, not the
+routine, and hold-to-blue remains the guaranteed recovery.
+
+Since `E43C26CBE325` the running image identifies itself: the watch face
+carries a version line (`0.1.0-m16 Aug 03 14:12`) in diag builds, so a sealed
+watch no longer has to be identified by inference.
+
+**Flashing from InfiniTime is the reliable path** while the watch still runs a
+build without N-20/N-21/N-22. Those fixes are what make Slate a dependable DFU
+*target*; a build lacking them cannot be relied on to receive its replacement.
+
+Overlay gains a third line during OTA: `<percent>/<last NAK>/<NAK count>`
+(NAK 8 = image still on trial). See `docs/ota-verification.md`.
 
 Verify after flashing: nRF Connect should show the 128-bit service as
 `e979acfb-c338-0000-a962-e96e4cf078f3`. If it still reads `f378f04c-…`, use

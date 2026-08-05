@@ -18,6 +18,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -140,6 +141,7 @@ class SlateOtaService : Service() {
                 awaitBeginAck(state)
 
                 // Transfer loop
+                var resyncs = 0
                 while (state.acknowledgedOffset < image.size) {
                     while (state.sendable > 0) {
                         val chunkSize = minOf(state.sendable, slate.ota.OTA_MAX_CHUNK_BYTES)
@@ -150,15 +152,54 @@ class SlateOtaService : Service() {
                             fromIndex = state.sentOffset,
                             length = chunkSize,
                         )
+                        // I-13: per-chunk log with offsets. When a transfer
+                        // stalls on sealed hardware this is the only record of
+                        // which offset it died at, to line up against the
+                        // watch's OTA diag line (percent / last NAK).
+                        LinkLog.i(
+                            "OTA chunk off=${state.sentOffset} len=$chunkSize " +
+                                "acked=${state.acknowledgedOffset} " +
+                                "credit=${state.sendable} of ${image.size}",
+                        )
                         gatt.sendMessage(SdpFrame.CHAN_OTA, chunk)
                         state.onChunkSent(chunkSize)
                         // Yield frequently so the write queue drains
                         delay(1)
                     }
-                    // Wait for the watch to ACK / send more credit
-                    val rawMsg = withTimeout(CHUNK_TIMEOUT_MS) { watchMessages.receive() }
+                    // Wait for the watch to ACK / send more credit.
+                    //
+                    // A timeout here does not mean failure (N-19). The watch's
+                    // link inbox holds one message, so chunks sent while the
+                    // app task is busy are dropped outright — the watch has
+                    // nothing to ACK and stays silent, while this side has
+                    // already spent the credit for them. Re-sending BEGIN with
+                    // the same id is the resume handshake: the watch answers
+                    // with its true offset and its true credit, and the
+                    // transfer continues from there.
+                    val rawMsg = try {
+                        withTimeout(CHUNK_TIMEOUT_MS) { watchMessages.receive() }
+                    } catch (t: TimeoutCancellationException) {
+                        if (++resyncs > MAX_RESYNCS) {
+                            error("No response after $MAX_RESYNCS resyncs " +
+                                "at ${state.acknowledgedOffset}/${image.size} B")
+                        }
+                        LinkLog.w(
+                            "OTA timeout at acked=${state.acknowledgedOffset} " +
+                                "sent=${state.sentOffset} — resync #$resyncs",
+                        )
+                        publish(
+                            SlateOtaState(
+                                active = true,
+                                progress = (state.acknowledgedOffset * 100L / image.size).toInt(),
+                                message = "Re-syncing at ${state.acknowledgedOffset} B",
+                            ),
+                        )
+                        gatt.sendMessage(SdpFrame.CHAN_OTA, beginMsg)
+                        continue
+                    }
                     val decoded = slate.ota.decodeWatchMessage(rawMsg)
                         ?: continue
+                    LinkLog.i("OTA watch msg=$decoded at acked=${state.acknowledgedOffset}")
                     when (val action = state.onWatchMessage(decoded)) {
                         is slate.ota.OtaSendAction.SendChunks -> {
                             val pct = (state.acknowledgedOffset * 100L / image.size).toInt()
@@ -279,7 +320,18 @@ class SlateOtaService : Service() {
         /** Timeout waiting for watch to ACK BEGIN (erase can be slow). */
         private const val BEGIN_TIMEOUT_MS = 30_000L
         /** Timeout waiting for any ACK/CREDIT/NAK during chunk transfer. */
-        private const val CHUNK_TIMEOUT_MS = 15_000L
+        // Lock-step now (N-19): a chunk is answered as soon as the app task
+        // drains it, so a long wait means the chunk was lost, not slow. Keep
+        // it well clear of the ~5 s BEGIN erase and a ~200 ms repaint, but
+        // short enough that a lost chunk costs seconds rather than a minute.
+        private const val CHUNK_TIMEOUT_MS = 5_000L
+
+        /**
+         * Resume handshakes tolerated before giving up (N-19). Each one
+         * recovers from dropped chunks; a transfer that needs many is telling
+         * you something else is wrong.
+         */
+        private const val MAX_RESYNCS = 20
 
         private val stateMutable = MutableStateFlow(SlateOtaState())
         val state = stateMutable.asStateFlow()

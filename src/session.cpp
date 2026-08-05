@@ -407,9 +407,13 @@ void Manager::on_display(const std::uint8_t* msg, std::size_t len,
                          std::uint32_t now_ms) {
   if (state_ != State::Ready && state_ != State::Active &&
       state_ != State::Idle) {
+    // Silently discarding here made a wrong session state look identical to a
+    // transport failure: apply_list never runs, so the dl counters stay at 0.
+    ++display_drops_;
     return;
   }
   if (hooks_.apply_list == nullptr || msg == nullptr || len == 0u) {
+    ++display_drops_;
     return;
   }
 
@@ -463,9 +467,23 @@ void Manager::tick(std::uint32_t now_ms) {
 
 bool Manager::local_back(std::uint32_t now_ms) {
   (void)now_ms;
-  // Caller emits BACK on the wire; session only reports whether a remote
-  // screen is present for local navigation policy.
-  return remote_depth_ > 0u;
+  if (remote_depth_ == 0u) {
+    return false;
+  }
+  // The watch pops its own screen stack rather than waiting for the phone to
+  // do it. The caller still emits BACK on the wire so the companion can follow,
+  // but the user must never depend on the phone being responsive to get back to
+  // the watch face — a wedged or busy companion previously trapped the screen
+  // with no local escape. The companion's own fallback only popped when its
+  // stack held more than one app, so a single focused app was inescapable.
+  --remote_depth_;
+  if (remote_depth_ == 0u) {
+    pending_ = PendingDisplay::Replace;
+    if (hooks_.show_watch_face) {
+      hooks_.show_watch_face(false, hooks_.ctx);
+    }
+  }
+  return true;
 }
 
 }  // namespace session

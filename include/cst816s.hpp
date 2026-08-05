@@ -40,6 +40,12 @@ void init();
 // True if the IRQ line latched a falling edge since the last poll.
 bool irq_pending();
 
+/** Raw GPIOTE PORT latches seen since init. Diagnostics. */
+std::uint32_t irq_count();
+
+/** I2C reads that returned an error. Diagnostics. */
+std::uint32_t read_fail_count();
+
 // Clear the GPIOTE event and read touch registers.
 // Returns a sample with valid=false if the controller is asleep / NACK.
 TouchSample poll();

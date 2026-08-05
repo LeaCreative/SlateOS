@@ -121,6 +121,37 @@ class DisplayListBuilder {
         bytes.forEach { buffer.add(it) }
     }
 
+    /**
+     * TEXT_SCALED (0xE0) — each glyph pixel becomes a scale×scale block.
+     *
+     * The base font is 3×5, which is unreadable on a 240×240 panel at arm's
+     * length; every legible screen the firmware draws itself uses this opcode.
+     * Without it the Kotlin builder could only emit tiny text, so remote
+     * screens were unreadable while local ones were fine.
+     *
+     * Extension opcode, so it carries a u16 payload length and old firmware
+     * skips it cleanly. Layout must match `sdp_parser.cpp`:
+     * font, x, y, colour, align, scale, len, bytes.
+     */
+    fun textScaled(
+        font: Int = 0,
+        x: Int,
+        y: Int,
+        align: Int = Align.LEFT,
+        color: SdpColor,
+        scale: Int,
+        text: String,
+    ) {
+        val bytes = text.encodeToByteArray()
+        val colorBytes = color.encode()
+        op(SdpWire.Op.TEXT_SCALED)
+        u16Le(6 + colorBytes.size + bytes.size)
+        u8(font); u8(x); u8(y)
+        color(color)
+        u8(align); u8(scale); u8(bytes.size)
+        bytes.forEach { buffer.add(it) }
+    }
+
     fun textBox(
         font: Int = 0,
         x: Int, y: Int, w: Int, h: Int,

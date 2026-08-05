@@ -22,5 +22,12 @@ struct ViewModel {
 // Returns bytes written (0 on overflow / null). Includes COMMIT.
 std::size_t build_screen(const ViewModel& vm, std::uint8_t* out, std::size_t cap);
 
+/**
+ * Band-only "UPDATING nn%" overlay drawn during a firmware transfer.
+ * Emits no CLEAR, so it repaints a single band rather than the whole panel.
+ */
+std::size_t build_ota_banner(std::uint8_t* out, std::size_t cap,
+                             std::uint8_t pct);
+
 }  // namespace ui
 }  // namespace slate

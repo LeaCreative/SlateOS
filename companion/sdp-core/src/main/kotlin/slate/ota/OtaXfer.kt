@@ -45,7 +45,14 @@ enum class NakReason(val code: Int) {
     TooLarge(4),
     NoStorage(5),
     LowBattery(6),
-    Yield(7);
+    Yield(7),
+
+    /**
+     * The running watch image is still on trial (I-13). Stacking a new image
+     * on an unconfirmed one would leave a revert landing on firmware nobody
+     * validated, so the watch refuses until IMAGE_OK is written.
+     */
+    Unconfirmed(8);
 
     companion object {
         fun fromCode(code: Int): NakReason =
@@ -252,6 +259,10 @@ class OtaSenderState(
                     }
                     NakReason.Busy -> OtaSendAction.Fail("Watch busy (another transfer active?)")
                     NakReason.LowBattery -> OtaSendAction.Fail("Watch battery too low (< 30%)")
+                    NakReason.Unconfirmed -> OtaSendAction.Fail(
+                        "Watch image is still on trial — keep the watch connected " +
+                            "until the amber bar clears, then retry",
+                    )
                     NakReason.TooLarge -> OtaSendAction.Fail("Image too large for watch secondary slot")
                     NakReason.NoStorage -> OtaSendAction.Fail("Watch storage error (erase or write failed)")
                     NakReason.HashFail -> OtaSendAction.Fail("Hash mismatch at commit")

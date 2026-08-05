@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -12,8 +12,12 @@ android {
         applicationId = "slate.app"
         minSdk = 30
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0-m16"
+        // BUMP versionCode ON EVERY BUILD THAT IS INSTALLED.
+        // It sat at 1 through roughly fifteen installs, which made the version
+        // display useless for the one thing it exists for â€” telling two builds
+        // apart. versionName tracks features; versionCode tracks the install.
+        versionCode = 14
+        versionName = "0.2.3-p13"
     }
 
     buildTypes {
@@ -27,6 +31,8 @@ android {
 
     buildFeatures {
         compose = true
+        // Version strings for the in-app log header and the main screen.
+        buildConfig = true
     }
 
     compileOptions {

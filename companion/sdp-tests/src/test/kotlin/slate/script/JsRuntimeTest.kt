@@ -10,6 +10,42 @@ import slate.host.HostInbound
 import slate.host.HostOutbound
 
 class JsUiGoldenTest {
+    /**
+     * `timerFace` calls element() with default flags, so the flags byte was
+     * never compared between the builders. EMIT_TOUCH is what makes the watch
+     * report a tap at all — a divergence there presents as "taps do nothing",
+     * not as a visible rendering fault.
+     */
+    @Test
+    fun testAppFace_jsMatchesKotlin() {
+        RhinoScriptEngine().use { eng ->
+            eng.evaluate(ScriptResources.read(ScriptResources.UI_JS))
+            val b64 = eng.evaluate(
+                """
+                slate.ui.displayList(function (b) {
+                  b.palette(0, 0x0000);
+                  b.palette(1, 0xffff);
+                  b.clear(slate.PAL(0));
+                  b.text(0, 120, 40, 'CENTER', slate.PAL(1), 'TestApp');
+                  b.element(1, 40, 96, 160, 64, 0x01, function () {
+                    b.rect(40, 96, 160, 64, slate.PAL(1));
+                  });
+                  b.text(0, 120, 180, 'CENTER', slate.PAL(1), '3');
+                  b.commit();
+                });
+                """.trimIndent(),
+            )
+            val jsBytes = java.util.Base64.getDecoder().decode(b64)
+            val ktBytes = JsUiScenes.testAppFace(taps = 3)
+            assertContentEquals(
+                ktBytes,
+                jsBytes,
+                "JS slate.ui diverged from Kotlin DSL on the EMIT_TOUCH path — " +
+                    "kt=${ktBytes.toHex()} js=${jsBytes.toHex()}",
+            )
+        }
+    }
+
     @Test
     fun timerFace_jsMatchesKotlin() {
         RhinoScriptEngine().use { eng ->

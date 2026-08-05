@@ -108,6 +108,18 @@ class MainActivity : ComponentActivity() {
             ),
         )
 
+        // Which build is on the phone — needed constantly when firmware and
+        // companion are being flashed in lockstep.
+        root.addView(
+            text(
+                "Companion ${slate.app.BuildConfig.VERSION_NAME} " +
+                    "(build ${slate.app.BuildConfig.VERSION_CODE}, " +
+                    "${slate.app.BuildConfig.BUILD_TYPE})",
+                12f,
+                false,
+            ),
+        )
+
         metricsView = text("…", 15f, false).also { root.addView(it) }
         confirmBanner = text("", 16f, true).also {
             it.setPadding(dp(8), dp(12), dp(8), dp(12))
@@ -235,6 +247,9 @@ class MainActivity : ComponentActivity() {
         })
         root.addView(button("Troubleshooting (BLE one-slot)") {
             startActivity(Intent(this, slate.app.link.TroubleshootingActivity::class.java))
+        })
+        root.addView(button("View log") {
+            startActivity(Intent(this, slate.app.link.LogActivity::class.java))
         })
         root.addView(button("Background reliability settings") {
             startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))

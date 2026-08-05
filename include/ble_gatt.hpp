@@ -91,6 +91,16 @@ bool request_conn_interval(std::uint16_t interval_units);
 void negotiate_now();
 
 /**
+ * True while a Nordic legacy DFU transfer is in progress.
+ *
+ * DFU runs in the GATT callback on the NimBLE host task and writes the
+ * external flash, which shares the SPI bus with the display. The app task
+ * must stand back while that happens or it competes for the bus and starves
+ * the inbound stream (N-22).
+ */
+bool dfu_busy();
+
+/**
  * Sealed-watch BLE bring-up telemetry (no SWD on sealed units — the diag
  * overlay is the only window). state: 0 stack not started, 1 start_stack
  * entered, 2 port+LL init done, 3 eventqs verified, 4 FreeRTOS host/LL tasks

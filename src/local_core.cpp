@@ -107,8 +107,34 @@ void Core::apply_cts_time(std::uint32_t unix_epoch_sec) {
   show_current();
 }
 
+void Core::show_ota_progress(std::uint8_t pct) {
+  if (hooks_.push_list == nullptr) {
+    return;
+  }
+  const std::size_t n = ui::build_ota_banner(dl_buf_, sizeof(dl_buf_), pct);
+  if (n > 0u) {
+    hooks_.push_list(dl_buf_, n, hooks_.ctx);
+  }
+}
+
 void Core::show_current() {
   if (hooks_.push_list == nullptr) {
+    return;
+  }
+  // One guard, here, rather than at each call site. Gating callers one at a
+  // time missed a different path three times running (N-29, N-30): the diag
+  // overlay, the minute rollover, the stale hook — and still others call this
+  // indirectly, `apply_cts_time` among them, which repaints on every time
+  // sync. Every local repaint passes through here, so this is the only place
+  // the rule can be enforced completely.
+  if (!local_owns_screen_) {
+    return;
+  }
+  // Same rule for a firmware transfer: the OTA banner owns the panel, and a
+  // local repaint slipping in made the face and the banner alternate. Gating
+  // the callers individually is what failed three times before — the guard
+  // belongs here, where every local repaint passes.
+  if (updating_) {
     return;
   }
   ui::ViewModel vm;
@@ -228,7 +254,10 @@ void Core::tick(std::uint32_t now_ms) {
     const std::uint8_t minute_now = clock::civil_now().minute;
     const bool changed = local_state().steps != steps_before ||
                          minute_now != last_painted_minute_;
-    if (local_state().screen == local::Screen::Face && changed) {
+    // local_owns_screen_: the minute rolling over must not wipe a screen the
+    // phone owns (N-29). Step and battery bookkeeping still run.
+    if (local_state().screen == local::Screen::Face && changed &&
+        local_owns_screen_) {
       last_painted_minute_ = minute_now;
       show_current();
     }

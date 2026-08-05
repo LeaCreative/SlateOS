@@ -38,6 +38,18 @@ class SlateGattClient(
     private val writeQueue = SdpWriteQueue()
     private val writing = AtomicBoolean(false)
 
+    /** True from connect() until services are discovered or the attempt ends. */
+    private var connecting = false
+
+    /** True once discoverServices() has been issued for the current GATT. */
+    private var discoveryStarted = false
+
+    /** Message-boundary state for the write pump (N-28). */
+    private var lastPktEndedMessage = false
+    private var lastPktChannel = -1
+    private var lastWriteStartedMs = 0L
+    private var lastNotReadyLogMs = 0L
+
     private var gatt: BluetoothGatt? = null
     private var rxChar: BluetoothGattCharacteristic? = null
     private var txChar: BluetoothGattCharacteristic? = null
@@ -87,10 +99,43 @@ class SlateGattClient(
         otaListeners -= listener
     }
 
+    /**
+     * Drop Android's cached GATT table for this device, then discover.
+     *
+     * The watch keeps one address (derived from FICR) across InfiniTime and
+     * every Slate build, while the service tables differ completely, so a
+     * cached table routinely describes firmware that is no longer installed —
+     * which is how a correct build can look like it has no services at all.
+     * `BluetoothGatt.refresh()` is a hidden API, so this is best-effort by
+     * design: any failure is logged and discovery proceeds exactly as before.
+     */
+    private fun discoverServicesFresh(g: BluetoothGatt) {
+        discoveryStarted = true
+        val refreshed = try {
+            val m = g.javaClass.getMethod("refresh")
+            val r = m.invoke(g) as? Boolean ?: false
+            LinkLog.i("gatt.refresh() = $r")
+            r
+        } catch (t: Throwable) {
+            // Blocked or absent on this OS build — not an error, just means the
+            // operator may need to clear the cache manually after a firmware
+            // change that alters the service table.
+            LinkLog.w("gatt.refresh() unavailable: ${t.javaClass.simpleName}")
+            false
+        }
+        if (!g.discoverServices()) {
+            LinkLog.w("discoverServices() returned false")
+            update { copy(lastError = "discoverServices refused") }
+        } else if (!refreshed) {
+            LinkLog.i("discovering with a possibly cached table")
+        }
+    }
+
     private val callback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
             LinkLog.i("onConnectionStateChange status=$status newState=$newState")
             if (status != BluetoothGatt.GATT_SUCCESS) {
+                connecting = false
                 update { copy(lastError = "conn status=$status", connected = false) }
                 closeInternal()
                 return
@@ -109,10 +154,28 @@ class SlateGattClient(
                     val ok = g.requestMtu(247)
                     LinkLog.i("requestMtu(247) submitted=$ok")
                     if (!ok) {
-                        g.discoverServices()
+                        discoverServicesFresh(g)
+                    } else {
+                        // Watchdog: discovery is chained off onMtuChanged, so a
+                        // callback that never arrives leaves the link connected
+                        // but unusable (N-24). Discover anyway after a grace
+                        // period; a second discoverServices() is harmless.
+                        mainHandler.postDelayed({
+                            // Test whether discovery was *started*, not whether
+                            // it finished: rxChar is still null while discovery
+                            // is in flight, so the first version of this fired
+                            // during a healthy discovery and ran a second one.
+                            // That produced two onServicesDiscovered callbacks
+                            // and a CCCD write rejected with rc=201.
+                            if (gatt === g && !discoveryStarted) {
+                                LinkLog.w("no onMtuChanged after ${MTU_GRACE_MS}ms — discovering anyway")
+                                discoverServicesFresh(g)
+                            }
+                        }, MTU_GRACE_MS)
                     }
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
+                    connecting = false
                     update { copy(connected = false, notes = "disconnected") }
                     closeInternal()
                 }
@@ -127,11 +190,12 @@ class SlateGattClient(
                     notes = "MTU event: $mtu status=$status",
                 )
             }
-            g.discoverServices()
+            discoverServicesFresh(g)
         }
 
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
             LinkLog.i("onServicesDiscovered status=$status")
+            connecting = false
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 update {
                     copy(
@@ -233,7 +297,7 @@ class SlateGattClient(
                 update { copy(lastError = "write status=$status") }
             }
             writing.set(false)
-            pumpWrites()
+            continuePump()
         }
 
         override fun onPhyUpdate(g: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
@@ -260,7 +324,24 @@ class SlateGattClient(
     }
 
     fun connect(device: BluetoothDevice) {
+        // Ignore a second attempt while one is already in flight (N-24).
+        // CDM's presence callback fires moments after we connect ourselves, and
+        // the old code called close() first — tearing down a GATT that had
+        // requestMtu() outstanding. Its onMtuChanged never arrived, and since
+        // discovery is chained off that callback, services were never
+        // discovered, rxChar stayed null, and every send failed "not ready".
+        if (connecting || _metrics.value.connected) {
+            LinkLog.w(
+                "connect(${device.address}) ignored — already " +
+                    if (connecting) "connecting" else "connected",
+            )
+            return
+        }
+        connecting = true
         close()
+        // Sequences restart with the connection: the watch resets its
+        // reassembler on every reboot (N-32).
+        writeQueue.reset()
         update {
             copy(
                 deviceAddress = device.address,
@@ -283,7 +364,9 @@ class SlateGattClient(
     }
 
     private fun closeInternal() {
-        writeQueue.clear()
+        connecting = false
+        discoveryStarted = false
+        writeQueue.reset()
         writing.set(false)
         rxChar = null
         txChar = null
@@ -297,7 +380,17 @@ class SlateGattClient(
         val g = gatt
         val rx = rxChar
         if (g == null || rx == null || !_metrics.value.connected) {
-            LinkLog.w("sendMessage: not ready")
+            // Rate-limited: the compositor and heartbeat retry constantly, and
+            // an unready link used to bury everything else in the log.
+            val now = System.currentTimeMillis()
+            if (now - lastNotReadyLogMs > NOT_READY_LOG_INTERVAL_MS) {
+                lastNotReadyLogMs = now
+                LinkLog.w(
+                    "sendMessage ch=$channel: not ready " +
+                        "(gatt=${g != null} rx=${rx != null} " +
+                        "connected=${_metrics.value.connected})",
+                )
+            }
             return false
         }
         val mtu = _metrics.value.attMtu.coerceAtLeast(23)
@@ -327,8 +420,32 @@ class SlateGattClient(
         return ok
     }
 
+    /**
+     * Recover a stalled pump.
+     *
+     * `writing` is cleared by onCharacteristicWrite. If that callback never
+     * arrives — which it demonstrably doesn't always, for writes without
+     * response — the queue stops dead and every later message is silently
+     * stranded. That is what left a 53-byte display list enqueued with no
+     * corresponding writeCharacteristic.
+     */
+    private fun scheduleStallCheck() {
+        mainHandler.postDelayed({
+            if (!writeQueue.isEmpty() && writing.get() &&
+                System.currentTimeMillis() - lastWriteStartedMs >= WRITE_STALL_MS
+            ) {
+                LinkLog.w("write pump stalled — forcing resume")
+                writing.set(false)
+                pumpWrites()
+            }
+        }, WRITE_STALL_MS)
+    }
+
     private fun pumpWrites() {
-        if (!writing.compareAndSet(false, true)) return
+        if (!writing.compareAndSet(false, true)) {
+            scheduleStallCheck()
+            return
+        }
         val pkt = writeQueue.poll()
         if (pkt == null) {
             writing.set(false)
@@ -340,10 +457,40 @@ class SlateGattClient(
             writing.set(false)
             return
         }
-        val ok = writeNoResponse(g, rx, pkt)
+        lastPktEndedMessage = pkt.endsMessage
+        lastPktChannel = pkt.channel
+        lastWriteStartedMs = System.currentTimeMillis()
+        scheduleStallCheck()
+        val ok = writeNoResponse(g, rx, pkt.bytes)
         if (!ok) {
             writing.set(false)
             update { copy(lastError = "writeNoResponse failed") }
+        }
+    }
+
+    /**
+     * Continue the pump after a completed write, leaving a gap at message
+     * boundaries (N-28).
+     *
+     * The watch's AppInbox holds exactly one message and gates ingest while
+     * busy; the app task drains it every 20 ms. Two messages written
+     * back-to-back mean the second is dropped, silently, because these are
+     * writes without response. `pushToWatch` did exactly that on every screen
+     * push — a CONTROL message immediately followed by the display list — so
+     * no display list ever reached the renderer.
+     *
+     * Channel 5 (OTA) is exempt: it has real credit-based flow control, never
+     * has more than one message outstanding, and pacing it would cut transfer
+     * throughput by more than half.
+     */
+    private fun continuePump() {
+        val gap = lastPktEndedMessage &&
+            lastPktChannel != SdpFrame.CHAN_OTA &&
+            !writeQueue.isEmpty()
+        if (gap) {
+            mainHandler.postDelayed({ pumpWrites() }, INTER_MESSAGE_GAP_MS)
+        } else {
+            pumpWrites()
         }
     }
 
@@ -510,5 +657,37 @@ class SlateGattClient(
 
     private fun update(block: LinkMetrics.() -> LinkMetrics) {
         _metrics.value = _metrics.value.block()
+    }
+
+    companion object {
+        /** How long to wait for onMtuChanged before discovering anyway. */
+        private const val MTU_GRACE_MS = 2_000L
+
+        /** Minimum gap between "not ready" log lines. */
+        private const val NOT_READY_LOG_INTERVAL_MS = 5_000L
+
+        /**
+         * Gap between consecutive SDP messages, covering the watch's 20 ms
+         * app-task drain interval with margin. See [continuePump].
+         */
+        /**
+         * Gap between consecutive SDP messages.
+         *
+         * 30 ms covered the watch's nominal 20 ms drain, but not reality: a
+         * face repaint takes ~230 ms and the worst measured app-loop stall is
+         * 929 ms. During those the single-slot inbox stays occupied, so the
+         * CONTROL immediately preceding a display list held the slot and the
+         * list itself — sent 41 ms later — was discarded. 110 inbox drops
+         * against 5 applied lists.
+         *
+         * 250 ms clears a repaint. It does not clear a worst-case stall; the
+         * real fix is for the watch not to stall for a second, and for the
+         * redundant pre-display CONTROL (a Replace, which the firmware already
+         * defaults to) not to be sent at all.
+         */
+        private const val INTER_MESSAGE_GAP_MS = 250L
+
+        /** How long a write may be outstanding before the pump is force-resumed. */
+        private const val WRITE_STALL_MS = 400L
     }
 }

@@ -186,16 +186,35 @@ static slate::session::ApplyListResult apply_list(const std::uint8_t* data,
                                                   std::size_t len, void*) {
   const sdp::PushStats s = g_interp.push_list(data, len);
   if (s.status != sdp::Status::Ok) {
+    ++g_core.local_state().diag_dl_rej;
+    rtt::log(rtt::Level::Error, "display list rejected");
     return slate::session::ApplyListResult::Reject;
   }
+  ++g_core.local_state().diag_dl_ok;
   g_local_owns_screen = false;
+  g_core.set_local_owns_screen(false);
   g_input.set_hits(g_interp.hit_rects(), g_interp.hit_count());
   return slate::session::ApplyListResult::Ok;
 }
 
 static void show_watch_face(bool stale, void*) {
   g_core.set_remote_stale(stale);
+  // Staleness must not discard a screen the phone owns (N-30). The session's
+  // own stale branch says "keep remote pixels ... overlay via flag", but this
+  // hook took the screen back and repainted the face, so a pushed screen was
+  // destroyed the moment the heartbeat window lapsed — about a second after it
+  // appeared. Mark it stale and leave the pixels alone; the button-back path
+  // (N-27) is still the way out.
+  if (stale && !g_local_owns_screen) {
+    return;
+  }
+  if (!g_local_owns_screen) {
+    ++g_core.local_state().diag_face_restores;
+    g_core.local_state().diag_face_last_src = stale ? 2u : 1u;
+    rtt::log(rtt::Level::Info, "face restored from remote screen");
+  }
   g_local_owns_screen = true;
+  g_core.set_local_owns_screen(true);
   g_core.local_state().screen = slate::local::Screen::Face;
   // Deferred (N-15): session link-up calls this and then Core::on_link_up,
   // which used to be two full repaints back to back inside the connect path.
@@ -343,7 +362,26 @@ static void on_app_message(std::uint8_t channel, const std::uint8_t* msg,
                            !g_local_owns_screen);
     g_asset.on_message(msg, len);
   } else if (channel == sdp::frame::kChanOta) {
+    // I-13: log every refusal and each 10 % of progress. RTT is available on
+    // the bench; the same numbers reach a sealed watch via the diag overlay.
+    const std::uint32_t naks_before = g_ota.nak_count();
+    const std::uint8_t pct_before = g_ota.progress_percent();
     g_ota.on_message(msg, len);
+    if (g_ota.nak_count() != naks_before) {
+      rtt::write("OTA NAK reason=0x");
+      rtt::write_hex(static_cast<std::uint8_t>(g_ota.last_nak()));
+      rtt::write(" at=0x");
+      rtt::write_hex(g_ota.received());
+      rtt::write_line("");
+    } else if (g_ota.progress_percent() / 10u != pct_before / 10u) {
+      rtt::write("OTA progress pct=0x");
+      rtt::write_hex(g_ota.progress_percent());
+      rtt::write(" off=0x");
+      rtt::write_hex(g_ota.received());
+      rtt::write(" of=0x");
+      rtt::write_hex(g_ota.total());
+      rtt::write_line("");
+    }
   }
 }
 
@@ -370,6 +408,9 @@ static void app_loop() {
   std::uint32_t iters = 0u;
   std::uint32_t paints = 0u;
   std::uint32_t last_diag = now_ms();
+  // 0xFF = no transfer painted; any other value is the last percentage drawn.
+  std::uint8_t last_ota_pct = 0xFFu;
+  std::uint32_t last_updating_ms = 0u;
   std::uint32_t link_seq_seen = g_link_seq;
   bool link_applied = false;
 
@@ -421,7 +462,11 @@ static void app_loop() {
     }
     // One coalesced repaint for whatever the transition changed, outside the
     // GAP callback and after the state settles.
-    if (g_core.take_paint_pending()) {
+    // Never repaint the local face over a screen the phone owns. The diag
+    // overlay alone repainted every 2 s regardless, so a remote screen was
+    // wiped within two seconds of arriving — it rendered correctly and was
+    // then clobbered, which read as "nothing happened" (N-29).
+    if (g_core.take_paint_pending() && g_local_owns_screen) {
       g_core.show_current();
     }
     note_phase(7u, t_phase);
@@ -442,6 +487,12 @@ static void app_loop() {
     const input::Event ev = input::poll();
     note_phase(2u, t_phase);
     if (ev.type != input::EventType::None) {
+      if (ev.type != input::EventType::Button) {
+        ++g_core.local_state().diag_touch;
+        if (g_input.has_hit(ev.x, ev.y)) {
+          ++g_core.local_state().diag_touch_hit;
+        }
+      }
       if (g_local_owns_screen || g_session.remote_depth() == 0u) {
         if (ev.type == input::EventType::Button) {
           g_core.on_button_press();
@@ -460,11 +511,53 @@ static void app_loop() {
       rtt::log(rtt::Level::Info, "boot: image confirmed (link held)");
       send_confirm_status();
     }
+    // While firmware is being received, the app task stands back (N-22).
+    // Nordic DFU writes flash from the NimBLE host task and SDP OTA writes it
+    // from here; either way the external flash shares the SPI bus with the
+    // display, and a 199 ms repaint holding that bus stalls the inbound
+    // stream long enough to exhaust NimBLE's mbuf pool. Session ticks still
+    // run — heartbeats must not lapse — but painting and sensor polling wait.
+    const bool updating = ble::dfu_busy() || g_ota.transfer_active();
+
+    // ...with one exception: show progress. A sealed watch that goes blank for
+    // three minutes is indistinguishable from one that has hung, which is
+    // exactly the ambiguity that made the last few OTA attempts hard to read.
+    // The banner is band-only (~5 tile passes, not 30) and repaints at most
+    // every 2%, so it stays well inside the SPI budget N-22 was protecting.
+    // Latch for 3 s past the last sign of activity. transfer_active() goes
+    // false between chunks, so the raw flag flickered and let a face repaint
+    // through on every gap — the face and the banner alternated (N-33).
+    if (updating) {
+      last_updating_ms = t;
+    }
+    const bool updating_latched =
+        updating || (last_updating_ms != 0u && (t - last_updating_ms) < 3000u);
+    g_core.set_updating(updating_latched);
+
+    if (updating) {
+      const std::uint8_t pct = g_ota.progress_percent();
+      if (last_ota_pct == 0xFFu || pct >= last_ota_pct + 2u ||
+          pct < last_ota_pct) {
+        last_ota_pct = pct;
+        // Keep the panel lit: a transfer involves no user input, so the
+        // display would otherwise sleep within seconds and the banner — drawn
+        // correctly all along — was never actually seen.
+        g_core.wake_display();
+        g_core.show_ota_progress(pct);
+      }
+    } else if (last_ota_pct != 0xFFu) {
+      // Transfer ended (done, cancelled or NAKed) — restore the real screen.
+      last_ota_pct = 0xFFu;
+      g_core.show_current();
+    }
+
     if (t - last_tick >= 200u) {
       t_phase = board::micros();
       g_session.tick(t);
-      g_core.set_remote_stale(g_session.stale());
-      g_core.tick(t);
+      if (!updating) {
+        g_core.set_remote_stale(g_session.stale());
+        g_core.tick(t);
+      }
       note_phase(3u, t_phase);
       last_tick = t;
     }
@@ -473,7 +566,7 @@ static void app_loop() {
     // hundreds of ms, so tying it to iteration count made the overlay the
     // dominant CPU consumer as soon as the loop sped up. 2 s keeps it useful
     // for bring-up while bounding the render load.
-    if (t - last_diag >= 2000u) {
+    if (!updating && g_local_owns_screen && t - last_diag >= 2000u) {
       last_diag = t;
       auto& st = g_core.local_state();
       st.diag_uptime_s = t / 1000u;
@@ -490,13 +583,27 @@ static void app_loop() {
       st.diag_mv = slate::battery::millivolts();
       st.diag_render_ms = g_max_render_ms;
       st.diag_parse_ms = g_max_parse_ms;
+      st.diag_touch_irq =
+          static_cast<std::uint16_t>(cst816s::irq_count());
+      st.diag_touch_readfail =
+          static_cast<std::uint16_t>(cst816s::read_fail_count());
+      st.diag_frame_drop = static_cast<std::uint16_t>(g_link.drop_count());
+      st.diag_inbox_drop = static_cast<std::uint16_t>(g_link.handoff_drop_count());
+      st.diag_dl_drop = g_session.display_drops();
+      st.diag_sess_state = static_cast<std::uint8_t>(g_session.state());
+      st.diag_ota_shown = g_ota.touched() ? 1u : 0u;
+      st.diag_ota_pct = g_ota.progress_percent();
+      st.diag_ota_nak = static_cast<std::uint8_t>(g_ota.last_nak());
+      st.diag_ota_naks = g_ota.nak_count();
       t_phase = board::micros();
       g_core.show_current();
       note_phase(4u, t_phase);
     }
 #endif
-    if (t - last_batt >= 10000u) {
+    if (!updating && t - last_batt >= 10000u) {
       // ADC refresh lives in Core::poll_battery (charge edge + 10 s). BAS only.
+      // Skipped during a transfer: sampling ends in buses_idle(), which takes
+      // the SPI bus the DFU writer is using (N-21/N-22).
       t_phase = board::micros();
       if (slate::battery::percent_valid()) {
         ble::update_battery_level(slate::battery::percent());
@@ -674,6 +781,9 @@ extern "C" int main() {
   oh.charging = &ota_chg;
   oh.commit_ok = &ota_commit;
   oh.send = &ota_send;
+  // I-13: refuse OTA while this image is still on trial, so a revert always
+  // lands on firmware that was validated.
+  oh.image_confirmed = [](void*) { return !slate::boot::needs_confirm(); };
   oh.ctx = &g_link;
   g_ota.init(oh);
 

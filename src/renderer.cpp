@@ -88,7 +88,15 @@ void Renderer::fill_rect(std::uint16_t x, std::uint16_t y,
     if (x >= kDisplayWidth || y >= kDisplayHeight) return;
     dirty_.mark_rect(y, y1);
 
-    for (std::uint16_t py = y; py <= y1; ++py) {
+    // Cull to the active tile band (N-18). The dirty marking above still
+    // covers the whole rect, so only the wasted iteration disappears.
+    if (tile_rejects_rows(y, y1)) return;
+    const std::uint16_t py0 = static_cast<std::uint16_t>(
+        std::max<std::int32_t>(y, tile_first_row()));
+    const std::uint16_t py1 = static_cast<std::uint16_t>(
+        std::min<std::int32_t>(y1, tile_last_row()));
+
+    for (std::uint16_t py = py0; py <= py1; ++py) {
         for (std::uint16_t px = x; px <= x1; ++px) {
             put_pixel(px, py, colour);
         }
@@ -98,6 +106,7 @@ void Renderer::fill_rect(std::uint16_t x, std::uint16_t y,
 void Renderer::draw_line(std::int16_t x0, std::int16_t y0,
                           std::int16_t x1, std::int16_t y1,
                           std::uint16_t colour) {
+    if (tile_rejects_rows(std::min(y0, y1), std::max(y0, y1))) return;
     // Bresenham's line algorithm.
     const std::int16_t adx = static_cast<std::int16_t>(x1 - x0);
     const std::int16_t ady = static_cast<std::int16_t>(y1 - y0);
@@ -122,6 +131,7 @@ void Renderer::draw_line(std::int16_t x0, std::int16_t y0,
 
 void Renderer::draw_circle(std::int16_t cx, std::int16_t cy, std::int16_t radius,
                              std::uint16_t colour) {
+    if (tile_rejects_rows(cy - radius, cy + radius)) return;
     // Midpoint circle algorithm.
     std::int16_t x = radius;
     std::int16_t y = 0;
@@ -161,6 +171,7 @@ void Renderer::draw_round_rect(std::uint16_t x, std::uint16_t y,
                                  std::uint16_t w, std::uint16_t h,
                                  std::uint16_t radius,
                                  std::uint16_t colour) {
+    if (h > 0u && tile_rejects_rows(y, y + h - 1)) return;
     if (radius == 0u) {
         // Degenerate — draw as regular rect outline.
         fill_rect(x, y, w, 1, colour);
@@ -221,6 +232,7 @@ void Renderer::draw_round_rect(std::uint16_t x, std::uint16_t y,
 void Renderer::draw_arc(std::int16_t cx, std::int16_t cy, std::int16_t radius,
                          std::int16_t a0, std::int16_t a1,
                          std::uint16_t colour) {
+    if (tile_rejects_rows(cy - radius, cy + radius)) return;
     // Walk in 1-degree steps using the fixed-point sin/cos table.
     // For smooth arcs a 0.5-degree step would be better; 1° gives visible
     // gaps at large radii.  This is sufficient for progress arcs at watch scale.
@@ -237,10 +249,30 @@ void Renderer::draw_arc(std::int16_t cx, std::int16_t cy, std::int16_t radius,
     }
 }
 
+// Blits share the same tile-band culling: skip when the source rows cannot
+// land in the active tile, otherwise iterate only the rows that can (N-18).
+// `dy` stays the source row index, so the source indexing is unchanged.
+Renderer::RowRange Renderer::visible_rows(std::uint16_t y, std::uint16_t h) const {
+    RowRange r{0u, 0u, true};
+    if (h == 0u) return r;
+    const std::int32_t y0 = static_cast<std::int32_t>(y);
+    const std::int32_t y1 = y0 + static_cast<std::int32_t>(h) - 1;
+    if (tile_rejects_rows(y0, y1)) return r;
+    const std::int32_t vis0 = std::max<std::int32_t>(y0, tile_first_row());
+    const std::int32_t vis1 = std::min<std::int32_t>(y1, tile_last_row());
+    if (vis1 < vis0) return r;
+    r.first = static_cast<std::uint16_t>(vis0 - y0);
+    r.last = static_cast<std::uint16_t>(vis1 - y0);
+    r.empty = false;
+    return r;
+}
+
 void Renderer::blit_rgb565(std::uint16_t x, std::uint16_t y,
                              std::uint16_t w, std::uint16_t h,
                              const std::uint16_t* src) {
-    for (std::uint16_t dy = 0u; dy < h; ++dy) {
+    const RowRange rows = visible_rows(y, h);
+    if (rows.empty) return;
+    for (std::uint16_t dy = rows.first; dy <= rows.last; ++dy) {
         for (std::uint16_t dx = 0u; dx < w; ++dx) {
             put_pixel(static_cast<std::uint16_t>(x + dx),
                       static_cast<std::uint16_t>(y + dy),
@@ -252,7 +284,9 @@ void Renderer::blit_rgb565(std::uint16_t x, std::uint16_t y,
 void Renderer::blit_rgb332(std::uint16_t x, std::uint16_t y,
                              std::uint16_t w, std::uint16_t h,
                              const std::uint8_t* src) {
-    for (std::uint16_t dy = 0u; dy < h; ++dy) {
+    const RowRange rows = visible_rows(y, h);
+    if (rows.empty) return;
+    for (std::uint16_t dy = rows.first; dy <= rows.last; ++dy) {
         for (std::uint16_t dx = 0u; dx < w; ++dx) {
             put_pixel(static_cast<std::uint16_t>(x + dx),
                       static_cast<std::uint16_t>(y + dy),
@@ -265,7 +299,9 @@ void Renderer::blit_1bit(std::uint16_t x, std::uint16_t y,
                            std::uint16_t w, std::uint16_t h,
                            const std::uint8_t* src,
                            std::uint16_t fg, std::uint16_t bg) {
-    for (std::uint16_t dy = 0u; dy < h; ++dy) {
+    const RowRange rows = visible_rows(y, h);
+    if (rows.empty) return;
+    for (std::uint16_t dy = rows.first; dy <= rows.last; ++dy) {
         for (std::uint16_t dx = 0u; dx < w; ++dx) {
             const std::uint32_t bit_idx = dy * w + dx;
             const bool set = (src[bit_idx / 8u] >> (7u - (bit_idx % 8u))) & 1u;

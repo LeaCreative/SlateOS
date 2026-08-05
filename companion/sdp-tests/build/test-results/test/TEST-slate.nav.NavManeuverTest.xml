@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.nav.NavManeuverTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:54.961Z" hostname="DAN01" time="0.025">
+  <properties/>
+  <testcase name="lostGpsKeepsTurn()" classname="slate.nav.NavManeuverTest" time="0.006"/>
+  <testcase name="disconnectedMarksStatus()" classname="slate.nav.NavManeuverTest" time="0.0"/>
+  <testcase name="jsonIncludesTypeAndStatus()" classname="slate.nav.NavManeuverTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

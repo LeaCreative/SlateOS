@@ -128,6 +128,49 @@ build test_sdp_parser.exe: CXX_EXECUTABLE_LINKER__test_sdp_parser_ CMakeFiles/te
   TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
 
 # =============================================================================
+# Object build statements for EXECUTABLE target test_renderer_cull
+
+
+#############################################
+# Order-only phony target for test_renderer_cull
+
+build cmake_object_order_depends_target_test_renderer_cull: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_renderer_cull.dir/test_renderer_cull.cpp.obj: CXX_COMPILER__test_renderer_cull_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_renderer_cull.cpp || cmake_object_order_depends_target_test_renderer_cull
+  DEP_FILE = CMakeFiles\test_renderer_cull.dir\test_renderer_cull.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_renderer_cull.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_renderer_cull.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_renderer_cull.dir
+
+build CMakeFiles/test_renderer_cull.dir/C_/Users/highj/Documents/Projects/EvoTime/src/renderer.cpp.obj: CXX_COMPILER__test_renderer_cull_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/renderer.cpp || cmake_object_order_depends_target_test_renderer_cull
+  DEP_FILE = CMakeFiles\test_renderer_cull.dir\C_\Users\highj\Documents\Projects\EvoTime\src\renderer.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_renderer_cull.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_renderer_cull.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_renderer_cull.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_renderer_cull
+
+
+#############################################
+# Link the executable test_renderer_cull.exe
+
+build test_renderer_cull.exe: CXX_EXECUTABLE_LINKER__test_renderer_cull_ CMakeFiles/test_renderer_cull.dir/test_renderer_cull.cpp.obj CMakeFiles/test_renderer_cull.dir/C_/Users/highj/Documents/Projects/EvoTime/src/renderer.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_renderer_cull.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_renderer_cull.exe
+  TARGET_IMPLIB = libtest_renderer_cull.dll.a
+  TARGET_PDB = test_renderer_cull.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_renderer_cull.dir
+
+# =============================================================================
 # Object build statements for EXECUTABLE target test_uuids
 
 
@@ -1059,6 +1102,8 @@ build test_local_ui: phony test_local_ui.exe
 
 build test_ota_xfer: phony test_ota_xfer.exe
 
+build test_renderer_cull: phony test_renderer_cull.exe
+
 build test_sdp_diag: phony test_sdp_diag.exe
 
 build test_sdp_frame: phony test_sdp_frame.exe
@@ -1083,7 +1128,7 @@ build test_wdt_hold: phony test_wdt_hold.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_uuids.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_spi_timeout.exe
+build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_renderer_cull.exe test_uuids.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_spi_timeout.exe
 
 # =============================================================================
 # Built-in targets

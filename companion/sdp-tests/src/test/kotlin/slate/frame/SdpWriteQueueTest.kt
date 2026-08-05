@@ -19,7 +19,8 @@ class SdpWriteQueueTest {
         val messages = ArrayList<Pair<Int, ByteArray>>()
         var inFlight = -1
         while (true) {
-            val pkt = q.poll() ?: break
+            val entry = q.poll() ?: break
+            val pkt = entry.bytes
             val channel = (pkt[0].toInt() ushr 5) and 0x07
             val flags = pkt[0].toInt() and 0x1F
             val first = flags and SdpFrame.FLAG_FIRST != 0
@@ -107,7 +108,7 @@ class SdpWriteQueueTest {
                 SdpFrame.fragmentMessage(SdpFrame.CHAN_DISPLAY, m2, seq)
         for (e in expected) {
             val got = q.poll()
-            assertTrue(got != null && e.contentEquals(got), "fragment mismatch")
+            assertTrue(got != null && e.contentEquals(got.bytes), "fragment mismatch")
         }
         assertNull(q.poll())
     }
@@ -119,7 +120,23 @@ class SdpWriteQueueTest {
         q.clear()
         assertNull(q.poll())
         q.enqueueMessage(SdpFrame.CHAN_DISPLAY, byteArrayOf(2))
-        val pkt = q.poll()!!
+        val pkt = q.poll()!!.bytes
         assertEquals(1, pkt[1].toInt() and 0xFF) // seq continued past cleared pkt
+    }
+
+    @Test
+    fun endsMessageMarksOnlyTheFinalFragment() {
+        // The write pump needs message boundaries to pace sends: the watch's
+        // AppInbox holds one message and silently drops anything arriving
+        // before the app task drains it (N-28).
+        val q = SdpWriteQueue()
+        val big = ByteArray(600) { it.toByte() }
+        val n = q.enqueueMessage(SdpFrame.CHAN_DISPLAY, big)
+        assertTrue(n > 1, "expected a multi-fragment message, got $n")
+        val pkts = generateSequence { q.poll() }.toList()
+        assertEquals(n, pkts.size)
+        pkts.dropLast(1).forEach { assertTrue(!it.endsMessage, "mid fragment marked as end") }
+        assertTrue(pkts.last().endsMessage, "final fragment not marked")
+        pkts.forEach { assertEquals(SdpFrame.CHAN_DISPLAY, it.channel) }
     }
 }

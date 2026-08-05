@@ -175,7 +175,13 @@ class Compositor(
         if (handled) return
 
         // Fallback: BACK pops the stack; otherwise offer to ambient base.
-        if (input.op == slate.generated.SdpWire.InputOp.BACK && stack.size > 1) {
+        // Pop the last app too. Requiring size > 1 meant a single focused app
+        // could not be dismissed, so the watch stayed on that remote screen
+        // forever — the user's only way back to the watch face was to drop the
+        // link. The watch now pops locally regardless (session::local_back);
+        // this keeps the host's view in step rather than leaving it believing
+        // it still owns a screen it no longer has.
+        if (input.op == slate.generated.SdpWire.InputOp.BACK && stack.isNotEmpty()) {
             relinquishFocus(focusId)
             return
         }

@@ -3,6 +3,7 @@
 #include "ota_xfer.hpp"
 #include "sha256.hpp"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -196,6 +197,300 @@ int main() {
                g_tx.back()[1] ==
                    static_cast<std::uint8_t>(slate::ota::NakReason::HashFail),
            "ota hash fail nak");
+  }
+
+  // ── OTA refuses while the running image is unconfirmed (I-13) ────────────
+  {
+    g_batt = 90;
+    g_charging = false;
+    g_tx.clear();
+    slate::ota::Receiver r;
+    slate::ota::Hooks h;
+    h.erase_slot = erase_slot;
+    h.write_slot = write_slot;
+    h.battery_percent = batt;
+    h.charging = chg;
+    h.commit_ok = commit_ok;
+    h.send = send_fn;
+    h.image_confirmed = [](void*) { return false; };  // still on trial
+    r.init(h);
+    g_tx.clear();
+    std::uint8_t begin[43] = {};
+    begin[0] = slate::ota::kOpBegin;
+    wr_u16(begin + 1, 1);
+    wr_u32(begin + 3, 16);
+    r.on_message(begin, sizeof(begin));
+    expect(!g_tx.empty() && g_tx.back()[0] == slate::ota::kOpNak &&
+               g_tx.back()[1] ==
+                   static_cast<std::uint8_t>(slate::ota::NakReason::Unconfirmed),
+           "ota unconfirmed image nak");
+    expect(!r.transfer_active(), "ota unconfirmed does not start");
+    expect(r.last_nak() == slate::ota::NakReason::Unconfirmed,
+           "ota unconfirmed recorded for diag");
+
+    // Same receiver, image now confirmed → the transfer is allowed.
+    slate::ota::Receiver r2;
+    h.image_confirmed = [](void*) { return true; };
+    r2.init(h);
+    g_tx.clear();
+    r2.on_message(begin, sizeof(begin));
+    expect(r2.transfer_active(), "ota confirmed image starts");
+  }
+
+  // ── OTA full transfer with resumption at 25/50/75 % (I-13) ───────────────
+  {
+    g_batt = 90;
+    g_rebooted = false;
+    constexpr std::uint32_t kTotal = 4096u;
+    constexpr std::size_t kChunk = 256u;
+    std::vector<std::uint8_t> image(kTotal);
+    for (std::uint32_t i = 0; i < kTotal; ++i) {
+      image[i] = static_cast<std::uint8_t>((i * 31u + 7u) & 0xFFu);
+    }
+    std::uint8_t sha[32];
+    slate::sha256::hash(image.data(), image.size(), sha);
+
+    g_slot.assign(g_slot.size(), 0xFF);
+    slate::ota::Receiver r;
+    slate::ota::Hooks h;
+    h.erase_slot = erase_slot;
+    h.write_slot = write_slot;
+    h.battery_percent = batt;
+    h.charging = chg;
+    h.commit_ok = commit_ok;
+    h.send = send_fn;
+    h.image_confirmed = [](void*) { return true; };
+    r.init(h);
+    g_tx.clear();
+
+    std::uint8_t begin[43] = {};
+    begin[0] = slate::ota::kOpBegin;
+    wr_u16(begin + 1, 0x2A);
+    wr_u32(begin + 3, kTotal);
+    std::memcpy(begin + 7, sha, 32);
+    r.on_message(begin, sizeof(begin));
+    expect(r.transfer_active(), "resume: transfer begins");
+
+    // Drop the link at 25/50/75 %: the companion re-sends BEGIN with the same
+    // id, the watch ACKs its current offset, and the sender continues there.
+    const std::uint32_t drops[3] = {kTotal / 4u, kTotal / 2u,
+                                    (kTotal * 3u) / 4u};
+    std::size_t next_drop = 0u;
+    std::uint32_t off = 0u;
+    while (off < kTotal) {
+      if (next_drop < 3u && off >= drops[next_drop]) {
+        // Link drop → resume handshake. Offset must survive it.
+        const std::uint32_t before = r.received();
+        g_tx.clear();
+        r.on_message(begin, sizeof(begin));
+        expect(r.received() == before, "resume: offset preserved");
+        bool acked = false;
+        for (const auto& t : g_tx) {
+          if (!t.empty() && t[0] == slate::ota::kOpAck) acked = true;
+        }
+        expect(acked, "resume: watch ACKs current offset");
+        ++next_drop;
+      }
+      const std::size_t n =
+          static_cast<std::size_t>(std::min<std::uint32_t>(kChunk, kTotal - off));
+      std::vector<std::uint8_t> chunk(7u + n);
+      chunk[0] = slate::ota::kOpChunk;
+      wr_u16(chunk.data() + 1, 0x2A);
+      wr_u32(chunk.data() + 3, off);
+      std::memcpy(chunk.data() + 7, image.data() + off, n);
+      r.on_message(chunk.data(), chunk.size());
+      off += static_cast<std::uint32_t>(n);
+      expect(r.received() == off, "resume: offset advances");
+    }
+    expect(next_drop == 3u, "resume: all three drops exercised");
+    expect(r.progress_percent() == 100u, "resume: progress reads 100");
+
+    // A stale chunk (already-written offset) must be answered with an ACK of
+    // the true offset, not corrupt the stream.
+    {
+      std::vector<std::uint8_t> stale(7u + 16u);
+      stale[0] = slate::ota::kOpChunk;
+      wr_u16(stale.data() + 1, 0x2A);
+      wr_u32(stale.data() + 3, 0u);
+      r.on_message(stale.data(), stale.size());
+      expect(r.received() == kTotal, "resume: stale chunk does not rewind");
+    }
+
+    std::uint8_t commit[3] = {slate::ota::kOpCommit, 0x2A, 0};
+    r.on_message(commit, sizeof(commit));
+    expect(g_rebooted, "resume: commit reboots");
+    expect(std::memcmp(g_slot.data(), image.data(), kTotal) == 0,
+           "resume: slot matches image byte-for-byte");
+  }
+
+  // ── OTA survives dropped chunks: credit must resync (N-19) ──────────────
+  //
+  // Reproduces the stall seen on hardware at 512/133236 B. The zero-copy link
+  // inbox holds one message, so chunks sent while the app task is busy are
+  // dropped. A sender that decrements credit locally then has 0 credit while
+  // the watch still believes it has 1536 — and the watch only replenished
+  // below a quarter window, which dropped traffic never reaches. Both wait.
+  {
+    g_batt = 90;
+    g_rebooted = false;
+    constexpr std::uint32_t kTotal = 4096u;
+    constexpr std::size_t kChunk = 512u;
+    std::vector<std::uint8_t> image(kTotal);
+    for (std::uint32_t i = 0; i < kTotal; ++i) {
+      image[i] = static_cast<std::uint8_t>((i * 17u) & 0xFFu);
+    }
+    std::uint8_t sha[32];
+    slate::sha256::hash(image.data(), image.size(), sha);
+
+    g_slot.assign(g_slot.size(), 0xFF);
+    slate::ota::Receiver r;
+    slate::ota::Hooks h;
+    h.erase_slot = erase_slot;
+    h.write_slot = write_slot;
+    h.battery_percent = batt;
+    h.charging = chg;
+    h.commit_ok = commit_ok;
+    h.send = send_fn;
+    h.image_confirmed = [](void*) { return true; };
+    r.init(h);
+    g_tx.clear();
+
+    std::uint8_t begin[43] = {};
+    begin[0] = slate::ota::kOpBegin;
+    wr_u16(begin + 1, 0x4C);
+    wr_u32(begin + 3, kTotal);
+    std::memcpy(begin + 7, sha, 32);
+    r.on_message(begin, sizeof(begin));
+
+    // Model the sender the way the companion does: an absolute credit set by
+    // the watch, decremented locally as chunks go out.
+    int credit = 0;
+    std::uint32_t sent = 0u;
+    std::uint32_t acked = 0u;
+    const auto pump_tx = [&]() {
+      for (const auto& t : g_tx) {
+        if (t.empty()) continue;
+        if (t[0] == slate::ota::kOpCredit) {
+          credit = t[1] | (t[2] << 8);
+        } else if (t[0] == slate::ota::kOpAck) {
+          acked = static_cast<std::uint32_t>(t[3]) |
+                  (static_cast<std::uint32_t>(t[4]) << 8) |
+                  (static_cast<std::uint32_t>(t[5]) << 16) |
+                  (static_cast<std::uint32_t>(t[6]) << 24);
+          if (acked < sent) sent = acked;  // rewind, as the companion does
+        }
+      }
+      g_tx.clear();
+    };
+    pump_tx();
+    expect(credit > 0, "drop: initial credit advertised");
+
+    // Every third chunk is dropped in flight — the app task was busy.
+    int dropped = 0;
+    int resyncs = 0;
+    int rounds = 0;
+    while (acked < kTotal && rounds < 200) {
+      ++rounds;
+      if (credit <= 0) {
+        expect(false, "drop: sender stalled with no credit (the N-19 hang)");
+        break;
+      }
+      const std::size_t n = static_cast<std::size_t>(
+          std::min<std::uint32_t>(kChunk, kTotal - sent));
+      std::vector<std::uint8_t> chunk(7u + n);
+      chunk[0] = slate::ota::kOpChunk;
+      wr_u16(chunk.data() + 1, 0x4C);
+      wr_u32(chunk.data() + 3, sent);
+      std::memcpy(chunk.data() + 7, image.data() + sent, n);
+      const bool drop = (rounds % 3) == 0;
+      credit -= static_cast<int>(n);
+      sent += static_cast<std::uint32_t>(n);
+      if (drop) {
+        ++dropped;  // never reaches the watch
+      } else {
+        r.on_message(chunk.data(), chunk.size());
+      }
+      const bool heard = !g_tx.empty();
+      pump_tx();
+      if (!heard) {
+        // Nothing came back — the chunk never arrived, so the watch has
+        // nothing to ACK. This is the companion's chunk timeout: re-send
+        // BEGIN with the same id, which the watch answers with its true
+        // offset and its true credit, and carry on from there.
+        r.on_message(begin, sizeof(begin));
+        pump_tx();
+        ++resyncs;
+      }
+    }
+    expect(dropped > 0, "drop: chunks were actually dropped");
+    expect(resyncs > 0, "drop: resync handshake was exercised");
+    expect(acked == kTotal, "drop: transfer still completes after drops");
+
+    g_tx.clear();
+    std::uint8_t commit[3] = {slate::ota::kOpCommit, 0x4C, 0};
+    r.on_message(commit, sizeof(commit));
+    expect(g_rebooted, "drop: commit succeeds");
+    expect(std::memcmp(g_slot.data(), image.data(), kTotal) == 0,
+           "drop: slot matches image after recovery");
+  }
+
+  // ── OTA corrupted chunk mid-transfer is caught at commit (I-13) ──────────
+  {
+    g_batt = 90;
+    g_rebooted = false;
+    constexpr std::uint32_t kTotal = 1024u;
+    constexpr std::size_t kChunk = 256u;
+    std::vector<std::uint8_t> image(kTotal);
+    for (std::uint32_t i = 0; i < kTotal; ++i) {
+      image[i] = static_cast<std::uint8_t>(i & 0xFFu);
+    }
+    std::uint8_t sha[32];
+    slate::sha256::hash(image.data(), image.size(), sha);
+
+    slate::ota::Receiver r;
+    slate::ota::Hooks h;
+    h.erase_slot = erase_slot;
+    h.write_slot = write_slot;
+    h.battery_percent = batt;
+    h.charging = chg;
+    h.commit_ok = commit_ok;
+    h.send = send_fn;
+    h.image_confirmed = [](void*) { return true; };
+    r.init(h);
+    g_tx.clear();
+
+    std::uint8_t begin[43] = {};
+    begin[0] = slate::ota::kOpBegin;
+    wr_u16(begin + 1, 0x3B);
+    wr_u32(begin + 3, kTotal);
+    std::memcpy(begin + 7, sha, 32);
+    r.on_message(begin, sizeof(begin));
+
+    for (std::uint32_t off = 0u; off < kTotal; off += kChunk) {
+      std::vector<std::uint8_t> chunk(7u + kChunk);
+      chunk[0] = slate::ota::kOpChunk;
+      wr_u16(chunk.data() + 1, 0x3B);
+      wr_u32(chunk.data() + 3, off);
+      std::memcpy(chunk.data() + 7, image.data() + off, kChunk);
+      // Flip one bit in the third chunk — a transfer that "succeeds" all the
+      // way to commit and must still be rejected.
+      if (off == 2u * kChunk) {
+        chunk[7 + 100] ^= 0x01u;
+      }
+      r.on_message(chunk.data(), chunk.size());
+    }
+    expect(r.received() == kTotal, "corrupt: all bytes accepted in transit");
+
+    g_tx.clear();
+    std::uint8_t commit[3] = {slate::ota::kOpCommit, 0x3B, 0};
+    r.on_message(commit, sizeof(commit));
+    expect(!g_rebooted, "corrupt: no reboot");
+    expect(!g_tx.empty() && g_tx.back()[0] == slate::ota::kOpNak &&
+               g_tx.back()[1] ==
+                   static_cast<std::uint8_t>(slate::ota::NakReason::HashFail),
+           "corrupt: hash fail nak at commit");
+    expect(r.last_nak() == slate::ota::NakReason::HashFail,
+           "corrupt: reason survives reset for diag");
   }
 
   // ── Nordic DFU: happy path (InfiniTime/nrfutil exact sequence) ────────────

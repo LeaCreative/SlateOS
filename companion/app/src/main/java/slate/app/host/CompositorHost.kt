@@ -34,7 +34,9 @@ import slate.notif.SystemNotifCodec
 import slate.script.ScriptConsole
 import slate.session.ConfirmStatus
 import slate.session.SessionClient
+import slate.generated.SdpWire
 import slate.session.TimeSync
+import java.util.TimeZone
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,10 +69,38 @@ class CompositorHost(
     val compositor = Compositor(
         nowMs = { System.currentTimeMillis() },
         pushToWatch = { bytes ->
-            if (SharedLink.benchmarkPaused) return@Compositor false
-            if (session.state != SessionClient.State.Ready) return@Compositor false
-            gatt.sendMessage(SdpFrame.CHAN_CONTROL, session.takePreDisplayControl())
-            gatt.pushDisplayList(bytes)
+            if (SharedLink.benchmarkPaused) {
+                LinkLog.w("pushToWatch dropped: benchmark paused")
+                return@Compositor false
+            }
+            if (session.state != SessionClient.State.Ready) {
+                LinkLog.w("pushToWatch dropped: session=${session.state}")
+                return@Compositor false
+            }
+            // Drop an identical re-push arriving within the coalesce window.
+            // Focusing an app emitted the same list three times in ~33 ms
+            // (onFocus, onRender and the scheduler flush), which is six
+            // messages against the watch's 20 ms drain — most were discarded
+            // by the single-slot inbox, and whether the screen appeared came
+            // down to which one survived.
+            val now = System.currentTimeMillis()
+            val digest = bytes.contentHashCode()
+            if (digest == lastPushDigest && now - lastPushAtMs < PUSH_COALESCE_MS) {
+                LinkLog.i("pushToWatch: skipped duplicate ${bytes.size} B list")
+                return@Compositor true
+            }
+            lastPushDigest = digest
+            lastPushAtMs = now
+
+            // No credit gate here. One was tried (P-8) and removed: it never
+            // once delivered a held list, because presses are always further
+            // apart than its timeout — but it did swallow the press that
+            // happened to land inside the window, so a screen opened only on
+            // the *second* attempt. What actually made pushes reliable is the
+            // 250 ms inter-message gap in SlateGattClient, which stops the
+            // pre-display CONTROL from holding the watch's single-slot inbox
+            // when the list arrives behind it.
+            sendListNow(bytes)
         },
         onAdapterCommand = { cmd -> handleAdapter(cmd) },
         onScreenStackOp = { op ->
@@ -100,6 +130,25 @@ class CompositorHost(
     private var navAdapter: NavAdapter? = null
     private var cameraSession: CameraPreviewSession? = null
     private var navSubscribed = false
+
+    /** Last display list pushed, for duplicate coalescing. */
+    private var lastPushDigest: Int = 0
+    private var lastPushAtMs: Long = 0L
+
+    /**
+     * Write the pre-display CONTROL and then the display list.
+     *
+     * The pair shares the watch's single-slot inbox, which is why the write
+     * pump spaces messages by 250 ms — see [SlateGattClient].
+     */
+    private fun sendListNow(bytes: ByteArray): Boolean {
+        LinkLog.i("pushToWatch: ${bytes.size} B display list")
+        gatt.sendMessage(SdpFrame.CHAN_CONTROL, session.takePreDisplayControl())
+        return gatt.pushDisplayList(bytes)
+    }
+
+    /** Wall-clock of the last TIME_SYNC sent, for the periodic resend. */
+    private var lastTimeSyncMs = 0L
 
     private val _confirmUi = MutableStateFlow<ConfirmUi>(ConfirmUi.Idle)
     val confirmUi: StateFlow<ConfirmUi> = _confirmUi.asStateFlow()
@@ -136,6 +185,12 @@ class CompositorHost(
                     if (!wasConnected) {
                         session.onLinkUp()
                     }
+                    // Restored. Removing this was the only behavioural change
+                    // coincident with display pushes ceasing to arrive, and
+                    // the compositor's focus and quota logic both reference an
+                    // AMBIENT entry in the stack — so an empty stack base is a
+                    // plausible reason pushes stop landing. ClockApp's screen
+                    // is unwanted, but proving that is what matters first.
                     ensureAmbient()
                     startTicker()
                     startNotifBridge()
@@ -229,8 +284,38 @@ class CompositorHost(
         if (session.freeCreditBytes > 0) {
             compositor.setCredit(session.freeCreditBytes)
         }
+        // Keep the watch clock set. The watch has no RTC battery and boots at
+        // 1970, so an unsynced watch shows 00:00 forever — this is the only
+        // thing that sets it until GATT CTS lands (I-12). Sending only on the
+        // Ready edge meant one missed edge left the clock wrong for the whole
+        // session, so also resend periodically; CONTROL traffic (heartbeats)
+        // drives this often enough that no timer is needed.
+        val nowMs = System.currentTimeMillis()
+        if (session.state == SessionClient.State.Ready &&
+            (!wasReady || nowMs - lastTimeSyncMs >= TIME_RESYNC_INTERVAL_MS)
+        ) {
+            lastTimeSyncMs = nowMs
+            if (!wasReady) {
+                // N-25: do NOT send on the Ready edge. HELLO_ACCEPT has just
+                // gone out, and the watch's AppInbox holds exactly one message
+                // (N-8) — anything arriving before the app task drains (20 ms)
+                // is dropped with no retransmit, because these are writes
+                // without response. The clock then stayed at 1970 for the whole
+                // session. Send after the handshake has been consumed, and
+                // repeat: the cost of a redundant 5-byte write is nothing next
+                // to another 15-minute wait for the periodic resync.
+                scope.launch {
+                    for (delayMs in TIME_SYNC_RETRY_DELAYS_MS) {
+                        delay(delayMs)
+                        if (session.state != SessionClient.State.Ready) return@launch
+                        sendTimeSync()
+                    }
+                }
+            } else {
+                sendTimeSync()
+            }
+        }
         if (!wasReady && session.state == SessionClient.State.Ready) {
-            sendTimeSync()
             val addr = SharedLink.associatedAddress
                 ?: gatt.metrics.value.deviceAddress.takeIf { it.isNotBlank() }
             if (addr != null) {
@@ -253,10 +338,26 @@ class CompositorHost(
         }
     }
 
-    /** CONTROL 0x20 unix epoch — firmware wall_clock path (pre-CTS). */
-    fun sendTimeSync(epochSeconds: Long = System.currentTimeMillis() / 1000L) {
+    /**
+     * CONTROL 0x20 — firmware wall_clock path (pre-CTS).
+     *
+     * Carries **local** wall-clock, not UTC. The watch has no timezone
+     * database and renders the value it is given straight, so sending a UTC
+     * epoch put the face four hours behind in UTC+4. This matches CTS, which
+     * is also local time — hence `apply_cts_sync` on the firmware side.
+     * Recomputed on every send, so DST and travel are picked up by the
+     * periodic resync.
+     */
+    fun sendTimeSync(nowMillis: Long = System.currentTimeMillis()) {
         if (session.state != SessionClient.State.Ready) return
-        gatt.sendMessage(SdpFrame.CHAN_CONTROL, TimeSync.encodeUnix(epochSeconds))
+        val offsetMs = TimeZone.getDefault().getOffset(nowMillis)
+        val localEpoch = (nowMillis + offsetMs) / 1000L
+        LinkLog.i(
+            "time sync → watch: local epoch=$localEpoch " +
+                "(utc=${nowMillis / 1000L}, offset=${offsetMs / 60000}min, " +
+                "${TimeZone.getDefault().id})",
+        )
+        gatt.sendMessage(SdpFrame.CHAN_CONTROL, TimeSync.encodeUnix(localEpoch))
     }
 
     fun requestConfirmStatus() {
@@ -311,6 +412,17 @@ class CompositorHost(
     }
 
     private fun applyConfirmSnapshot(snap: ConfirmStatus.Snapshot) {
+        // Log the edge: previously the only trace of a confirmed image was the
+        // confirm poll going quiet, which reads exactly like the watch having
+        // stopped answering.
+        val prev = SharedLink.lastConfirmStatus
+        if (prev == null || prev.needsConfirm != snap.needsConfirm) {
+            if (snap.needsConfirm) {
+                LinkLog.i("watch image ON TRIAL — ${snap.dwellMsRemaining}ms dwell remaining")
+            } else {
+                LinkLog.i("watch image CONFIRMED (IMAGE_OK written)")
+            }
+        }
         SharedLink.lastConfirmStatus = snap
         if (_confirmUi.value is ConfirmUi.StuckWarning && snap.needsConfirm) {
             SharedLink.publishConfirmUi(ConfirmUi.StuckWarning)
@@ -336,11 +448,23 @@ class CompositorHost(
     }
 
     suspend fun openTestApp() {
-        compositor.requestFocus(
+        // Timestamped either side of requestFocus: the press itself was never
+        // logged, so "nothing is happening" could not be distinguished from
+        // "the push has not been issued yet".
+        val t0 = System.currentTimeMillis()
+        LinkLog.i(
+            "openTestApp: requesting focus " +
+                "(session=${session.state}, linkConnected=${compositor.linkConnected})",
+        )
+        val deny = compositor.requestFocus(
             test.manifest.id,
             PriorityClass.NORMAL,
             FocusReason.UserNavigation,
             StackOp.Push,
+        )
+        LinkLog.i(
+            "openTestApp: focus returned after ${System.currentTimeMillis() - t0}ms" +
+                if (deny != null) " — DENIED: $deny" else "",
         )
     }
 
@@ -616,5 +740,27 @@ class CompositorHost(
 
     companion object {
         const val TICK_MS = 500L
+
+        /**
+         * Resend the wall clock this often while connected. The watch keeps
+         * time on RTC1 once set, so this is drift correction and a safety net
+         * for a missed Ready edge — not a per-tick cost.
+         */
+        const val TIME_RESYNC_INTERVAL_MS = 15 * 60 * 1000L
+
+        /**
+         * Window in which an identical display list is treated as a duplicate.
+         * Comfortably longer than the burst (~33 ms) and far shorter than any
+         * interval at which real content changes.
+         */
+        const val PUSH_COALESCE_MS = 500L
+
+        /**
+         * Cumulative delays after the session goes Ready, for the initial time
+         * sync. Spaced past the watch's 20 ms drain so the message cannot be
+         * swallowed by the single-slot inbox, then repeated twice in case it
+         * still collides with a heartbeat or confirm-status reply.
+         */
+        val TIME_SYNC_RETRY_DELAYS_MS = longArrayOf(300L, 2_000L, 8_000L)
     }
 }

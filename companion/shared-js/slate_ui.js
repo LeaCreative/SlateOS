@@ -13,7 +13,7 @@
     CLEAR: 0x01, SET_PALETTE: 0x02, RECT: 0x03, RECT_ROUND: 0x04,
     LINE: 0x05, CIRCLE: 0x06, ARC: 0x07, POLYLINE: 0x08,
     CLIP_RECT: 0x09, CLIP_CLEAR: 0x0A,
-    TEXT: 0x10, TEXT_BOX: 0x11, ICON: 0x12, IMAGE: 0x13,
+    TEXT: 0x10, TEXT_BOX: 0x11, ICON: 0x12, IMAGE: 0x13, TEXT_SCALED: 0xe0,
     PROGRESS_BAR: 0x20, PROGRESS_ARC: 0x21,
     BEGIN_ELEM: 0x30, END_ELEM: 0x31, SCROLL_REGION: 0x40,
     PATCH: 0x50, HAPTIC: 0x60, BACKLIGHT: 0x61,
@@ -70,6 +70,27 @@
     colorTag(this.buf, c);
     u8(this.buf, a);
     u8(this.buf, bytes.length);
+    for (var j = 0; j < bytes.length; j++) u8(this.buf, bytes[j]);
+  };
+  // TEXT_SCALED (0xE0): each glyph pixel becomes scale x scale. The base 3x5
+  // font is unreadable on a 240x240 panel at arm's length, so every legible
+  // screen uses this. Extension opcode, so it carries a u16 payload length and
+  // old firmware skips it. Layout must match sdp_parser.cpp:
+  //   font, x, y, colour, align, scale, len, bytes
+  Builder.prototype.textScaled = function (font, x, y, align, c, scale, s) {
+    var f = (typeof font === 'string') ? 0 : (font | 0);
+    var a = 0;
+    if (align === 'CENTER' || align === 1) a = 1;
+    else if (align === 'RIGHT' || align === 2) a = 2;
+    var bytes = [];
+    for (var i = 0; i < s.length; i++) bytes.push(s.charCodeAt(i) & 0xff);
+    var colour = [];
+    colorTag(colour, c);
+    u8(this.buf, OP.TEXT_SCALED);
+    u16le(this.buf, 6 + colour.length + bytes.length);
+    u8(this.buf, f); u8(this.buf, x); u8(this.buf, y);
+    for (var k = 0; k < colour.length; k++) u8(this.buf, colour[k]);
+    u8(this.buf, a); u8(this.buf, scale | 0); u8(this.buf, bytes.length);
     for (var j = 0; j < bytes.length; j++) u8(this.buf, bytes[j]);
   };
   Builder.prototype.element = function (id, x, y, w, h, flagsOrFn, maybeFn) {
