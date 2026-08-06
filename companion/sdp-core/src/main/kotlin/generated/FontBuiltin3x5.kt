@@ -1,17 +1,30 @@
 package slate.generated
 
-/** Built-in font 0 — generated from shared/fonts/font0_3x5.json. */
+/** Built-in font 0 (builtin_3x5) — generated from shared/fonts/. */
 object FontBuiltin3x5 {
     const val ID = 0
     const val CELL_WIDTH = 3
     const val CELL_HEIGHT = 5
     const val ADVANCE = 4
-    const val FIRST_CODEPOINT = 45
-    const val GLYPH_COUNT = 14
+    const val FIRST_CODEPOINT = 32
+    const val GLYPH_COUNT = 95
 
     data class Glyph(val codepoint: Int, val rows: ByteArray)
 
     val GLYPHS: List<Glyph> = listOf(
+        Glyph(32, byteArrayOf(0, 0, 0, 0, 0)),
+        Glyph(33, byteArrayOf(2, 2, 2, 0, 2)),
+        Glyph(34, byteArrayOf(5, 5, 0, 0, 0)),
+        Glyph(35, byteArrayOf(5, 7, 5, 7, 5)),
+        Glyph(36, byteArrayOf(2, 3, 2, 6, 2)),
+        Glyph(37, byteArrayOf(5, 1, 2, 4, 5)),
+        Glyph(38, byteArrayOf(2, 5, 2, 5, 3)),
+        Glyph(39, byteArrayOf(2, 2, 0, 0, 0)),
+        Glyph(40, byteArrayOf(1, 2, 2, 2, 1)),
+        Glyph(41, byteArrayOf(4, 2, 2, 2, 4)),
+        Glyph(42, byteArrayOf(0, 5, 2, 5, 0)),
+        Glyph(43, byteArrayOf(0, 2, 7, 2, 0)),
+        Glyph(44, byteArrayOf(0, 0, 0, 2, 4)),
         Glyph(45, byteArrayOf(0, 0, 7, 0, 0)),
         Glyph(46, byteArrayOf(0, 0, 0, 0, 2)),
         Glyph(47, byteArrayOf(1, 1, 2, 4, 4)),
@@ -26,6 +39,74 @@ object FontBuiltin3x5 {
         Glyph(56, byteArrayOf(7, 5, 7, 5, 7)),
         Glyph(57, byteArrayOf(7, 5, 7, 1, 7)),
         Glyph(58, byteArrayOf(0, 2, 0, 2, 0)),
+        Glyph(59, byteArrayOf(0, 2, 0, 2, 4)),
+        Glyph(60, byteArrayOf(1, 2, 4, 2, 1)),
+        Glyph(61, byteArrayOf(0, 7, 0, 7, 0)),
+        Glyph(62, byteArrayOf(4, 2, 1, 2, 4)),
+        Glyph(63, byteArrayOf(6, 1, 2, 0, 2)),
+        Glyph(64, byteArrayOf(2, 5, 7, 4, 3)),
+        Glyph(65, byteArrayOf(2, 5, 7, 5, 5)),
+        Glyph(66, byteArrayOf(6, 5, 6, 5, 6)),
+        Glyph(67, byteArrayOf(3, 4, 4, 4, 3)),
+        Glyph(68, byteArrayOf(6, 5, 5, 5, 6)),
+        Glyph(69, byteArrayOf(7, 4, 6, 4, 7)),
+        Glyph(70, byteArrayOf(7, 4, 6, 4, 4)),
+        Glyph(71, byteArrayOf(3, 4, 5, 5, 3)),
+        Glyph(72, byteArrayOf(5, 5, 7, 5, 5)),
+        Glyph(73, byteArrayOf(7, 2, 2, 2, 7)),
+        Glyph(74, byteArrayOf(1, 1, 1, 5, 2)),
+        Glyph(75, byteArrayOf(5, 5, 6, 5, 5)),
+        Glyph(76, byteArrayOf(4, 4, 4, 4, 7)),
+        Glyph(77, byteArrayOf(5, 7, 7, 5, 5)),
+        Glyph(78, byteArrayOf(5, 7, 5, 5, 5)),
+        Glyph(79, byteArrayOf(2, 5, 5, 5, 2)),
+        Glyph(80, byteArrayOf(6, 5, 6, 4, 4)),
+        Glyph(81, byteArrayOf(2, 5, 5, 6, 3)),
+        Glyph(82, byteArrayOf(6, 5, 6, 5, 5)),
+        Glyph(83, byteArrayOf(3, 4, 2, 1, 6)),
+        Glyph(84, byteArrayOf(7, 2, 2, 2, 2)),
+        Glyph(85, byteArrayOf(5, 5, 5, 5, 7)),
+        Glyph(86, byteArrayOf(5, 5, 5, 5, 2)),
+        Glyph(87, byteArrayOf(5, 5, 7, 7, 5)),
+        Glyph(88, byteArrayOf(5, 5, 2, 5, 5)),
+        Glyph(89, byteArrayOf(5, 5, 2, 2, 2)),
+        Glyph(90, byteArrayOf(7, 1, 2, 4, 7)),
+        Glyph(91, byteArrayOf(3, 2, 2, 2, 3)),
+        Glyph(92, byteArrayOf(4, 4, 2, 1, 1)),
+        Glyph(93, byteArrayOf(6, 2, 2, 2, 6)),
+        Glyph(94, byteArrayOf(2, 5, 0, 0, 0)),
+        Glyph(95, byteArrayOf(0, 0, 0, 0, 7)),
+        Glyph(96, byteArrayOf(4, 2, 0, 0, 0)),
+        Glyph(97, byteArrayOf(0, 3, 5, 5, 3)),
+        Glyph(98, byteArrayOf(4, 4, 6, 5, 6)),
+        Glyph(99, byteArrayOf(0, 3, 4, 4, 3)),
+        Glyph(100, byteArrayOf(1, 1, 3, 5, 3)),
+        Glyph(101, byteArrayOf(0, 2, 5, 6, 3)),
+        Glyph(102, byteArrayOf(3, 4, 6, 4, 4)),
+        Glyph(103, byteArrayOf(0, 3, 5, 3, 6)),
+        Glyph(104, byteArrayOf(4, 4, 6, 5, 5)),
+        Glyph(105, byteArrayOf(2, 0, 2, 2, 2)),
+        Glyph(106, byteArrayOf(1, 0, 1, 5, 2)),
+        Glyph(107, byteArrayOf(4, 5, 6, 6, 5)),
+        Glyph(108, byteArrayOf(6, 2, 2, 2, 3)),
+        Glyph(109, byteArrayOf(0, 7, 7, 5, 5)),
+        Glyph(110, byteArrayOf(0, 6, 5, 5, 5)),
+        Glyph(111, byteArrayOf(0, 2, 5, 5, 2)),
+        Glyph(112, byteArrayOf(0, 6, 5, 6, 4)),
+        Glyph(113, byteArrayOf(0, 3, 5, 3, 1)),
+        Glyph(114, byteArrayOf(0, 5, 6, 4, 4)),
+        Glyph(115, byteArrayOf(0, 3, 6, 1, 6)),
+        Glyph(116, byteArrayOf(2, 7, 2, 2, 3)),
+        Glyph(117, byteArrayOf(0, 5, 5, 5, 3)),
+        Glyph(118, byteArrayOf(0, 5, 5, 5, 2)),
+        Glyph(119, byteArrayOf(0, 5, 5, 7, 7)),
+        Glyph(120, byteArrayOf(0, 5, 2, 2, 5)),
+        Glyph(121, byteArrayOf(0, 5, 5, 3, 6)),
+        Glyph(122, byteArrayOf(0, 7, 1, 2, 7)),
+        Glyph(123, byteArrayOf(1, 1, 5, 2, 0)),
+        Glyph(124, byteArrayOf(0, 5, 2, 5, 0)),
+        Glyph(125, byteArrayOf(0, 5, 0, 5, 2)),
+        Glyph(126, byteArrayOf(5, 7, 7, 2, 0)),
     )
 
     fun rowsFor(codepoint: Int): ByteArray? =

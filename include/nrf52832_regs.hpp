@@ -259,10 +259,23 @@ constexpr std::uint32_t ERRORSRC_OVERRUN  = (1u << 0);
 constexpr std::uint32_t ERRORSRC_ANACK    = (1u << 1);
 constexpr std::uint32_t ERRORSRC_DNACK    = (1u << 2);
 
-constexpr std::uint32_t SHORT_LASTTX_STOP = (1u << 8);
-constexpr std::uint32_t SHORT_LASTTX_SUSPEND = (1u << 7);
-constexpr std::uint32_t SHORT_LASTTX_STARTRX = (1u << 10);
-constexpr std::uint32_t SHORT_LASTRX_STOP = (1u << 12);
+// SHORTS bit positions, nRF52832 PS / third_party/nrfx/mdk/nrf52_bitfields.h:
+//   7 LASTTX_STARTRX, 8 LASTTX_SUSPEND, 9 LASTTX_STOP,
+//  10 LASTRX_STARTTX, 11 LASTRX_SUSPEND, 12 LASTRX_STOP.
+//
+// These were shifted: STOP was 8 (= SUSPEND) and STARTRX was 10
+// (= LASTRX_STARTTX). So every twi::write ended by SUSPENDING instead of
+// stopping, and every twi::write_read never issued the repeated START at all —
+// in both cases EVENTS_STOPPED never arrived and the transfer died on its
+// timeout. That is why no I2C transfer has ever succeeded on this watch, on
+// any device, since bring-up (N-31). Plain twi::read was the one path with a
+// correct short, and nothing uses it.
+constexpr std::uint32_t SHORT_LASTTX_STARTRX = (1u << 7);
+constexpr std::uint32_t SHORT_LASTTX_SUSPEND = (1u << 8);
+constexpr std::uint32_t SHORT_LASTTX_STOP    = (1u << 9);
+constexpr std::uint32_t SHORT_LASTRX_STARTTX = (1u << 10);
+constexpr std::uint32_t SHORT_LASTRX_SUSPEND = (1u << 11);
+constexpr std::uint32_t SHORT_LASTRX_STOP    = (1u << 12);
 }  // namespace twim1
 
 // ── GPIOTE ───────────────────────────────────────────────────────────────────

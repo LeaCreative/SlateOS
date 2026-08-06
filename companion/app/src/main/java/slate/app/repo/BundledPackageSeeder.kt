@@ -44,6 +44,12 @@ object BundledPackageSeeder {
             ScriptResources.CAMERA_MAIN,
             setOf(ScriptPermission.Camera),
         ),
+        Bundled(
+            "slate.vibrate",
+            ScriptResources.VIBRATE_MANIFEST,
+            ScriptResources.VIBRATE_MAIN,
+            setOf(ScriptPermission.Vibrate),
+        ),
     )
 
     fun ensureOfficialDemos(context: Context): Int {

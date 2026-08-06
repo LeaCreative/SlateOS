@@ -79,6 +79,19 @@
   slate.haptic = function (pattern) {
     return { type: 'adapter', adapter: 'haptic', command: 'pulse', payload: JSON.stringify({ pattern: pattern || 0 }) };
   };
+  /**
+   * Vibrate the PHONE. slate.haptic() buzzes the watch motor; this reaches
+   * back to the handset. Permission-gated on "vibrate".
+   */
+  slate.phone = {
+    vibrate: function (ms) {
+      var d = ms | 0;
+      if (d < 0) d = 0;
+      if (d > 2000) d = 2000;
+      return { type: 'adapter', adapter: 'phone', command: 'vibrate',
+        payload: JSON.stringify({ ms: d }) };
+    }
+  };
   slate.timer = {
     set: function (id, ms) {
       return { type: 'adapter', adapter: 'timer', command: 'set',

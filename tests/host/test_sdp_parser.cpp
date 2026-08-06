@@ -362,7 +362,9 @@ void test_unset_palette() {
 }
 
 void test_bad_font_id() {
-  std::vector<std::uint8_t> b = {0x10, 1, 0, 0};  // font 1 not registered
+  // Font 1 is the built-in 5x7 since max_font_id went to 1, so 2 is now the
+  // first id that must be refused.
+  std::vector<std::uint8_t> b = {0x10, 2, 0, 0};  // font 2 not registered
   color_literal(b, 0);
   b.push_back(0);
   b.push_back(0);
@@ -382,7 +384,89 @@ void test_commit_with_open_elem() {
 
 }  // namespace
 
+
+// ── Scrollable content taller than the viewport ─────────────────────────────
+//
+// check_rect() used to bound every op to the 240 px display, so a SCROLL_REGION
+// could never carry content taller than the screen — which is the only case
+// where scrolling means anything. The launcher's fourth row (y=216 h=64 -> 280)
+// was rejected, and with it the whole list. These pin the new rule: inside a
+// region the bound is the declared content height; outside it is the display.
+
+static std::vector<std::uint8_t> scroll_list(std::uint16_t content_h,
+                                             std::uint8_t row_y,
+                                             std::uint8_t row_h,
+                                             bool close_region) {
+  std::vector<std::uint8_t> v;
+  v.push_back(sdp::op::SCROLL_REGION);
+  v.push_back(24u);            // region y
+  v.push_back(216u);           // region h
+  push_u16(v, content_h);
+  v.push_back(sdp::op::RECT);
+  v.push_back(8u);             // x
+  v.push_back(row_y);
+  v.push_back(224u);           // w
+  v.push_back(row_h);
+  color_literal(v, 0xFFFFu);
+  v.push_back(0u);             // style FILL
+  if (close_region) {
+    v.push_back(sdp::op::CLIP_CLEAR);
+    // Same rect again, now outside the region — must be judged against the
+    // display, not the content height.
+    v.push_back(sdp::op::RECT);
+    v.push_back(8u);
+    v.push_back(row_y);
+    v.push_back(224u);
+    v.push_back(row_h);
+    color_literal(v, 0xFFFFu);
+    v.push_back(0u);
+  }
+  v.push_back(sdp::op::COMMIT);
+  v.push_back(0u);
+  return v;
+}
+
+static void test_scroll_content_taller_than_screen() {
+  // The exact launcher case: 4 rows of 72 px pitch, last at 216 + 64 = 280.
+  expect_status("scroll: row past 240 accepted inside region",
+                run(scroll_list(288u, 216u, 64u, false)).status,
+                sdp::Status::Ok);
+  // Right at the declared content height is fine...
+  expect_status("scroll: row ending exactly at content_h",
+                run(scroll_list(280u, 216u, 64u, false)).status,
+                sdp::Status::Ok);
+  // ...one past it is not. The bound moved, it did not disappear.
+  expect_status("scroll: row past content_h rejected",
+                run(scroll_list(279u, 216u, 64u, false)).status,
+                sdp::Status::Reject);
+}
+
+static void test_scroll_bound_ends_with_region() {
+  // CLIP_CLEAR closes the region, so the second rect is off-screen again.
+  expect_status("scroll: bound resets after CLIP_CLEAR",
+                run(scroll_list(288u, 216u, 64u, true)).status,
+                sdp::Status::Reject);
+}
+
+static void test_no_scroll_still_bounded_to_display() {
+  std::vector<std::uint8_t> v;
+  v.push_back(sdp::op::RECT);
+  v.push_back(8u);
+  v.push_back(216u);
+  v.push_back(224u);
+  v.push_back(64u);            // 216 + 64 = 280, no scroll region in sight
+  color_literal(v, 0xFFFFu);
+  v.push_back(0u);
+  v.push_back(sdp::op::COMMIT);
+  v.push_back(0u);
+  expect_status("no scroll region: off-screen rect still rejected",
+                run(v).status, sdp::Status::Reject);
+}
+
 int main() {
+  test_scroll_content_taller_than_screen();
+  test_scroll_bound_ends_with_region();
+  test_no_scroll_still_bounded_to_display();
   test_clear_commit();
   test_set_palette_rect();
   test_all_shape_ops();

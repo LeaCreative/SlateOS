@@ -23,6 +23,13 @@ enum class Status : std::uint8_t {
 
 void init();
 
+// InfiniTime TwiMaster::Sleep() / Wakeup(): ENABLE alone. PSEL, FREQUENCY and
+// the pin configuration all survive, so a woken bus needs no re-init. Every
+// transfer below already wakes on entry and sleeps on exit — these exist for
+// callers that want the bus down explicitly (power::buses_idle).
+void sleep();
+void wake();
+
 // Write `len` bytes to `addr` (7-bit).  Returns Status::Ok on success.
 Status write(std::uint8_t addr, const std::uint8_t* data, std::size_t len,
              std::uint32_t timeout_us = 5000u);
@@ -39,5 +46,15 @@ Status write_read(std::uint8_t addr,
 
 // Clock out stuck slaves and force a STOP condition on the bus.
 void recover_bus();
+
+/**
+ * Status of the most recent transfer.
+ *
+ * A failure count alone cannot tell a bus-level fault from a peripheral that
+ * never ran: the SHORTS defect made every transfer end in Timeout, which reads
+ * identically to AddressNack in a counter. Surfaced on diag line 3 so the next
+ * failure names itself.
+ */
+Status last_status();
 
 }  // namespace twi

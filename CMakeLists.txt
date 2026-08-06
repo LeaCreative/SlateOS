@@ -92,6 +92,7 @@ set(SLATE_APP_SOURCES
   src/backlight.cpp
   src/twi.cpp
   src/cst816s.cpp
+  src/motor.cpp
   src/button.cpp
   src/input_event.cpp
   src/input_router.cpp

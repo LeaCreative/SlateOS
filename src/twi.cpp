@@ -10,17 +10,30 @@ static constexpr std::uint32_t kPinSda = 6u;
 
 namespace {
 
-void gpio_input_pullup(std::uint32_t pin) {
+// I2C pin configuration, mirroring InfiniTime TwiMaster::ConfigurePins() —
+// which is also what nrfx_twim does.
+//
+// This was DIR_INPUT | PULLUP | S0S1. S0S1 actively drives the line high, so
+// the master fights a slave pulling it low; the pins must be open-drain (S0D1)
+// with the PineTime's external pull-ups doing the rest.
+//
+// Corrected 5 Aug, but it was NOT the reason every transfer failed — fixing it
+// alone changed nothing on hardware (readfail still tracked irq exactly). The
+// cause was the SHORTS bit positions in nrf52832_regs.hpp. Keep this anyway:
+// it is what InfiniTime and nrfx do, and it is wrong the other way.
+void gpio_twi_pin(std::uint32_t pin) {
+  constexpr std::uint32_t kDriveS0D1 = (6u << 8);
   nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(pin)) =
       nrf::gpio::PIN_CNF_DIR_INPUT |
       nrf::gpio::PIN_CNF_INPUT_CONNECT |
-      nrf::gpio::PIN_CNF_PULLUP |
-      nrf::gpio::PIN_CNF_DRIVE_S0S1 |
+      nrf::gpio::PIN_CNF_PULL_DISABLED |
+      kDriveS0D1 |
       nrf::gpio::PIN_CNF_SENSE_DISABLED;
 }
 
 void gpio_output_open_drain_pullup(std::uint32_t pin) {
-  // S0D1 drive: pull low actively, release high (open-drain with pull-up).
+  // Bit-bang recovery only: same open-drain drive, but the internal pull-up is
+  // added because we are driving the lines by hand rather than the peripheral.
   constexpr std::uint32_t kDriveS0D1 = (6u << 8);
   nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(pin)) =
       nrf::gpio::PIN_CNF_DIR_OUTPUT |
@@ -56,6 +69,13 @@ void clear_events() {
   nrf::reg<std::uint32_t>(nrf::twim1::EVENTS_LASTTX) = 0u;
   nrf::reg<std::uint32_t>(nrf::twim1::EVENTS_LASTRX) = 0u;
   nrf::reg<std::uint32_t>(nrf::twim1::EVENTS_SUSPENDED) = 0u;
+}
+
+twi::Status g_last_status = twi::Status::Ok;
+
+twi::Status note(twi::Status s) {
+  g_last_status = s;
+  return s;
 }
 
 twi::Status map_error() {
@@ -138,19 +158,25 @@ void recover_bus() {
   board::busy_wait_us(5u);
 
   // Hand pins back to TWIM1.
-  gpio_input_pullup(kPinScl);
-  gpio_input_pullup(kPinSda);
+  gpio_twi_pin(kPinScl);
+  gpio_twi_pin(kPinSda);
 
   nrf::reg<std::uint32_t>(nrf::twim1::PSEL_SCL) = kPinScl;
   nrf::reg<std::uint32_t>(nrf::twim1::PSEL_SDA) = kPinSda;
   twim_enable();
 }
 
+Status last_status() { return g_last_status; }
+
+void sleep() { twim_disable(); }
+
+void wake() { twim_enable(); }
+
 void init() {
   twim_disable();
 
-  gpio_input_pullup(kPinScl);
-  gpio_input_pullup(kPinSda);
+  gpio_twi_pin(kPinScl);
+  gpio_twi_pin(kPinSda);
 
   nrf::reg<std::uint32_t>(nrf::twim1::PSEL_SCL) = kPinScl;
   nrf::reg<std::uint32_t>(nrf::twim1::PSEL_SDA) = kPinSda;
@@ -167,7 +193,10 @@ Status write(std::uint8_t addr, const std::uint8_t* data, std::size_t len,
     return Status::Ok;
   }
 
-  twim_enable();  // power::buses_idle may have disabled TWIM
+  // Wakeup / Sleep around the transfer, exactly as InfiniTime's TwiMaster does.
+  // PSEL, FREQUENCY and PIN_CNF all survive ENABLE=0, so re-enabling is the
+  // whole of what a caller needs after power::buses_idle().
+  twim_enable();
   clear_events();
   nrf::reg<std::uint32_t>(nrf::twim1::ADDRESS) = addr;
   nrf::reg<std::uint32_t>(nrf::twim1::TXD_PTR) =
@@ -180,10 +209,12 @@ Status write(std::uint8_t addr, const std::uint8_t* data, std::size_t len,
   Status st = Status::Ok;
   if (!wait_event(nrf::twim1::EVENTS_STOPPED, timeout_us, &st)) {
     recover_bus();
-    return st;
+    twim_disable();
+    return note(st);
   }
   nrf::reg<std::uint32_t>(nrf::twim1::SHORTS) = 0u;
-  return Status::Ok;
+  twim_disable();
+  return note(Status::Ok);
 }
 
 Status read(std::uint8_t addr, std::uint8_t* data, std::size_t len,
@@ -205,10 +236,12 @@ Status read(std::uint8_t addr, std::uint8_t* data, std::size_t len,
   Status st = Status::Ok;
   if (!wait_event(nrf::twim1::EVENTS_STOPPED, timeout_us, &st)) {
     recover_bus();
-    return st;
+    twim_disable();
+    return note(st);
   }
   nrf::reg<std::uint32_t>(nrf::twim1::SHORTS) = 0u;
-  return Status::Ok;
+  twim_disable();
+  return note(Status::Ok);
 }
 
 Status write_read(std::uint8_t addr,
@@ -241,11 +274,13 @@ Status write_read(std::uint8_t addr,
   Status st = Status::Ok;
   if (!wait_event(nrf::twim1::EVENTS_STOPPED, timeout_us, &st)) {
     recover_bus();
-    return st;
+    twim_disable();
+    return note(st);
   }
 
   nrf::reg<std::uint32_t>(nrf::twim1::SHORTS) = 0u;
-  return Status::Ok;
+  twim_disable();
+  return note(Status::Ok);
 }
 
 }  // namespace twi

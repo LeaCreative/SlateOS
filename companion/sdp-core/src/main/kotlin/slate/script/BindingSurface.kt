@@ -42,7 +42,7 @@ class BindingSurface(
                         "timer" -> handleTimer(m)
                         "http" -> handleHttp(m)
                         "notifications", "media", "location", "health", "haptic",
-                        "nav", "camera",
+                        "nav", "camera", "phone",
                         -> {
                             val perm = when (m.adapter) {
                                 "notifications" -> ScriptPermission.Notifications
@@ -51,6 +51,7 @@ class BindingSurface(
                                 "health" -> ScriptPermission.HealthRead
                                 "nav" -> ScriptPermission.Navigation
                                 "camera" -> ScriptPermission.Camera
+                                "phone" -> ScriptPermission.Vibrate
                                 else -> null
                             }
                             if (perm != null && !effective(perm)) {

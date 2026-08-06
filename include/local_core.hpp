@@ -68,6 +68,16 @@ public:
 
   void show_current();
 
+  /**
+   * Swipe-to-launcher with no phone attached.
+   *
+   * The app drawer is composed on the phone — the watch has no idea what is
+   * installed — so with the link down there is nothing to push and the gesture
+   * would otherwise do nothing at all. Say so instead. Cleared automatically
+   * on the next link-up (on_link_up sends Disconnected back to Face).
+   */
+  void show_not_connected();
+
   /** Band-only "UPDATING nn%" repaint, safe to call during a transfer. */
   void show_ota_progress(std::uint8_t pct);
   void wake_display();

@@ -14,6 +14,8 @@ object ScriptResources {
     const val NAV_MANIFEST = "/slate/subapps/navigation/manifest.json"
     const val CAMERA_MAIN = "/slate/subapps/camera/main.js"
     const val CAMERA_MANIFEST = "/slate/subapps/camera/manifest.json"
+    const val VIBRATE_MAIN = "/slate/subapps/vibrate/main.js"
+    const val VIBRATE_MANIFEST = "/slate/subapps/vibrate/manifest.json"
 
     fun read(path: String): String {
         val stream = ScriptResources::class.java.getResourceAsStream(path)

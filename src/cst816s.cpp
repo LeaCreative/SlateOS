@@ -43,6 +43,10 @@ volatile std::uint32_t g_irq_count = 0u;
 // read succeeded but the controller reported no touch" — the storm fix proved
 // the IRQ fires, so the remaining fault is one of these two (N-31).
 std::uint32_t g_read_fail = 0u;
+// twi::Status of the most recent touch read. A bare failure count cannot tell
+// "the peripheral never ran" (Timeout) from "the slave did not answer"
+// (AddressNack); that ambiguity cost three build-and-flash cycles on N-31.
+std::uint8_t g_last_twi_status = 0u;
 
 void gpio_output(std::uint32_t pin, bool high) {
   nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(pin)) =
@@ -63,6 +67,23 @@ void hard_reset() {
   board::busy_wait_ms(10u);
   nrf::reg<std::uint32_t>(nrf::gpio::OUTSET) = (1u << kPinRst);
   board::busy_wait_ms(50u);
+}
+
+/** InfiniTime's validity check: anything outside the documented set is junk. */
+bool is_known_gesture(std::uint8_t g) {
+  switch (g) {
+    case 0x00u:  // None
+    case 0x01u:  // SlideDown
+    case 0x02u:  // SlideUp
+    case 0x03u:  // SlideLeft
+    case 0x04u:  // SlideRight
+    case 0x05u:  // SingleTap
+    case 0x0Bu:  // DoubleTap
+    case 0x0Cu:  // LongPress
+      return true;
+    default:
+      return false;
+  }
 }
 
 /** True while the touch IRQ line is asserted (active low). */
@@ -136,6 +157,7 @@ void init() {
   g_irq_latched = false;
   g_irq_count = 0u;
   g_read_fail = 0u;
+  g_last_twi_status = 0u;
   hard_reset();
 
   // Wake and configure the controller, mirroring InfiniTime. Slate previously
@@ -151,12 +173,14 @@ void init() {
   (void)twi::write_read(kI2cAddr, &reg, 1u, &dummy, 1u, 2000u);
   board::busy_wait_ms(5u);
 
-  const std::uint8_t motion[2] = {kRegMotionMask, kMotionMask};
+  // Deliberately non-const: EasyDMA can only read Data RAM, and a const local
+  // array may be promoted to .rodata in flash at -Os. Non-const locals cannot.
+  std::uint8_t motion[2] = {kRegMotionMask, kMotionMask};
   (void)twi::write(kI2cAddr, motion, sizeof(motion), 2000u);
-  const std::uint8_t irq[2] = {kRegIrqCtl, kIrqCtl};
+  std::uint8_t irq[2] = {kRegIrqCtl, kIrqCtl};
   (void)twi::write(kI2cAddr, irq, sizeof(irq), 2000u);
   // Disable the 5 s auto-reset: it drops the live touch point mid-gesture.
-  const std::uint8_t autorst[2] = {kRegAutoReset, 0x00u};
+  std::uint8_t autorst[2] = {kRegAutoReset, 0x00u};
   (void)twi::write(kI2cAddr, autorst, sizeof(autorst), 2000u);
 
   configure_irq_pin_sense();
@@ -170,6 +194,8 @@ std::uint32_t irq_count() { return g_irq_count; }
 
 std::uint32_t read_fail_count() { return g_read_fail; }
 
+std::uint8_t last_twi_status() { return g_last_twi_status; }
+
 TouchSample poll() {
   TouchSample sample{};
 
@@ -177,29 +203,29 @@ TouchSample poll() {
     g_irq_latched = false;
   }
 
-  // Full re-init, not just power::buses_wake().
+  // No bus re-init here any more. twi::write_read() wakes TWIM1 on entry and
+  // sleeps it on exit (InfiniTime TwiMaster), and ENABLE=0 preserves PSEL,
+  // FREQUENCY and PIN_CNF — so there was never anything for a re-init to
+  // restore.
   //
-  // The controller lives on TWIM1, which buses_idle() disables on entry to
-  // every power state except Active. buses_wake() only sets ENABLE — but
-  // disabling TWIM returns SCL/SDA to GPIO control, so PSEL, FREQUENCY, SHORTS
-  // and the pin pull-ups all need restoring before a transfer will work.
-  // Measured 12 read failures against 12 interrupts with buses_wake() alone
-  // (N-31): the IRQ was correct and every read went out over a dead bus.
-  //
-  // Cost is a disable/enable cycle per touch event, not per loop iteration.
-  twi::init();
-
+  // The reason every read failed regardless was the TWIM SHORTS bit positions
+  // (nrf52832_regs.hpp): write_read never armed LASTTX→STARTRX, so after the
+  // register byte the peripheral simply stopped doing anything and the wait
+  // timed out. Three separate theories were tried against this symptom before
+  // that — bus wake, full re-init, pin drive — because the failure counter did
+  // not say *how* it failed. It now reports the status code.
   alignas(4) std::uint8_t data[kTouchRegs] = {};
   static std::uint8_t start = kReadStart;
   const twi::Status st =
       twi::write_read(kI2cAddr, &start, 1u, data, kTouchRegs, 3000u);
 
+  g_last_twi_status = static_cast<std::uint8_t>(st);
   if (st != twi::Status::Ok) {
     ++g_read_fail;
     return sample;
   }
 
-  sample.gesture = static_cast<Gesture>(data[kOffGesture]);
+  const std::uint8_t raw_gesture = data[kOffGesture];
   sample.fingers = static_cast<std::uint8_t>(data[kOffFingers] & 0x0Fu);
   sample.x = static_cast<std::uint16_t>(
       ((static_cast<std::uint16_t>(data[kOffXh] & 0x0Fu) << 8u) |
@@ -208,15 +234,38 @@ TouchSample poll() {
       ((static_cast<std::uint16_t>(data[kOffYh] & 0x0Fu) << 8u) |
        data[kOffYl]));
 
-  if (sample.x >= 240u) {
-    sample.x = 239u;
-  }
-  if (sample.y >= 240u) {
-    sample.y = 239u;
+  // InfiniTime rejects the whole sample when the coordinates or the gesture
+  // byte are out of range rather than clamping — a read that returns nonsense
+  // is a failed read, and clamping turns it into a plausible tap at the edge
+  // of the screen. Slate clamped.
+  if (sample.x >= 240u || sample.y >= 240u || !is_known_gesture(raw_gesture)) {
+    return sample;
   }
 
-  sample.valid = (sample.gesture != Gesture::None) || (sample.fingers > 0u);
+  sample.gesture = static_cast<Gesture>(raw_gesture);
+  sample.touching = sample.fingers > 0u;
+  sample.valid = true;
   return sample;
+}
+
+void sleep() {
+  // InfiniTime Cst816S::Sleep(). Not wired into power::enter() — see the note
+  // in cst816s.hpp: the panel has to stay in normal mode for a tap to wake the
+  // watch, which is also what InfiniTime does whenever a touch wake-up mode is
+  // enabled. Kept so I-17 (display sleep) has the mirrored primitive available.
+  gpio_output(kPinRst, false);
+  board::busy_wait_ms(5u);
+  nrf::reg<std::uint32_t>(nrf::gpio::OUTSET) = (1u << kPinRst);
+  board::busy_wait_ms(50u);
+  std::uint8_t sleep_cmd[2] = {0xA5u, 0x03u};
+  (void)twi::write(kI2cAddr, sleep_cmd, sizeof(sleep_cmd), 2000u);
+}
+
+void wake() {
+  // InfiniTime Cst816S::Wakeup() is Init() — reset, wake reads, control
+  // registers. Blocks ~65 ms, so it belongs on a wake transition, never in the
+  // poll path.
+  init();
 }
 
 }  // namespace cst816s

@@ -8,7 +8,7 @@ object SdpWire {
     const val PALETTE_SIZE = 16
     const val MAX_ELEM_DEPTH = 8
     const val MAX_HIT_ELEMS = 32
-    const val MAX_FONT_ID = 0
+    const val MAX_FONT_ID = 1
     const val MAX_ATLAS_ID = 0
     const val MAX_ASSET_ID = 0
     const val MAX_ICON_ID = 0
@@ -174,8 +174,6 @@ object SdpWire {
         const val CREDIT = 0x0A
         const val GOODBYE = 0x0B
         const val TIME_SYNC = 0x20
-        // CONTROL 0xE0–0xEF extensions (skippable on old FW). Distinct from
-        // DISPLAY TEXT_SCALED 0xE0 (channel 1).
         const val CONFIRM_STATUS_REQUEST = 0xE0
         const val CONFIRM_STATUS = 0xE1
     }

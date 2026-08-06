@@ -17,7 +17,11 @@ constexpr std::uint32_t kMaxHitElems   = 32u;
 
 // M3 registered ID ranges (until M11 asset packs expand them).
 // Runtime packs may raise these; see shared/generated/asset_ids.hpp from pack.py.
-constexpr std::uint8_t  kMaxFontId     = 0u;   // font 0 = built-in / pack
+// 0 = built-in 3x5 (dense, diagnostic overlay), 1 = built-in 5x7 (legible).
+// Both are compiled in; see include/font_builtin.hpp. The parser rejects any
+// text op above this, so it must track shared/sdp_wire.json — tools/codegen
+// cross-checks the two on every run.
+constexpr std::uint8_t  kMaxFontId     = 1u;
 // TEXT_SCALED multiplies each glyph pixel into a scale×scale block. 1 = native.
 constexpr std::uint8_t  kMinTextScale  = 1u;
 constexpr std::uint8_t  kMaxTextScale  = 16u;

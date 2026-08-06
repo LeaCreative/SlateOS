@@ -1,6 +1,7 @@
 package slate.render
 
 import slate.generated.FontBuiltin3x5
+import slate.generated.FontBuiltin5x7
 import slate.generated.SdpWire
 
 /** RGB565 helpers matching firmware renderer.hpp. */
@@ -208,17 +209,56 @@ object Gfx {
 }
 
 object TextLayout {
-    fun drawChar(fb: Framebuffer, x: Int, y: Int, c: Char, color: Int) {
-        val cp = c.code
-        val rows = FontBuiltin3x5.rowsFor(cp)
+    /**
+     * A built-in font, selected by the id every SDP text op carries.
+     *
+     * 0 is the 3x5 (dense — the diagnostic overlay); 1 the 5x7 (legible —
+     * anything a person reads). This used to hardcode font 0, so a font-1
+     * screen previewed on the phone looked nothing like the watch.
+     */
+    data class Font(
+        val cellWidth: Int,
+        val cellHeight: Int,
+        val advance: Int,
+        val rowsFor: (Int) -> ByteArray?,
+    )
+
+    private val FONT_0 = Font(
+        FontBuiltin3x5.CELL_WIDTH, FontBuiltin3x5.CELL_HEIGHT,
+        FontBuiltin3x5.ADVANCE, FontBuiltin3x5::rowsFor,
+    )
+    private val FONT_1 = Font(
+        FontBuiltin5x7.CELL_WIDTH, FontBuiltin5x7.CELL_HEIGHT,
+        FontBuiltin5x7.ADVANCE, FontBuiltin5x7::rowsFor,
+    )
+
+    /** Unknown ids fall back to 0, matching font::describe() on the watch. */
+    fun font(id: Int): Font = if (id == 1) FONT_1 else FONT_0
+
+    /**
+     * Ink width of a run, matching the firmware exactly.
+     *
+     * The trailing advance is inter-glyph spacing, not ink, so the last cell
+     * is measured rather than its gap — `draw_text_run` in sdp_interpreter.cpp
+     * does the same. Getting this wrong shifts every centred string.
+     */
+    fun pixelWidth(fontId: Int, scale: Int, text: String): Int {
+        val f = font(fontId)
+        if (text.isEmpty()) return 0
+        return (text.length - 1) * f.advance * scale + f.cellWidth * scale
+    }
+
+    fun drawChar(fb: Framebuffer, x: Int, y: Int, c: Char, color: Int, fontId: Int = 0) {
+        val f = font(fontId)
+        val rows = f.rowsFor(c.code)
         if (rows == null) {
-            fb.fillRect(x, y, FontBuiltin3x5.CELL_WIDTH, FontBuiltin3x5.CELL_HEIGHT, color)
+            fb.fillRect(x, y, f.cellWidth, f.cellHeight, color)
             return
         }
-        for (row in 0 until FontBuiltin3x5.CELL_HEIGHT) {
+        for (row in 0 until f.cellHeight) {
             val g = rows[row].toInt() and 0xFF
-            for (col in 0 until FontBuiltin3x5.CELL_WIDTH) {
-                if (g and (1 shl (FontBuiltin3x5.CELL_WIDTH - 1 - col)) != 0) {
+            for (col in 0 until f.cellWidth) {
+                if (g and (1 shl (f.cellWidth - 1 - col)) != 0) {
                     fb.putPixel(x + col, y + row, color)
                 }
             }
@@ -227,16 +267,17 @@ object TextLayout {
 
     fun drawTextRun(
         fb: Framebuffer, x: Int, y: Int, color: Int, align: Int, text: String,
+        fontId: Int = 0,
     ) {
-        val len = text.length
-        val pixelW = len * FontBuiltin3x5.ADVANCE
+        val f = font(fontId)
+        val pixelW = pixelWidth(fontId, 1, text)
         var startX = x
         when (align) {
             SdpWire.Align.CENTER -> startX = if (pixelW / 2 < x) x - pixelW / 2 else 0
             SdpWire.Align.RIGHT -> startX = if (pixelW < x) x - pixelW else 0
         }
-        for (i in 0 until len) {
-            drawChar(fb, startX + i * FontBuiltin3x5.ADVANCE, y, text[i], color)
+        for (i in text.indices) {
+            drawChar(fb, startX + i * f.advance, y, text[i], color, fontId)
         }
     }
 }

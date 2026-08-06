@@ -1,0 +1,12 @@
+{
+  "id": "slate.vibrate",
+  "name": "Buzz Phone",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["vibrate"],
+  "allowedHosts": []
+}

@@ -31,12 +31,15 @@ struct W {
     b(0x00u);  // literal RGB565
     u16(c);
   }
+  // font: 0 = 3x5 (dense — the diagnostic overlay lives on it), 1 = 5x7
+  // (legible — anything a person is meant to read).
   void text_big(std::uint8_t x, std::uint8_t y, std::uint8_t align,
-                std::uint8_t scale, std::uint8_t palette, const char* s) {
+                std::uint8_t scale, std::uint8_t palette, const char* s,
+                std::uint8_t font = 0u) {
     const std::uint8_t len = static_cast<std::uint8_t>(std::strlen(s));
     b(sdp::op::TEXT_SCALED);
     u16(static_cast<std::uint16_t>(7u + len));
-    b(0x00u);  // font 0
+    b(font);
     b(x);
     b(y);
     b(static_cast<std::uint8_t>(sdp::color_tag::PaletteMin + palette));
@@ -168,7 +171,12 @@ void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
 
 // Third line — the SDP path end to end, so a lost display list can be placed
 // exactly:
-//   "<frame>.<inbox>/<applied>.<rejected>.<dropped>.<state>/<touch>.<hit>"
+//   "<frame>.<inbox>/<applied>.<rejected>.<dropped>.<state>/
+//    <irq>.<readfail>.<touch>.<hit>"
+//
+// The twi::Status field that lived at the end was removed once N-31 closed:
+// readfail sits at 0 and the line needs the width. cst816s::last_twi_status()
+// still exists if a future failure needs it back.
 //
 // Read left to right it follows the message: frame reassembly, then the app
 // inbox, then the session, then the interpreter. The first non-zero drop
@@ -506,13 +514,27 @@ std::size_t build_alert(W& w, const ViewModel& vm) {
   return w.ok ? w.n : 0u;
 }
 
+// Shown when the wearer asks for something only the phone can provide — today
+// that is the app drawer, reached by swiping right-to-left — while no
+// companion is connected. Until font 1 existed this screen drew a single "0",
+// because the built-in font had no letters to say anything with.
+//
+// Three centred lines at scale 2: the 5x7 advances 6, so scale 2 is 12 px per
+// character and 20 characters is the widest line that fits the 240 px panel.
 std::size_t build_disconnected(W& w, const ViewModel&) {
+  constexpr std::uint8_t kFont5x7 = 1u;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
   w.u16(0xFFFFu);
-  w.text_big(120, 100, sdp::align::CENTER, 8u, 0u, "0");
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x01u);
+  w.u16(0xFD20u);  // amber — this is a prompt, not an error
+  w.text_big(120, 74, sdp::align::CENTER, 3u, 1u, "Not connected", kFont5x7);
+  w.text_big(120, 116, sdp::align::CENTER, 2u, 0u, "Please connect the", kFont5x7);
+  w.text_big(120, 136, sdp::align::CENTER, 2u, 0u, "Slate OS", kFont5x7);
+  w.text_big(120, 156, sdp::align::CENTER, 2u, 0u, "companion app", kFont5x7);
   w.b(sdp::op::COMMIT);
   w.b(0x00u);
   return w.ok ? w.n : 0u;

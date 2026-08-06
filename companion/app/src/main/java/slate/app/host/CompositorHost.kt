@@ -1,6 +1,10 @@
 package slate.app.host
 
 import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -8,6 +12,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import slate.app.apps.ClockApp
+import slate.app.apps.LauncherApp
 import slate.app.apps.NotificationsApp
 import slate.app.apps.TestApp
 import slate.app.camera.CameraPreviewSession
@@ -17,6 +22,7 @@ import slate.app.link.PhoneId
 import slate.app.link.SharedLink
 import slate.app.link.SlateGattClient
 import slate.app.nav.NavAdapter
+import slate.app.repo.InstalledStore
 import slate.app.notif.NotifChange
 import slate.app.notif.NotifPrefs
 import slate.app.notif.NotifStore
@@ -124,6 +130,18 @@ class CompositorHost(
     private val clock = ClockApp()
     private val test = TestApp()
     private val notifications = NotificationsApp()
+
+    /**
+     * The app drawer. Its list is rebuilt on every focus from the installed
+     * store, so a package installed mid-session shows up without a restart.
+     * Only JS sub-apps live in that store — Kotlin apps are registered in code
+     * and are deliberately not launchable from the watch.
+     */
+    private val launcher = LauncherApp {
+        InstalledStore.create(context).list().map {
+            LauncherApp.Entry(id = it.id, name = it.manifest().name)
+        }
+    }
     private val scripts = ScriptRuntimeHost(context, scope, compositor)
 
     private val serviceLifecycle = ServiceLifecycleOwner()
@@ -167,6 +185,7 @@ class CompositorHost(
         compositor.register(clock)
         compositor.register(test)
         compositor.register(notifications)
+        compositor.register(launcher)
         scope.launch {
             try {
                 scripts.ensureSeeded()
@@ -443,8 +462,62 @@ class CompositorHost(
     private fun onInputMessage(msg: ByteArray) {
         val input = InputEventDecoder.decode(msg) ?: return
         scope.launch {
+            // Swipe right-to-left is a reserved system gesture: it opens the
+            // launcher from wherever you are, so it is claimed here rather
+            // than offered to the focused sub-app. Everything else goes
+            // straight through.
+            //
+            // Deliberately idempotent. This used to skip the open when the
+            // launcher was already the focused app, which made the gesture a
+            // one-shot: if the push had been rejected, or the watch had
+            // rebooted and reset to its own face, the host still believed the
+            // launcher was up and swallowed every further swipe. Re-focusing
+            // an already-focused app re-sends its screen, which is exactly the
+            // recovery wanted here.
+            if (input.op == SdpWire.InputOp.SWIPE &&
+                input.dir == SdpWire.SwipeDir.LEFT
+            ) {
+                LinkLog.i("swipe LEFT — opening launcher " +
+                    "(focused=${compositor.focusedAppId})")
+                openLauncher()
+                return@launch
+            }
+            if (input.op == SdpWire.InputOp.SWIPE) {
+                // Every swipe that is not the launcher gesture, so a direction
+                // that never arrives is visible in the log rather than silent.
+                LinkLog.i("swipe dir=${input.dir} — passed to focused app")
+            }
             compositor.dispatchInput(input)
+            // A tapped row cannot focus another app itself — sub-apps have no
+            // such authority — so it parks the id and the host acts on it.
+            launcher.takePendingLaunch()?.let { launchFromLauncher(it) }
         }
+    }
+
+    /** Swipe-left, or the phone-side button. */
+    suspend fun openLauncher() {
+        val deny = compositor.requestFocus(
+            LauncherApp.APP_ID,
+            PriorityClass.NORMAL,
+            FocusReason.UserNavigation,
+            StackOp.Push,
+        )
+        if (deny != null) LinkLog.i("openLauncher: DENIED — $deny")
+    }
+
+    /**
+     * Replace the launcher with the chosen sub-app rather than stacking on it,
+     * so BACK from the sub-app returns to the watch face, not to the drawer.
+     */
+    private suspend fun launchFromLauncher(appId: String) {
+        scripts.ensureRegistered(appId)
+        val deny = compositor.requestFocus(
+            appId,
+            PriorityClass.NORMAL,
+            FocusReason.UserNavigation,
+            StackOp.Replace,
+        )
+        LinkLog.i("launcher -> $appId" + if (deny != null) " DENIED: $deny" else "")
     }
 
     suspend fun openTestApp() {
@@ -481,6 +554,9 @@ class CompositorHost(
     private fun onLinkLost() {
         navAdapter?.notifyDisconnected()
         stopCamera()
+        // The watch reverts to its local face on disconnect, so anything left
+        // on the host's stack is stale the moment the link drops.
+        scope.launch { compositor.resetStack() }
     }
 
     private fun startNotifBridge() {
@@ -569,6 +645,7 @@ class CompositorHost(
             "nav" -> handleNavAdapter(cmd)
             "camera" -> handleCameraAdapter(cmd)
             "haptic" -> handleHaptic(cmd)
+            "phone" -> handlePhoneAdapter(cmd)
             else -> Unit
         }
     }
@@ -695,6 +772,42 @@ class CompositorHost(
                 commit()
             },
         )
+    }
+
+    /**
+     * Vibrate the phone on behalf of a sub-app.
+     *
+     * Deliberately not the same thing as [handleHaptic], which pushes a HAPTIC
+     * op to the watch motor. This one never touches the link — it is the only
+     * sub-app action so far whose whole effect is on the handset, so it works
+     * with the watch disconnected.
+     *
+     * Duration is clamped in the JS binding and again here: a sub-app must not
+     * be able to buzz the phone indefinitely.
+     */
+    private fun handlePhoneAdapter(cmd: HostOutbound.AdapterCommand) {
+        if (cmd.command != "vibrate") return
+        val ms = try {
+            JSONObject(cmd.payloadJson).optInt("ms", 150)
+        } catch (_: Throwable) {
+            150
+        }.coerceIn(0, 2000)
+        if (ms == 0) return
+        val vibrator: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager)
+                ?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        }
+        if (vibrator == null || !vibrator.hasVibrator()) {
+            LinkLog.i("phone.vibrate: no vibrator on this device")
+            return
+        }
+        vibrator.vibrate(
+            VibrationEffect.createOneShot(ms.toLong(), VibrationEffect.DEFAULT_AMPLITUDE),
+        )
+        LinkLog.i("phone.vibrate: ${ms}ms")
     }
 
     private fun stopNav() {

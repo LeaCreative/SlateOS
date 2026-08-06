@@ -113,7 +113,12 @@ void buses_idle() {
   slate::fs::sleep_flash();
   spi::acquire();
   nrf::reg<std::uint32_t>(nrf::spim0::ENABLE) = nrf::spim0::DISABLE;
-  nrf::reg<std::uint32_t>(nrf::twim1::ENABLE) = nrf::twim1::DISABLE;
+  // TWIM through the driver rather than the register: every twi transfer now
+  // wakes and sleeps the peripheral itself (InfiniTime TwiMaster), so this is
+  // only about not leaving it enabled while idle. It no longer makes the bus
+  // unusable for the next caller — which is what the touch driver used to work
+  // around with a full twi::init() per poll.
+  twi::sleep();
   // release() re-deasserts both CS lines; the next acquire() re-enables SPIM.
   spi::release();
 }
@@ -121,7 +126,7 @@ void buses_idle() {
 void buses_wake() {
   // Re-enable buses only — flash stays in DPD until xt25/fs wake it.
   nrf::reg<std::uint32_t>(nrf::spim0::ENABLE) = nrf::spim0::ENABLE_SPIM;
-  nrf::reg<std::uint32_t>(nrf::twim1::ENABLE) = nrf::twim1::ENABLE_TWIM;
+  twi::wake();
 }
 
 void prefer_low_power() {
@@ -143,9 +148,8 @@ void hrs_sleep() {
   constexpr std::uint8_t kAddr = 0x44u;
   constexpr std::uint8_t kPdriver = 0x0Cu;
   std::uint8_t pkt[2] = {kPdriver, 0x00u};
-  buses_wake();
+  // twi::write() wakes and sleeps TWIM1 itself; no bus bracketing needed.
   (void)twi::write(kAddr, pkt, 2u, 3000u);
-  buses_idle();
 }
 
 int sample_battery_adc() {
@@ -159,12 +163,18 @@ int sample_battery_adc() {
   nrf::reg<std::uint32_t>(nrf::saadc::CH0_PSELP) = nrf::saadc::PSELP_AIN7;
   nrf::reg<std::uint32_t>(nrf::saadc::CH0_PSELN) = 0u;
   // Gain 1/4 + internal 0.6 V ref (InfiniTime's BatteryController settings),
-  // TACQ 10us, single-ended. The GAIN field previously held 5, which is gain
-  // *1* — full scale 0.6 V against ~2.0 V on the divided pin, so every sample
-  // railed and the battery always read 0 % (N-12).
+  // single-ended. The GAIN field previously held 5, which is gain *1* — full
+  // scale 0.6 V against ~2.0 V on the divided pin, so every sample railed and
+  // the battery always read 0 % (N-12).
+  //
+  // TACQ is 40 µs (field value 5), matching InfiniTime's
+  // NRF_SAADC_ACQTIME_40US. It was 10 µs, which is below what the nRF52832
+  // datasheet allows for this source impedance: the sample-and-hold capacitor
+  // does not finish charging through the 1:2 divider, so readings come in low
+  // and noisy. 30 µs more per sample, once every 10 s.
   nrf::reg<std::uint32_t>(nrf::saadc::CH0_CONFIG) =
       (0u << 0) | (nrf::saadc::GAIN_1_4 << 8) |
-      (nrf::saadc::REFSEL_INTERNAL << 12) | (2u << 16) | (0u << 20) |
+      (nrf::saadc::REFSEL_INTERNAL << 12) | (5u << 16) | (0u << 20) |
       (0u << 24);
   nrf::reg<std::uint32_t>(nrf::saadc::RESULT_PTR) =
       reinterpret_cast<std::uint32_t>(&result);

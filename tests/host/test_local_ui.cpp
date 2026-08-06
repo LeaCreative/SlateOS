@@ -129,19 +129,29 @@ static void test_disconnected_golden() {
   std::uint8_t buf[512];
   const std::size_t n = slate::ui::build_screen(vm, buf, sizeof(buf));
 
-  // CLEAR + black, palette white, TEXT_SCALED "0" scale 8 centred, COMMIT.
-  const std::uint8_t want[] = {
-      sdp::op::CLEAR, 0x00, 0x00, 0x00,
-      sdp::op::SET_PALETTE, 0x00, 0xFF, 0xFF,
-      sdp::op::TEXT_SCALED, 0x08, 0x00, 0x00, 120, 100,
-      static_cast<std::uint8_t>(sdp::color_tag::PaletteMin),
-      sdp::align::CENTER, 8, 1, '0',
-      sdp::op::COMMIT, 0x00,
-  };
-  expect("disconnected size", n == sizeof(want));
-  expect("disconnected golden",
-         n == sizeof(want) && std::memcmp(buf, want, sizeof(want)) == 0);
+  // This screen used to be a byte-for-byte golden of a single "0" at scale 8
+  // — all the built-in font could say, having no letters. It now carries the
+  // real prompt, so assert the properties that matter rather than pinning
+  // every byte of four text runs: it must parse, it must use the 5x7 (font 0
+  // cannot render this text), and it must actually say something.
+  expect("disconnected non-empty", n > 0u && n <= sizeof(buf));
   expect("disconnected parse", parse_ok(buf, n));
+
+  int text = 0, scaled = 0;
+  count_text_ops(buf, n, &text, &scaled);
+  expect("disconnected uses TEXT_SCALED x4", scaled == 4);
+  expect("disconnected no unscaled TEXT", text == 0);
+
+  // Every text run must name font 1: on font 0 this screen is a row of boxes,
+  // which is precisely the bug it exists to report. TEXT_SCALED is
+  // [op][len:u16][font], so the font byte sits 3 past the opcode.
+  bool all_font1 = true;
+  for (std::size_t i = 0u; i + 3u < n; ++i) {
+    if (buf[i] == sdp::op::TEXT_SCALED && buf[i + 3] != 1u) {
+      all_font1 = false;
+    }
+  }
+  expect("disconnected text is font 1 (5x7)", all_font1);
 }
 
 static void test_alert_scaled() {

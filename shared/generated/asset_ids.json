@@ -1,10 +1,14 @@
 {
-  "max_font_id": 0,
+  "max_font_id": 1,
   "max_atlas_id": 0,
   "fonts": [
     {
       "id": 0,
       "name": "builtin_3x5"
+    },
+    {
+      "id": 1,
+      "name": "builtin_5x7"
     }
   ],
   "atlases": [

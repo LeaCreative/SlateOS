@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="slate.app.debug"
-    android:versionCode="14"
-    android:versionName="0.2.3-p13" >
+    android:versionCode="19"
+    android:versionName="0.4.0-p18" >
 
     <uses-sdk
         android:minSdkVersion="30"
@@ -27,6 +27,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+         Phone vibration for the "vibrate" sub-app permission. Normal-level:
+         granted at install, no runtime request.
+    -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />

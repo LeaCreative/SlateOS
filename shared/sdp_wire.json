@@ -5,7 +5,7 @@
   "palette_size": 16,
   "max_elem_depth": 8,
   "max_hit_elems": 32,
-  "max_font_id": 0,
+  "max_font_id": 1,
   "max_atlas_id": 0,
   "max_asset_id": 0,
   "max_icon_id": 0,
@@ -152,7 +152,10 @@
     "SCREEN_POP": 8,
     "SCREEN_REPLACE": 9,
     "CREDIT": 10,
-    "GOODBYE": 11
+    "GOODBYE": 11,
+    "TIME_SYNC": 32,
+    "CONFIRM_STATUS_REQUEST": 224,
+    "CONFIRM_STATUS": 225
   },
   "protocol_version": 1
 }

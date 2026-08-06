@@ -16,6 +16,7 @@ C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_asset
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_ota_xfer.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_wdt_hold.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_wdt_app_pet.dir
+C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_motor.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test_spi_timeout.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/test.dir
 C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/CMakeFiles/edit_cache.dir

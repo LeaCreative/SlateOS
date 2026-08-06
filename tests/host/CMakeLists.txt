@@ -236,6 +236,15 @@ target_compile_definitions(test_wdt_app_pet PRIVATE SLATE_HOST_MMIO=1)
 target_compile_options(test_wdt_app_pet PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_wdt_app_pet wdt_app_pet)
 
+# Vibration pattern sequencer (InfiniTime MotorController port). Header-only
+# state machine, so no FreeRTOS fakes are needed.
+add_executable(test_motor
+  test_motor.cpp
+)
+target_include_directories(test_motor PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_motor PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_motor motor)
+
 add_executable(test_spi_timeout
   test_spi_timeout.cpp
 )

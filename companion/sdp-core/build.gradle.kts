@@ -34,6 +34,9 @@ tasks.processResources {
     from("$rootDir/examples/camera") {
         into("slate/subapps/camera")
     }
+    from("$rootDir/examples/vibrate") {
+        into("slate/subapps/vibrate")
+    }
 }
 
 tasks.test {

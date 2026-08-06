@@ -7,6 +7,7 @@ namespace {
 int g_fails = 0;
 int g_adc = -1;
 bool g_charging = false;
+bool g_power = false;
 
 void expect(const char* name, bool ok) {
   if (!ok) {
@@ -19,6 +20,22 @@ void expect(const char* name, bool ok) {
 
 int read_adc(void*) { return g_adc; }
 bool is_charging(void*) { return g_charging; }
+bool is_power_present(void*) { return g_power; }
+
+// The cable going in asserts both pins; charge completing releases only the
+// charging one (InfiniTime ReadPowerState).
+void plug_in() {
+  g_power = true;
+  g_charging = true;
+}
+void charge_complete() {
+  g_power = true;
+  g_charging = false;
+}
+void unplug() {
+  g_power = false;
+  g_charging = false;
+}
 
 // Invert Slate mV = adc * 4800 / 1024 (InfiniTime 10-bit, gain 1/4 — N-12).
 int adc_for_mv(std::uint16_t mv) {
@@ -28,10 +45,11 @@ int adc_for_mv(std::uint16_t mv) {
 
 void reset_hooks() {
   g_adc = -1;
-  g_charging = false;
+  unplug();
   slate::battery::Hooks h;
   h.read_adc_raw = &read_adc;
   h.is_charging = &is_charging;
+  h.is_power_present = &is_power_present;
   slate::battery::init(h);
 }
 
@@ -60,25 +78,41 @@ static void test_curve_points() {
 }
 
 static void test_charge_clamp() {
-  expect(
-      "clamp charging 100→99",
-      slate::battery::apply_hysteresis(100u, 50u, true, true) == 99u);
+  // args: raw, prev, charging, power_present, full, have_prev
+  expect("clamp charging 100→99",
+         slate::battery::apply_hysteresis(100u, 50u, true, true, false, true) ==
+             99u);
   expect(
       "no clamp when not charging",
-      slate::battery::apply_hysteresis(100u, 50u, false, false) == 100u);
+      slate::battery::apply_hysteresis(100u, 50u, false, false, false, false) ==
+          100u);
+  // Charge complete with the cable still in: InfiniTime reports 100, not 99.
+  expect("full reads 100",
+         slate::battery::apply_hysteresis(88u, 99u, false, true, true, true) ==
+             100u);
 }
 
 static void test_hysteresis() {
-  expect("charge only up",
-         slate::battery::apply_hysteresis(40u, 60u, true, true) == 60u);
-  expect("charge allow up",
-         slate::battery::apply_hysteresis(70u, 60u, true, true) == 70u);
-  expect("discharge only down",
-         slate::battery::apply_hysteresis(80u, 60u, false, true) == 60u);
-  expect("discharge allow down",
-         slate::battery::apply_hysteresis(40u, 60u, false, true) == 40u);
+  expect("plugged only up",
+         slate::battery::apply_hysteresis(40u, 60u, true, true, false, true) ==
+             60u);
+  expect("plugged allow up",
+         slate::battery::apply_hysteresis(70u, 60u, true, true, false, true) ==
+             70u);
+  expect("unplugged only down",
+         slate::battery::apply_hysteresis(80u, 60u, false, false, false,
+                                          true) == 60u);
+  expect("unplugged allow down",
+         slate::battery::apply_hysteresis(40u, 60u, false, false, false,
+                                          true) == 40u);
   expect("first sample",
-         slate::battery::apply_hysteresis(55u, 0u, false, false) == 55u);
+         slate::battery::apply_hysteresis(55u, 0u, false, false, false,
+                                          false) == 55u);
+  // The direction gate follows power_present, not charging: a full battery
+  // resting on the charger must not drift down.
+  expect("full on charger holds",
+         slate::battery::apply_hysteresis(95u, 100u, false, true, true, true) ==
+             100u);
 }
 
 static void test_percent_integration() {
@@ -94,15 +128,23 @@ static void test_percent_integration() {
   const std::uint8_t p1 = slate::battery::percent();
   expect("hysteresis holds while discharging", p1 == p0);
 
-  g_charging = true;
+  plug_in();
   g_adc = adc_for_mv(4180u);
   const std::uint8_t p2 = slate::battery::percent();
   expect("charging clamp 99", p2 == 99u);
 
-  g_charging = false;
-  g_adc = adc_for_mv(4180u);
+  // Charger stops pushing current with the cable still in → full.
+  charge_complete();
   const std::uint8_t p3 = slate::battery::percent();
-  expect("unplugged can reach 100", p3 == 100u);
+  expect("charge complete reads 100", p3 == 100u);
+  expect("full flag set", slate::battery::full());
+
+  // Cable out: full clears, and the reading may only fall from here.
+  unplug();
+  g_adc = adc_for_mv(3979u);
+  const std::uint8_t p4 = slate::battery::percent();
+  expect("full flag clears on unplug", !slate::battery::full());
+  expect("discharging falls", p4 < p3);
 }
 
 int main() {

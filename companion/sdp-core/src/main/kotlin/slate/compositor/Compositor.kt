@@ -159,6 +159,25 @@ class Compositor(
         }
     }
 
+    /**
+     * Drop every screen without telling the watch.
+     *
+     * For link loss. The watch falls back to its own face the moment the
+     * session ends (and again on reboot), so a stack held past that point is a
+     * belief about a screen that no longer exists. Left stale it does real
+     * damage: a reserved gesture that asks "is the launcher already focused?"
+     * answers yes forever, and the gesture stops working until the app is
+     * restarted.
+     *
+     * No SCREEN_POP is sent — there is nobody to send it to.
+     */
+    suspend fun resetStack() {
+        while (stack.isNotEmpty()) {
+            val top = stack.removeAt(stack.lastIndex)
+            blur(top.appId)
+        }
+    }
+
     suspend fun dispatchSystemEvent(appId: String, source: String, jsonPayload: String) {
         val reg = apps[appId] ?: return
         applyOutbound(reg, reg.endpoint.dispatch(HostInbound.SystemEvent(source, jsonPayload)))

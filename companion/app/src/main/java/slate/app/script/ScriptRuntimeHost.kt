@@ -130,5 +130,6 @@ class ScriptRuntimeHost(
         const val TIMER_ID = "slate.timer"
         const val NAV_ID = "slate.navigation"
         const val CAMERA_ID = "slate.camera"
+        const val VIBRATE_ID = "slate.vibrate"
     }
 }

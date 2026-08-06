@@ -7,7 +7,7 @@ namespace {
 Hooks g_hooks{};
 std::uint8_t g_displayed = kPercentUnknown;
 bool g_have_displayed = false;
-bool g_was_charging = false;
+bool g_full = false;
 
 // InfiniTime BatteryController voltage→% lookup (mV). Piecewise linear.
 struct Point {
@@ -27,7 +27,7 @@ void init(const Hooks& hooks) {
   g_hooks = hooks;
   g_displayed = kPercentUnknown;
   g_have_displayed = false;
-  g_was_charging = false;
+  g_full = false;
 }
 
 std::uint16_t millivolts() {
@@ -70,16 +70,19 @@ std::uint8_t percent_from_mv(std::uint16_t mv) {
 }
 
 std::uint8_t apply_hysteresis(std::uint8_t raw_pct, std::uint8_t prev_pct,
-                              bool is_charging, bool have_prev) {
+                              bool is_charging, bool power_present,
+                              bool is_full, bool have_prev) {
   std::uint8_t raw = raw_pct;
-  // InfiniTime: while charging, UI maxes at 99 until charge completes.
-  if (is_charging && raw > 99u) {
+  if (is_full) {
+    raw = 100u;
+  } else if (is_charging && raw > 99u) {
+    // InfiniTime: while charging, the UI maxes at 99 until charge completes.
     raw = 99u;
   }
   if (!have_prev || prev_pct > 100u) {
     return raw;
   }
-  if (is_charging) {
+  if (power_present) {
     return raw > prev_pct ? raw : prev_pct;
   }
   return raw < prev_pct ? raw : prev_pct;
@@ -91,13 +94,17 @@ std::uint8_t percent() {
   }
   const std::uint8_t raw = percent_from_mv(millivolts());
   const bool chg = charging();
-  // After unplug, drop the 99% charge clamp so a full cell can show 100.
-  if (g_have_displayed && g_was_charging && !chg) {
-    g_have_displayed = false;
+  const bool pwr = power_present();
+  // InfiniTime ReadPowerState(): the cable is in but no current is flowing, so
+  // the cell is full. Latched until the cable comes out — the charger cycles
+  // current on and off near the top of the charge.
+  if (pwr && !chg) {
+    g_full = true;
+  } else if (!pwr) {
+    g_full = false;
   }
-  g_was_charging = chg;
   g_displayed =
-      apply_hysteresis(raw, g_displayed, chg, g_have_displayed);
+      apply_hysteresis(raw, g_displayed, chg, pwr, g_full, g_have_displayed);
   g_have_displayed = true;
   return g_displayed;
 }
@@ -110,6 +117,17 @@ bool charging() {
   }
   return g_hooks.is_charging(g_hooks.ctx);
 }
+
+bool power_present() {
+  if (g_hooks.is_power_present == nullptr) {
+    // No power-present pin wired: charging is the best available proxy, and
+    // gives the pre-parity behaviour rather than "never plugged in".
+    return charging();
+  }
+  return g_hooks.is_power_present(g_hooks.ctx);
+}
+
+bool full() { return g_full; }
 
 bool sample_valid() {
   if (g_hooks.read_adc_raw == nullptr) {

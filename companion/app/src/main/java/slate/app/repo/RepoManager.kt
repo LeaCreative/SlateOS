@@ -48,14 +48,32 @@ class RepoManager(
 
     private val indexCacheDir = File(context.cacheDir, "repo-index").also { it.mkdirs() }
 
+    /**
+     * Re-stamp installed status, and make sure everything actually installed
+     * is in the catalogue.
+     *
+     * This used to bail out after the re-stamp whenever the catalogue was
+     * non-empty, so an installed package that no index happened to list was
+     * invisible — including on the Installed tab, which filters this same
+     * catalogue. A bundled demo seeded straight into the store (Buzz Phone was
+     * the first) simply never appeared, while being present in
+     * `files/repo/installed.json` and perfectly launchable from the watch.
+     *
+     * Index entries win where the ids collide: they carry the real repo
+     * identity, signature and update URL. The store only fills the gaps.
+     */
     fun refreshLocal() {
-        val current = _catalog.value
-        if (current.isNotEmpty()) {
-            _catalog.value = current.map { it.copy(installed = store.get(it.entry.app.id)) }
-            return
-        }
-        _catalog.value = store.list().map { inst ->
-            val m = inst.manifest()
+        val current = _catalog.value.map { it.copy(installed = store.get(it.entry.app.id)) }
+        val known = current.map { it.entry.app.id }.toSet()
+        val extras = store.list()
+            .filter { it.id !in known }
+            .map { localBrowseItem(it) }
+        _catalog.value = current + extras
+    }
+
+    private fun localBrowseItem(inst: InstalledStore.InstalledApp): BrowseItem {
+        val m = inst.manifest()
+        return run {
             BrowseItem(
                 entry = CatalogEntry(
                     app = IndexApp(
@@ -87,6 +105,7 @@ class RepoManager(
             )
         }
     }
+
 
     suspend fun refreshIndexes(force: Boolean = false): Result<Unit> {
         if (!force && isMetered() && !prefs.allowMeteredUpdates) {

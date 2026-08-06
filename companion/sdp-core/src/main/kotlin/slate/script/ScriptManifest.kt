@@ -18,6 +18,8 @@ enum class ScriptPermission(val id: String) {
      * the script isolate (see docs/flagship-apps.md).
      */
     Camera("camera"),
+    /** Vibrate the phone. Distinct from slate.haptic(), which is the watch. */
+    Vibrate("vibrate"),
     ;
 
     companion object {

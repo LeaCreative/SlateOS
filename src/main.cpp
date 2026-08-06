@@ -17,6 +17,7 @@
 #include "input_router.hpp"
 #include "lfs_fs.hpp"
 #include "local_core.hpp"
+#include "motor.hpp"
 #include "nrf52832_regs.hpp"
 #include "ota_slot.hpp"
 #include "ota_xfer.hpp"
@@ -266,16 +267,11 @@ static bool send_input_msg(const std::uint8_t* msg, std::size_t len, void* ctx) 
                                                     len);
 }
 
+// Non-blocking: slate::motor arms a FreeRTOS one-shot and returns (InfiniTime
+// MotorController). This used to busy-wait on the app task — 90 ms for a
+// DOUBLE — while that same task drains the SDP inbox.
 static void do_haptic(std::uint8_t pattern, void*) {
-  std::uint32_t ms = 30u;
-  if (pattern == sdp::haptic_pattern::LONG) ms = 80u;
-  if (pattern == sdp::haptic_pattern::DOUBLE) {
-    board::pulse_motor(25u);
-    board::busy_wait_ms(40u);
-    board::pulse_motor(25u);
-    return;
-  }
-  board::pulse_motor(ms);
+  slate::motor::play(pattern);
 }
 
 // Worst local render since boot, in ms — the display list is re-parsed once
@@ -493,7 +489,27 @@ static void app_loop() {
           ++g_core.local_state().diag_touch_hit;
         }
       }
-      if (g_local_owns_screen || g_session.remote_depth() == 0u) {
+      // Swipe right-to-left opens the app drawer, which only the phone can
+      // compose — it is the phone that knows what is installed. With no
+      // session there is nobody to ask, and the gesture would silently do
+      // nothing, so answer locally instead. Guarded here rather than in
+      // InputRouter because this is a policy about what the *watch* shows,
+      // not about how an event is encoded.
+      const bool launcher_swipe =
+          ev.type == input::EventType::Swipe &&
+          ev.swipe == input::SwipeDir::Left;
+      // Ready is not the only good state: Active means a remote screen is up
+      // and Idle means heartbeats went stale on a session that still exists.
+      // Testing for Ready alone would claim "not connected" while the phone
+      // was demonstrably driving the screen.
+      const slate::session::State sess = g_session.state();
+      const bool session_negotiated =
+          sess == slate::session::State::Ready ||
+          sess == slate::session::State::Active ||
+          sess == slate::session::State::Idle;
+      if (launcher_swipe && !session_negotiated) {
+        g_core.show_not_connected();
+      } else if (g_local_owns_screen || g_session.remote_depth() == 0u) {
         if (ev.type == input::EventType::Button) {
           g_core.on_button_press();
         } else {
@@ -709,6 +725,9 @@ extern "C" int main() {
   cst816s::init();
   button::init();
   input::init();
+  // Creates the one-shot vibration timer. xTimerCreate before the scheduler
+  // starts is legal; a start queued here would run when the daemon does.
+  slate::motor::init();
 
   slate::power::Hooks phooks;
   phooks.request_conn_interval = &request_interval;

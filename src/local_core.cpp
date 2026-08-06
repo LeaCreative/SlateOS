@@ -65,6 +65,12 @@ void Core::save_settings() {
 // where the central is discovering services. InfiniTime's BLE layer likewise
 // posts a message and lets the display task redraw on its own schedule; the
 // next scheduled paint picks the new state up.
+void Core::show_not_connected() {
+  wake_display();
+  local_state().screen = local::Screen::Disconnected;
+  show_current();
+}
+
 void Core::on_link_up() {
   local_state().link_up = 1u;
   local_state().remote_stale = 0u;

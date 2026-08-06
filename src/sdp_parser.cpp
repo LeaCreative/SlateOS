@@ -39,6 +39,31 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
   std::uint32_t elem_depth = 0u;
   bool committed = false;
 
+  // Vertical bound for drawing ops.
+  //
+  // Outside a scroll region this is the display: nothing may be addressed off
+  // screen. Inside one it becomes the declared content height, because content
+  // taller than the viewport is the entire point of scrolling — and until this
+  // existed, check_rect() bounded every op to 240 px, so a scrollable list was
+  // impossible to express and SCROLL_REGION had never once been usable for its
+  // purpose. The renderer is already safe either way: map_y() clamps to 0..239
+  // and the region installs a clip.
+  //
+  // x stays bounded to the display; there is no horizontal scrolling.
+  std::uint16_t y_limit = kDisplaySize;
+  const auto ok_y = [&y_limit](std::uint8_t v) {
+    return static_cast<std::uint16_t>(v) < y_limit;
+  };
+  const auto ok_rect = [&y_limit](std::uint8_t x, std::uint8_t y,
+                                  std::uint8_t w, std::uint8_t h) {
+    if (!check_coord(x)) return false;
+    if (static_cast<std::uint16_t>(y) >= y_limit) return false;
+    if (w == 0u || h == 0u) return false;
+    if (static_cast<std::uint16_t>(x) + w > kDisplaySize) return false;
+    if (static_cast<std::uint16_t>(y) + h > y_limit) return false;
+    return true;
+  };
+
   while (r.ok() && r.remaining() > 0u) {
     if (committed) {
       // Trailing bytes after COMMIT are rejected.
@@ -85,7 +110,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t text_len = r.take_u8();
         if (!r.ok()) break;
         if (!check_id_u8(font, kMaxFontId) || !check_coord(x) ||
-            !check_coord(y) || !check_enum(al, align::Max) ||
+            !ok_y(y) || !check_enum(al, align::Max) ||
             scale < kMinTextScale || scale > kMaxTextScale) {
           reject(r, &out);
           break;
@@ -136,7 +161,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t w = r.take_u8();
         const std::uint8_t h = r.take_u8();
         if (!r.ok()) break;
-        if (!check_rect(x, y, w, h)) {
+        if (!ok_rect(x, y, w, h)) {
           reject(r, &out);
           break;
         }
@@ -155,7 +180,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t h = r.take_u8();
         const std::uint8_t rad = r.take_u8();
         if (!r.ok()) break;
-        if (!check_rect(x, y, w, h)) {
+        if (!ok_rect(x, y, w, h)) {
           reject(r, &out);
           break;
         }
@@ -175,8 +200,8 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t x1 = r.take_u8();
         const std::uint8_t y1 = r.take_u8();
         if (!r.ok()) break;
-        if (!check_coord(x0) || !check_coord(y0) ||
-            !check_coord(x1) || !check_coord(y1)) {
+        if (!check_coord(x0) || !ok_y(y0) ||
+            !check_coord(x1) || !ok_y(y1)) {
           reject(r, &out);
           break;
         }
@@ -193,7 +218,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t cy = r.take_u8();
         const std::uint8_t rad = r.take_u8();
         if (!r.ok()) break;
-        if (!check_coord(cx) || !check_coord(cy)) {
+        if (!check_coord(cx) || !ok_y(cy)) {
           reject(r, &out);
           break;
         }
@@ -212,7 +237,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint16_t a0 = r.take_u16_le();
         const std::uint16_t a1 = r.take_u16_le();
         if (!r.ok()) break;
-        if (!check_coord(cx) || !check_coord(cy) || a0 >= 360u || a1 >= 360u) {
+        if (!check_coord(cx) || !ok_y(cy) || a0 >= 360u || a1 >= 360u) {
           reject(r, &out);
           break;
         }
@@ -242,7 +267,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t* pts = r.take_bytes(pts_bytes);
         if (!r.ok()) break;
         for (std::uint8_t i = 0u; i < count; ++i) {
-          if (!check_coord(pts[i * 2u]) || !check_coord(pts[i * 2u + 1u])) {
+          if (!check_coord(pts[i * 2u]) || !ok_y(pts[i * 2u + 1u])) {
             reject(r, &out);
             break;
           }
@@ -260,7 +285,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t w = r.take_u8();
         const std::uint8_t h = r.take_u8();
         if (!r.ok()) break;
-        if (!check_rect(x, y, w, h)) {
+        if (!ok_rect(x, y, w, h)) {
           reject(r, &out);
           break;
         }
@@ -269,6 +294,8 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
       }
 
       case op::CLIP_CLEAR: {
+        // Ends the scroll region too (see Sink::clip_clear).
+        y_limit = kDisplaySize;
         if (require_exec(opt, sink)) sink->clip_clear();
         break;
       }
@@ -279,7 +306,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t y = r.take_u8();
         if (!r.ok()) break;
         if (!check_id_u8(font, kMaxFontId) || !check_coord(x) ||
-            !check_coord(y)) {
+            !ok_y(y)) {
           reject(r, &out);
           break;
         }
@@ -307,7 +334,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t w = r.take_u8();
         const std::uint8_t h = r.take_u8();
         if (!r.ok()) break;
-        if (!check_id_u8(font, kMaxFontId) || !check_rect(x, y, w, h)) {
+        if (!check_id_u8(font, kMaxFontId) || !ok_rect(x, y, w, h)) {
           reject(r, &out);
           break;
         }
@@ -338,7 +365,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         if (!r.ok()) break;
         if (!check_id_u8(atlas, kMaxAtlasId) ||
             !check_id_u16(id, kMaxIconId) ||
-            !check_coord(x) || !check_coord(y)) {
+            !check_coord(x) || !ok_y(y)) {
           reject(r, &out);
           break;
         }
@@ -356,7 +383,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         if (!r.ok()) break;
         if (!check_id_u8(asset, kMaxAssetId) ||
             !check_id_u16(id, kMaxImageId) ||
-            !check_coord(x) || !check_coord(y)) {
+            !check_coord(x) || !ok_y(y)) {
           reject(r, &out);
           break;
         }
@@ -371,7 +398,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t h = r.take_u8();
         const std::uint8_t pct = r.take_u8();
         if (!r.ok()) break;
-        if (!check_rect(x, y, w, h) || pct > 100u) {
+        if (!ok_rect(x, y, w, h) || pct > 100u) {
           reject(r, &out);
           break;
         }
@@ -391,7 +418,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t rad = r.take_u8();
         const std::uint8_t pct = r.take_u8();
         if (!r.ok()) break;
-        if (!check_coord(cx) || !check_coord(cy) || pct > 100u) {
+        if (!check_coord(cx) || !ok_y(cy) || pct > 100u) {
           reject(r, &out);
           break;
         }
@@ -415,7 +442,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t h = r.take_u8();
         const std::uint8_t flags = r.take_u8();
         if (!r.ok()) break;
-        if (!check_rect(x, y, w, h) ||
+        if (!ok_rect(x, y, w, h) ||
             !check_flags(flags, elem_flags::Allowed)) {
           reject(r, &out);
           break;
@@ -451,6 +478,11 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
           reject(r, &out);
           break;
         }
+        // Only ever relaxes, never tightens: a list that was valid before
+        // this existed stays valid.
+        if (content_h > y_limit) {
+          y_limit = content_h;
+        }
         if (require_exec(opt, sink)) {
           sink->scroll_region(y, h, content_h);
         }
@@ -467,7 +499,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t encoding = r.take_u8();
         const std::uint16_t len = r.take_u16_le();
         if (!r.ok()) break;
-        if (!check_rect(x, y, w, h) ||
+        if (!ok_rect(x, y, w, h) ||
             !check_enum(format, patch_format::Max) ||
             !check_enum(encoding, patch_encoding::Max) ||
             len > 4096u) {
@@ -487,7 +519,7 @@ ParseResult parse(const std::uint8_t* data, std::size_t size,
         const std::uint8_t x = r.take_u8();
         const std::uint8_t y = r.take_u8();
         if (!r.ok()) break;
-        if (!check_coord(x) || !check_coord(y)) {
+        if (!check_coord(x) || !ok_y(y)) {
           reject(r, &out);
           break;
         }

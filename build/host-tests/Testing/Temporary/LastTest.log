@@ -1,10 +1,10 @@
-Start testing: Aug 05 16:18 Mauritius Standard Time
+Start testing: Aug 06 12:12 Mauritius Standard Time
 ----------------------------------------------------------
 1/18 Testing: hit_test
 1/18 Test: hit_test
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_hit_test.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"hit_test" start time: Aug 05 16:18 Mauritius Standard Time
+"hit_test" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS empty list
@@ -26,7 +26,7 @@ all hit-test checks passed
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"hit_test" end time: Aug 05 16:18 Mauritius Standard Time
+"hit_test" end time: Aug 06 12:12 Mauritius Standard Time
 "hit_test" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -34,9 +34,14 @@ Test Passed.
 2/18 Test: sdp_parser
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_sdp_parser.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"sdp_parser" start time: Aug 05 16:18 Mauritius Standard Time
+"sdp_parser" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
+PASS scroll: row past 240 accepted inside region
+PASS scroll: row ending exactly at content_h
+PASS scroll: row past content_h rejected
+PASS scroll: bound resets after CLIP_CLEAR
+PASS no scroll region: off-screen rect still rejected
 PASS CLEAR+COMMIT
 PASS saw commit
 PASS SET_PALETTE+RECT
@@ -72,10 +77,10 @@ PASS bad font id
 PASS COMMIT with open elem
 all sdp parser checks passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.14 sec
 ----------------------------------------------------------
 Test Passed.
-"sdp_parser" end time: Aug 05 16:18 Mauritius Standard Time
+"sdp_parser" end time: Aug 06 12:12 Mauritius Standard Time
 "sdp_parser" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -83,7 +88,7 @@ Test Passed.
 3/18 Test: renderer_cull
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_renderer_cull.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"renderer_cull" start time: Aug 05 16:18 Mauritius Standard Time
+"renderer_cull" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS full-screen fill paints all 30 tiles
@@ -93,10 +98,10 @@ PASS blit source rows stay aligned across tiles
 PASS unfiltered draw still writes row 0
 all renderer culling tests passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"renderer_cull" end time: Aug 05 16:18 Mauritius Standard Time
+"renderer_cull" end time: Aug 06 12:12 Mauritius Standard Time
 "renderer_cull" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -104,7 +109,7 @@ Test Passed.
 4/18 Test: uuids
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_uuids.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"uuids" start time: Aug 05 16:18 Mauritius Standard Time
+"uuids" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS kService = e979acfb-c338-0000-a962-e96e4cf078f3
@@ -119,7 +124,7 @@ all uuid tests passed
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"uuids" end time: Aug 05 16:18 Mauritius Standard Time
+"uuids" end time: Aug 06 12:12 Mauritius Standard Time
 "uuids" time elapsed: 00:00:00
 ----------------------------------------------------------
 
@@ -127,7 +132,7 @@ Test Passed.
 5/18 Test: sdp_frame
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_sdp_frame.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"sdp_frame" start time: Aug 05 16:18 Mauritius Standard Time
+"sdp_frame" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS frag single
@@ -194,52 +199,18 @@ PASS A survives reserved
 PASS A bytes intact
 all framing tests passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.04 sec
 ----------------------------------------------------------
 Test Passed.
-"sdp_frame" end time: Aug 05 16:18 Mauritius Standard Time
+"sdp_frame" end time: Aug 06 12:12 Mauritius Standard Time
 "sdp_frame" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-6/18 Testing: ble_link
-6/18 Test: ble_link
-Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_ble_link.exe"
-Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"ble_link" start time: Aug 05 16:18 Mauritius Standard Time
-Output:
-----------------------------------------------------------
-PASS loopback count
-PASS tx emitted
-PASS tx Ok
-PASS tx len
-PASS echo match
-PASS no loopback
-PASS drop/reject
-PASS no tx
-PASS mtu_ok
-PASS dle_ok
-PASS phy_ok
-PASS mtu
-PASS mtu not ok
-PASS mtu 23
-PASS mtu lo
-PASS mtu hi
-PASS phy
-PASS flags
-all ble link tests passed
-<end of output>
-Test time =   0.01 sec
-----------------------------------------------------------
-Test Passed.
-"ble_link" end time: Aug 05 16:18 Mauritius Standard Time
-"ble_link" time elapsed: 00:00:00
-----------------------------------------------------------
-
-7/18 Testing: ble_app_inbox
-7/18 Test: ble_app_inbox
+6/18 Testing: ble_app_inbox
+6/18 Test: ble_app_inbox
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_ble_app_inbox.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"ble_app_inbox" start time: Aug 05 16:18 Mauritius Standard Time
+"ble_app_inbox" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS inbox <= 16 B
@@ -305,15 +276,15 @@ all ble_app_inbox / handoff tests passed
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"ble_app_inbox" end time: Aug 05 16:18 Mauritius Standard Time
+"ble_app_inbox" end time: Aug 06 12:12 Mauritius Standard Time
 "ble_app_inbox" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-8/18 Testing: ble_gap_adv_policy
-8/18 Test: ble_gap_adv_policy
+7/18 Testing: ble_gap_adv_policy
+7/18 Test: ble_gap_adv_policy
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_ble_gap_adv_policy.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"ble_gap_adv_policy" start time: Aug 05 16:18 Mauritius Standard Time
+"ble_gap_adv_policy" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS connect ok: no resume
@@ -323,18 +294,18 @@ PASS disconnect: resume
 PASS other: no resume
 all passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"ble_gap_adv_policy" end time: Aug 05 16:18 Mauritius Standard Time
+"ble_gap_adv_policy" end time: Aug 06 12:12 Mauritius Standard Time
 "ble_gap_adv_policy" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-9/18 Testing: sdp_diag
-9/18 Test: sdp_diag
+8/18 Testing: sdp_diag
+8/18 Test: sdp_diag
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_sdp_diag.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"sdp_diag" start time: Aug 05 16:18 Mauritius Standard Time
+"sdp_diag" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS rtt loopbacks
@@ -357,18 +328,18 @@ PASS peak used
 PASS free now
 all diag bench tests passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"sdp_diag" end time: Aug 05 16:18 Mauritius Standard Time
+"sdp_diag" end time: Aug 06 12:12 Mauritius Standard Time
 "sdp_diag" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-10/18 Testing: session
-10/18 Test: session
+9/18 Testing: session
+9/18 Test: session
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_session.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"session" start time: Aug 05 16:18 Mauritius Standard Time
+"session" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 PASS clean: Connected
@@ -432,21 +403,21 @@ all session tests passed
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"session" end time: Aug 05 16:18 Mauritius Standard Time
+"session" end time: Aug 06 12:12 Mauritius Standard Time
 "session" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-11/18 Testing: local_core
-11/18 Test: local_core
+10/18 Testing: local_core
+10/18 Test: local_core
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_local_core.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"local_core" start time: Aug 05 16:18 Mauritius Standard Time
+"local_core" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 ok   local State <= 3KB
 ok   local block == 3KB
 ok   notif store <= 4KB
-  local State=108 block=3072 budget=3072
+  local State=140 block=3072 budget=3072
   notif Store=2564 budget=4096
 ok   synced
 ok   unix at sync
@@ -475,15 +446,15 @@ all local-core tests passed
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"local_core" end time: Aug 05 16:18 Mauritius Standard Time
+"local_core" end time: Aug 06 12:12 Mauritius Standard Time
 "local_core" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-12/18 Testing: battery
-12/18 Test: battery
+11/18 Testing: battery
+11/18 Test: battery
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_battery.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"battery" start time: Aug 05 16:18 Mauritius Standard Time
+"battery" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 ok   unknown: !valid
@@ -500,35 +471,42 @@ ok   curve above→100
 ok   curve mid 3500-3616
 ok   clamp charging 100→99
 ok   no clamp when not charging
-ok   charge only up
-ok   charge allow up
-ok   discharge only down
-ok   discharge allow down
+ok   full reads 100
+ok   plugged only up
+ok   plugged allow up
+ok   unplugged only down
+ok   unplugged allow down
 ok   first sample
+ok   full on charger holds
 ok   sample valid
 ok   first reading ~48
 ok   hysteresis holds while discharging
 ok   charging clamp 99
-ok   unplugged can reach 100
+ok   charge complete reads 100
+ok   full flag set
+ok   full flag clears on unplug
+ok   discharging falls
 all passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"battery" end time: Aug 05 16:18 Mauritius Standard Time
+"battery" end time: Aug 06 12:12 Mauritius Standard Time
 "battery" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-13/18 Testing: local_ui
-13/18 Test: local_ui
+12/18 Testing: local_ui
+12/18 Test: local_ui
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_local_ui.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"local_ui" start time: Aug 05 16:18 Mauritius Standard Time
+"local_ui" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
-ok   disconnected size
-ok   disconnected golden
+ok   disconnected non-empty
 ok   disconnected parse
+ok   disconnected uses TEXT_SCALED x4
+ok   disconnected no unscaled TEXT
+ok   disconnected text is font 1 (5x7)
 ok   alert non-empty
 ok   alert no TEXT
 ok   alert TEXT_SCALED x2
@@ -548,18 +526,18 @@ ok   notifs TEXT_SCALED count
 ok   notifs parse
 all passed
 <end of output>
-Test time =   0.01 sec
+Test time =   0.04 sec
 ----------------------------------------------------------
 Test Passed.
-"local_ui" end time: Aug 05 16:18 Mauritius Standard Time
+"local_ui" end time: Aug 06 12:12 Mauritius Standard Time
 "local_ui" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-14/18 Testing: assets
-14/18 Test: assets
+13/18 Testing: assets
+13/18 Test: assets
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_assets.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/tests/host/../..
-"assets" start time: Aug 05 16:18 Mauritius Standard Time
+"assets" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 ok   open core.slap
@@ -580,63 +558,122 @@ all asset tests passed
 Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"assets" end time: Aug 05 16:18 Mauritius Standard Time
+"assets" end time: Aug 06 12:12 Mauritius Standard Time
 "assets" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-15/18 Testing: ota_xfer
-15/18 Test: ota_xfer
+14/18 Testing: ota_xfer
+14/18 Test: ota_xfer
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_ota_xfer.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"ota_xfer" start time: Aug 05 16:18 Mauritius Standard Time
+"ota_xfer" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 test_ota_xfer: OK
 <end of output>
-Test time =   0.02 sec
+Test time =   0.03 sec
 ----------------------------------------------------------
 Test Passed.
-"ota_xfer" end time: Aug 05 16:18 Mauritius Standard Time
+"ota_xfer" end time: Aug 06 12:12 Mauritius Standard Time
 "ota_xfer" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-16/18 Testing: wdt_hold
-16/18 Test: wdt_hold
+15/18 Testing: wdt_hold
+15/18 Test: wdt_hold
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_wdt_hold.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"wdt_hold" start time: Aug 05 16:18 Mauritius Standard Time
+"wdt_hold" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 OK: wdt_hold
 <end of output>
-Test time =   0.01 sec
+Test time =   0.02 sec
 ----------------------------------------------------------
 Test Passed.
-"wdt_hold" end time: Aug 05 16:18 Mauritius Standard Time
+"wdt_hold" end time: Aug 06 12:12 Mauritius Standard Time
 "wdt_hold" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-17/18 Testing: wdt_app_pet
-17/18 Test: wdt_app_pet
+16/18 Testing: wdt_app_pet
+16/18 Test: wdt_app_pet
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_wdt_app_pet.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"wdt_app_pet" start time: Aug 05 16:18 Mauritius Standard Time
+"wdt_app_pet" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 OK: wdt_app_pet
 <end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"wdt_app_pet" end time: Aug 06 12:12 Mauritius Standard Time
+"wdt_app_pet" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/18 Testing: motor
+17/18 Test: motor
+Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_motor.exe"
+Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
+"motor" start time: Aug 06 12:12 Mauritius Standard Time
+Output:
+----------------------------------------------------------
+ok   terminal action leaves motor off
+ok   TICK finishes
+ok   TICK is one step
+ok   TICK drives the motor on
+ok   TICK is 20 ms
+ok   terminal action leaves motor off
+ok   DOUBLE finishes
+ok   DOUBLE is three steps
+ok   DOUBLE pulse 1 on 25 ms
+ok   DOUBLE gap is off for 40 ms
+ok   DOUBLE pulse 2 on 25 ms
+ok   DOUBLE runs the motor for 50 ms
+ok   terminal action leaves motor off
+ok   pattern terminates
+ok   pattern does something
+ok   pattern starts by driving the motor
+ok   terminal action leaves motor off
+ok   pattern terminates
+ok   pattern does something
+ok   pattern starts by driving the motor
+ok   terminal action leaves motor off
+ok   pattern terminates
+ok   pattern does something
+ok   pattern starts by driving the motor
+ok   terminal action leaves motor off
+ok   pattern terminates
+ok   pattern does something
+ok   pattern starts by driving the motor
+ok   terminal action leaves motor off
+ok   pattern terminates
+ok   pattern does something
+ok   pattern starts by driving the motor
+ok   terminal action leaves motor off
+ok   unknown pattern terminates
+ok   DOUBLE begins active
+ok   cancel clears active
+ok   expire after cancel does not re-arm
+ok   idle expire is inert
+ok   zero-length pulse arms nothing
+ok   zero-length pulse leaves the sequencer idle
+ok   zero pulses arms nothing
+ok   gapless repeat starts
+ok   gapless repeat is a single pulse
+all motor tests passed
+<end of output>
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"wdt_app_pet" end time: Aug 05 16:18 Mauritius Standard Time
-"wdt_app_pet" time elapsed: 00:00:00
+"motor" end time: Aug 06 12:12 Mauritius Standard Time
+"motor" time elapsed: 00:00:00
 ----------------------------------------------------------
 
 18/18 Testing: spi_timeout
 18/18 Test: spi_timeout
 Command: "C:/Users/highj/Documents/Projects/EvoTime/build/host-tests/test_spi_timeout.exe"
 Directory: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
-"spi_timeout" start time: Aug 05 16:18 Mauritius Standard Time
+"spi_timeout" start time: Aug 06 12:12 Mauritius Standard Time
 Output:
 ----------------------------------------------------------
 OK: spi_timeout
@@ -644,8 +681,8 @@ OK: spi_timeout
 Test time =   0.01 sec
 ----------------------------------------------------------
 Test Passed.
-"spi_timeout" end time: Aug 05 16:18 Mauritius Standard Time
+"spi_timeout" end time: Aug 06 12:12 Mauritius Standard Time
 "spi_timeout" time elapsed: 00:00:00
 ----------------------------------------------------------
 
-End testing: Aug 05 16:18 Mauritius Standard Time
+End testing: Aug 06 12:12 Mauritius Standard Time

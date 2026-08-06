@@ -1,8 +1,8 @@
 1<?xml version="1.0" encoding="utf-8"?>
 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 3    package="slate.app.debug"
-4    android:versionCode="14"
-5    android:versionName="0.2.3-p13" >
+4    android:versionCode="19"
+5    android:versionName="0.4.0-p18" >
 6
 7    <uses-sdk
 8        android:minSdkVersion="30"
@@ -54,361 +54,368 @@
 29    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 29-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:19:5-77
 29-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:19:22-74
-30    <uses-permission android:name="android.permission.INTERNET" />
-30-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:20:5-67
-30-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:20:22-64
-31    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-31-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:21:5-79
-31-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:21:22-76
-32    <uses-permission android:name="android.permission.CAMERA" />
-32-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:22:5-65
-32-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:22:22-62
-33    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-33-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:23:5-81
-33-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:23:22-78
-34
-35    <uses-feature
-35-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:25:5-27:35
-36        android:name="android.hardware.bluetooth_le"
-36-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:26:9-53
-37        android:required="true" />
-37-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:27:9-32
-38    <!-- Required for CompanionDeviceManager.associate(); missing → IllegalStateException. -->
-39    <uses-feature
-39-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:29:5-31:35
-40        android:name="android.software.companion_device_setup"
-40-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:30:9-63
-41        android:required="true" />
-41-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:31:9-32
-42    <uses-feature
-42-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:32:5-34:36
-43        android:name="android.hardware.camera"
-43-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:33:9-47
-44        android:required="false" />
-44-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:34:9-33
-45
-46    <permission
-46-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
-47        android:name="slate.app.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-47-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
-48        android:protectionLevel="signature" />
-48-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
-49
-50    <uses-permission android:name="slate.app.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-50-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
-50-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
-51
-52    <application
-52-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:36:5-155:19
-53        android:allowBackup="false"
-53-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:37:9-36
-54        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-54-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
-55        android:dataExtractionRules="@xml/data_extraction_rules"
-55-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:38:9-65
-56        android:debuggable="true"
-57        android:extractNativeLibs="false"
-58        android:fullBackupContent="@xml/full_backup_rules"
-58-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:39:9-59
-59        android:icon="@android:drawable/ic_menu_compass"
-59-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:40:9-57
-60        android:label="Slate"
-60-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:41:9-30
-61        android:supportsRtl="true"
-61-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:42:9-35
-62        android:theme="@android:style/Theme.DeviceDefault.DayNight" >
-62-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:43:9-68
-63        <activity
-63-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:45:9-52:20
-64            android:name="slate.app.MainActivity"
-64-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:46:13-41
-65            android:exported="true" >
-65-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:47:13-36
-66            <intent-filter>
-66-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:48:13-51:29
-67                <action android:name="android.intent.action.MAIN" />
-67-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:49:17-69
-67-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:49:25-66
-68
-69                <category android:name="android.intent.category.LAUNCHER" />
-69-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:50:17-77
-69-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:50:27-74
-70            </intent-filter>
-71        </activity>
-72        <activity
-72-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:54:9-57:57
-73            android:name="slate.app.ota.SealedDfuProbeActivity"
-73-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:55:13-55
-74            android:exported="false"
-74-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:56:13-37
-75            android:label="Install firmware (sealed)" />
-75-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:57:13-54
-76        <activity
-76-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:59:9-62:53
-77            android:name="slate.app.ota.SlateOtaActivity"
-77-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:60:13-49
-78            android:exported="false"
-78-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:61:13-37
-79            android:label="Update Slate firmware" />
-79-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:62:13-50
-80        <activity
-80-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:64:9-67:48
-81            android:name="slate.app.bench.BenchmarkActivity"
-81-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:65:13-52
-82            android:exported="false"
-82-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:66:13-37
-83            android:label="Slate benchmarks" />
-83-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:67:13-45
-84        <activity
-84-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:69:9-72:46
-85            android:name="slate.app.script.DevConsoleActivity"
-85-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:70:13-54
-86            android:exported="false"
-86-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:71:13-37
-87            android:label="Script console" />
-87-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:72:13-43
-88        <activity
-88-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:74:9-77:50
-89            android:name="slate.app.repo.RepoActivity"
-89-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:75:13-46
-90            android:exported="false"
-90-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:76:13-37
-91            android:label="Sub-app repository" />
-91-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:77:13-47
-92        <activity
-92-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:79:9-82:47
-93            android:name="slate.app.link.TroubleshootingActivity"
-93-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:80:13-57
-94            android:exported="false"
-94-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:81:13-37
-95            android:label="Troubleshooting" />
-95-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:82:13-44
-96        <activity
-96-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:84:9-87:35
-97            android:name="slate.app.link.LogActivity"
-97-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:85:13-45
-98            android:exported="false"
-98-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:86:13-37
-99            android:label="Log" />
-99-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:87:13-32
-100
-101        <!--
-102             Sideload a JS sub-app by opening its .zip on the phone, so
-103             iterating on sub-apps does not require reinstalling the APK.
-104        -->
-105        <activity
-105-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:91:9-108:20
-106            android:name="slate.app.repo.SideloadActivity"
-106-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:92:13-50
-107            android:exported="true"
-107-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:93:13-36
-108            android:label="Install Slate sub-app" >
-108-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:94:13-50
-109            <intent-filter>
-109-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:95:13-102:29
-110                <action android:name="android.intent.action.VIEW" />
-110-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:96:17-69
-110-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:96:25-66
-111
-112                <category android:name="android.intent.category.DEFAULT" />
-112-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:97:17-76
-112-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:97:27-73
-113                <category android:name="android.intent.category.BROWSABLE" />
-113-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:98:17-78
-113-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:98:27-75
-114
-115                <data android:mimeType="application/zip" />
-115-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:17-60
-115-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:23-57
-116                <data android:mimeType="application/x-zip-compressed" />
-116-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:17-60
-116-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:23-57
-117                <data android:mimeType="application/octet-stream" />
-117-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:17-60
-117-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:23-57
-118            </intent-filter>
-119            <intent-filter>
-119-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:103:13-107:29
-120                <action android:name="android.intent.action.SEND" />
-120-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:104:17-69
-120-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:104:25-66
-121
-122                <category android:name="android.intent.category.DEFAULT" />
-122-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:97:17-76
-122-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:97:27-73
-123
-124                <data android:mimeType="application/zip" />
-124-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:17-60
-124-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:23-57
-125            </intent-filter>
-126        </activity>
-127
-128        <service
-128-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:110:9-113:63
-129            android:name="slate.app.link.LinkForegroundService"
-129-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:111:13-55
-130            android:exported="false"
-130-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:112:13-37
-131            android:foregroundServiceType="connectedDevice" />
-131-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:113:13-60
-132        <service
-132-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:115:9-118:63
-133            android:name="slate.app.ota.SealedDfuService"
-133-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:116:13-49
-134            android:exported="false"
-134-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:117:13-37
-135            android:foregroundServiceType="connectedDevice" />
-135-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:118:13-60
-136        <service
-136-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:120:9-123:63
-137            android:name="slate.app.ota.SlateOtaService"
-137-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:121:13-48
-138            android:exported="false"
-138-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:122:13-37
-139            android:foregroundServiceType="connectedDevice" />
-139-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:123:13-60
-140        <service
-140-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:125:9-133:19
-141            android:name="slate.app.notif.SlateNotificationListener"
-141-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:126:13-60
-142            android:exported="true"
-142-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:127:13-36
-143            android:label="Slate notifications"
-143-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:128:13-48
-144            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
-144-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:129:13-87
-145            <intent-filter>
-145-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:130:13-132:29
-146                <action android:name="android.service.notification.NotificationListenerService" />
-146-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:131:17-99
-146-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:131:25-96
-147            </intent-filter>
-148        </service>
-149        <service
-149-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:135:9-144:19
-150            android:name="slate.app.link.SlateCompanionDeviceService"
-150-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:136:13-61
-151            android:enabled="@bool/companion_presence_service_enabled"
-151-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:137:13-71
-152            android:exported="true"
-152-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:138:13-36
-153            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE" >
-153-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:139:13-82
-154            <intent-filter>
-154-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:141:13-143:29
-155                <action android:name="android.companion.CompanionDeviceService" />
-155-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:142:17-83
-155-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:142:25-80
-156            </intent-filter>
-157        </service>
-158
-159        <receiver
-159-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:146:9-154:20
-160            android:name="slate.app.link.CompanionStartupReceiver"
-160-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:147:13-58
-161            android:enabled="true"
-161-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:148:13-35
-162            android:exported="false" >
-162-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:149:13-37
-163            <intent-filter>
-163-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:150:13-153:29
-164                <action android:name="android.intent.action.BOOT_COMPLETED" />
-164-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:151:17-79
-164-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:151:25-76
-165                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-165-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:152:17-84
-165-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:152:25-81
-166            </intent-filter>
-167        </receiver>
-168
-169        <activity
-169-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\highj\.gradle\caches\8.14.5\transforms\1fc68e4b871721f24098495077e5506d\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
-170            android:name="androidx.compose.ui.tooling.PreviewActivity"
-170-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\highj\.gradle\caches\8.14.5\transforms\1fc68e4b871721f24098495077e5506d\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
-171            android:exported="true" />
-171-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\highj\.gradle\caches\8.14.5\transforms\1fc68e4b871721f24098495077e5506d\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
-172
-173        <service
-173-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:24:9-33:19
-174            android:name="androidx.camera.core.impl.MetadataHolderService"
-174-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:25:13-75
-175            android:enabled="false"
-175-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:26:13-36
-176            android:exported="false" >
-176-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:27:13-37
-177            <meta-data
-177-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:30:13-32:89
-178                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
-178-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:31:17-103
-179                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
-179-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:32:17-86
-180        </service>
-181
-182        <provider
-182-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
-183            android:name="androidx.startup.InitializationProvider"
-183-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
-184            android:authorities="slate.app.debug.androidx-startup"
-184-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
-185            android:exported="false" >
-185-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
-186            <meta-data
-186-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
-187                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-187-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
-188                android:value="androidx.startup" />
-188-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
-189            <meta-data
-189-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\highj\.gradle\caches\8.14.5\transforms\45045d570d4686fdce2afd528aed96f9\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
-190                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-190-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\highj\.gradle\caches\8.14.5\transforms\45045d570d4686fdce2afd528aed96f9\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
-191                android:value="androidx.startup" />
-191-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\highj\.gradle\caches\8.14.5\transforms\45045d570d4686fdce2afd528aed96f9\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
-192            <meta-data
-192-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
-193                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-193-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
-194                android:value="androidx.startup" />
-194-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
-195        </provider>
-196
-197        <receiver
-197-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
-198            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-198-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
-199            android:directBootAware="false"
-199-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
-200            android:enabled="true"
-200-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
-201            android:exported="true"
-201-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
-202            android:permission="android.permission.DUMP" >
-202-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
-203            <intent-filter>
-203-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
-204                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-204-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
-204-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
-205            </intent-filter>
-206            <intent-filter>
-206-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
-207                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-207-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
-207-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
-208            </intent-filter>
-209            <intent-filter>
-209-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
-210                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-210-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
-210-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
-211            </intent-filter>
-212            <intent-filter>
-212-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
-213                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-213-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
-213-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
-214            </intent-filter>
-215        </receiver>
-216    </application>
-217
-218</manifest>
+30    <!--
+31         Phone vibration for the "vibrate" sub-app permission. Normal-level:
+32         granted at install, no runtime request.
+33    -->
+34    <uses-permission android:name="android.permission.VIBRATE" />
+34-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:22:5-66
+34-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:22:22-63
+35    <uses-permission android:name="android.permission.INTERNET" />
+35-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:23:5-67
+35-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:23:22-64
+36    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+36-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:24:5-79
+36-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:24:22-76
+37    <uses-permission android:name="android.permission.CAMERA" />
+37-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:25:5-65
+37-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:25:22-62
+38    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+38-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:26:5-81
+38-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:26:22-78
+39
+40    <uses-feature
+40-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:28:5-30:35
+41        android:name="android.hardware.bluetooth_le"
+41-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:29:9-53
+42        android:required="true" />
+42-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:30:9-32
+43    <!-- Required for CompanionDeviceManager.associate(); missing → IllegalStateException. -->
+44    <uses-feature
+44-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:32:5-34:35
+45        android:name="android.software.companion_device_setup"
+45-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:33:9-63
+46        android:required="true" />
+46-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:34:9-32
+47    <uses-feature
+47-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:35:5-37:36
+48        android:name="android.hardware.camera"
+48-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:36:9-47
+49        android:required="false" />
+49-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:37:9-33
+50
+51    <permission
+51-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:22:5-24:47
+52        android:name="slate.app.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+52-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:23:9-81
+53        android:protectionLevel="signature" />
+53-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:24:9-44
+54
+55    <uses-permission android:name="slate.app.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+55-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:26:5-97
+55-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:26:22-94
+56
+57    <application
+57-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:39:5-158:19
+58        android:allowBackup="false"
+58-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:40:9-36
+59        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+59-->[androidx.core:core:1.15.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\5056650f565ca465a1b6f65dc0807af2\transformed\core-1.15.0\AndroidManifest.xml:28:18-86
+60        android:dataExtractionRules="@xml/data_extraction_rules"
+60-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:41:9-65
+61        android:debuggable="true"
+62        android:extractNativeLibs="false"
+63        android:fullBackupContent="@xml/full_backup_rules"
+63-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:42:9-59
+64        android:icon="@android:drawable/ic_menu_compass"
+64-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:43:9-57
+65        android:label="Slate"
+65-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:44:9-30
+66        android:supportsRtl="true"
+66-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:45:9-35
+67        android:theme="@android:style/Theme.DeviceDefault.DayNight" >
+67-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:46:9-68
+68        <activity
+68-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:48:9-55:20
+69            android:name="slate.app.MainActivity"
+69-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:49:13-41
+70            android:exported="true" >
+70-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:50:13-36
+71            <intent-filter>
+71-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:51:13-54:29
+72                <action android:name="android.intent.action.MAIN" />
+72-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:52:17-69
+72-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:52:25-66
+73
+74                <category android:name="android.intent.category.LAUNCHER" />
+74-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:53:17-77
+74-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:53:27-74
+75            </intent-filter>
+76        </activity>
+77        <activity
+77-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:57:9-60:57
+78            android:name="slate.app.ota.SealedDfuProbeActivity"
+78-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:58:13-55
+79            android:exported="false"
+79-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:59:13-37
+80            android:label="Install firmware (sealed)" />
+80-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:60:13-54
+81        <activity
+81-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:62:9-65:53
+82            android:name="slate.app.ota.SlateOtaActivity"
+82-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:63:13-49
+83            android:exported="false"
+83-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:64:13-37
+84            android:label="Update Slate firmware" />
+84-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:65:13-50
+85        <activity
+85-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:67:9-70:48
+86            android:name="slate.app.bench.BenchmarkActivity"
+86-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:68:13-52
+87            android:exported="false"
+87-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:69:13-37
+88            android:label="Slate benchmarks" />
+88-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:70:13-45
+89        <activity
+89-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:72:9-75:46
+90            android:name="slate.app.script.DevConsoleActivity"
+90-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:73:13-54
+91            android:exported="false"
+91-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:74:13-37
+92            android:label="Script console" />
+92-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:75:13-43
+93        <activity
+93-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:77:9-80:50
+94            android:name="slate.app.repo.RepoActivity"
+94-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:78:13-46
+95            android:exported="false"
+95-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:79:13-37
+96            android:label="Sub-app repository" />
+96-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:80:13-47
+97        <activity
+97-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:82:9-85:47
+98            android:name="slate.app.link.TroubleshootingActivity"
+98-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:83:13-57
+99            android:exported="false"
+99-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:84:13-37
+100            android:label="Troubleshooting" />
+100-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:85:13-44
+101        <activity
+101-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:87:9-90:35
+102            android:name="slate.app.link.LogActivity"
+102-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:88:13-45
+103            android:exported="false"
+103-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:89:13-37
+104            android:label="Log" />
+104-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:90:13-32
+105
+106        <!--
+107             Sideload a JS sub-app by opening its .zip on the phone, so
+108             iterating on sub-apps does not require reinstalling the APK.
+109        -->
+110        <activity
+110-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:94:9-111:20
+111            android:name="slate.app.repo.SideloadActivity"
+111-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:95:13-50
+112            android:exported="true"
+112-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:96:13-36
+113            android:label="Install Slate sub-app" >
+113-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:97:13-50
+114            <intent-filter>
+114-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:98:13-105:29
+115                <action android:name="android.intent.action.VIEW" />
+115-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:17-69
+115-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:99:25-66
+116
+117                <category android:name="android.intent.category.DEFAULT" />
+117-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:100:17-76
+117-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:100:27-73
+118                <category android:name="android.intent.category.BROWSABLE" />
+118-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:101:17-78
+118-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:101:27-75
+119
+120                <data android:mimeType="application/zip" />
+120-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:17-60
+120-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:23-57
+121                <data android:mimeType="application/x-zip-compressed" />
+121-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:17-60
+121-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:23-57
+122                <data android:mimeType="application/octet-stream" />
+122-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:17-60
+122-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:23-57
+123            </intent-filter>
+124            <intent-filter>
+124-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:106:13-110:29
+125                <action android:name="android.intent.action.SEND" />
+125-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:107:17-69
+125-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:107:25-66
+126
+127                <category android:name="android.intent.category.DEFAULT" />
+127-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:100:17-76
+127-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:100:27-73
+128
+129                <data android:mimeType="application/zip" />
+129-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:17-60
+129-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:102:23-57
+130            </intent-filter>
+131        </activity>
+132
+133        <service
+133-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:113:9-116:63
+134            android:name="slate.app.link.LinkForegroundService"
+134-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:114:13-55
+135            android:exported="false"
+135-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:115:13-37
+136            android:foregroundServiceType="connectedDevice" />
+136-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:116:13-60
+137        <service
+137-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:118:9-121:63
+138            android:name="slate.app.ota.SealedDfuService"
+138-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:119:13-49
+139            android:exported="false"
+139-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:120:13-37
+140            android:foregroundServiceType="connectedDevice" />
+140-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:121:13-60
+141        <service
+141-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:123:9-126:63
+142            android:name="slate.app.ota.SlateOtaService"
+142-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:124:13-48
+143            android:exported="false"
+143-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:125:13-37
+144            android:foregroundServiceType="connectedDevice" />
+144-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:126:13-60
+145        <service
+145-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:128:9-136:19
+146            android:name="slate.app.notif.SlateNotificationListener"
+146-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:129:13-60
+147            android:exported="true"
+147-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:130:13-36
+148            android:label="Slate notifications"
+148-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:131:13-48
+149            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+149-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:132:13-87
+150            <intent-filter>
+150-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:133:13-135:29
+151                <action android:name="android.service.notification.NotificationListenerService" />
+151-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:134:17-99
+151-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:134:25-96
+152            </intent-filter>
+153        </service>
+154        <service
+154-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:138:9-147:19
+155            android:name="slate.app.link.SlateCompanionDeviceService"
+155-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:139:13-61
+156            android:enabled="@bool/companion_presence_service_enabled"
+156-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:140:13-71
+157            android:exported="true"
+157-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:141:13-36
+158            android:permission="android.permission.BIND_COMPANION_DEVICE_SERVICE" >
+158-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:142:13-82
+159            <intent-filter>
+159-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:144:13-146:29
+160                <action android:name="android.companion.CompanionDeviceService" />
+160-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:145:17-83
+160-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:145:25-80
+161            </intent-filter>
+162        </service>
+163
+164        <receiver
+164-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:149:9-157:20
+165            android:name="slate.app.link.CompanionStartupReceiver"
+165-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:150:13-58
+166            android:enabled="true"
+166-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:151:13-35
+167            android:exported="false" >
+167-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:152:13-37
+168            <intent-filter>
+168-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:153:13-156:29
+169                <action android:name="android.intent.action.BOOT_COMPLETED" />
+169-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:154:17-79
+169-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:154:25-76
+170                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+170-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:155:17-84
+170-->C:\Users\highj\Documents\Projects\EvoTime\companion\app\src\main\AndroidManifest.xml:155:25-81
+171            </intent-filter>
+172        </receiver>
+173
+174        <activity
+174-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\highj\.gradle\caches\8.14.5\transforms\1fc68e4b871721f24098495077e5506d\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+175            android:name="androidx.compose.ui.tooling.PreviewActivity"
+175-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\highj\.gradle\caches\8.14.5\transforms\1fc68e4b871721f24098495077e5506d\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+176            android:exported="true" />
+176-->[androidx.compose.ui:ui-tooling-android:1.7.5] C:\Users\highj\.gradle\caches\8.14.5\transforms\1fc68e4b871721f24098495077e5506d\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+177
+178        <service
+178-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:24:9-33:19
+179            android:name="androidx.camera.core.impl.MetadataHolderService"
+179-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:25:13-75
+180            android:enabled="false"
+180-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:26:13-36
+181            android:exported="false" >
+181-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:27:13-37
+182            <meta-data
+182-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:30:13-32:89
+183                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+183-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:31:17-103
+184                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+184-->[androidx.camera:camera-camera2:1.4.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\ca6c51092e8d3d6d9079f6e36fee7c0d\transformed\camera-camera2-1.4.0\AndroidManifest.xml:32:17-86
+185        </service>
+186
+187        <provider
+187-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+188            android:name="androidx.startup.InitializationProvider"
+188-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+189            android:authorities="slate.app.debug.androidx-startup"
+189-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+190            android:exported="false" >
+190-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+191            <meta-data
+191-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+192                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+192-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+193                android:value="androidx.startup" />
+193-->[androidx.emoji2:emoji2:1.3.0] C:\Users\highj\.gradle\caches\8.14.5\transforms\473e3e71459b535a75465c2213d6d048\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+194            <meta-data
+194-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\highj\.gradle\caches\8.14.5\transforms\45045d570d4686fdce2afd528aed96f9\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:29:13-31:52
+195                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+195-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\highj\.gradle\caches\8.14.5\transforms\45045d570d4686fdce2afd528aed96f9\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:30:17-78
+196                android:value="androidx.startup" />
+196-->[androidx.lifecycle:lifecycle-process:2.8.7] C:\Users\highj\.gradle\caches\8.14.5\transforms\45045d570d4686fdce2afd528aed96f9\transformed\lifecycle-process-2.8.7\AndroidManifest.xml:31:17-49
+197            <meta-data
+197-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+198                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+198-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+199                android:value="androidx.startup" />
+199-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+200        </provider>
+201
+202        <receiver
+202-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+203            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+203-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+204            android:directBootAware="false"
+204-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+205            android:enabled="true"
+205-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+206            android:exported="true"
+206-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+207            android:permission="android.permission.DUMP" >
+207-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+208            <intent-filter>
+208-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+209                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+209-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+209-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+210            </intent-filter>
+211            <intent-filter>
+211-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+212                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+212-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+212-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+213            </intent-filter>
+214            <intent-filter>
+214-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+215                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+215-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+215-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+216            </intent-filter>
+217            <intent-filter>
+217-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+218                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+218-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+218-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\highj\.gradle\caches\8.14.5\transforms\1cdfcfbabc89be94d2adaff6ef021d9c\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+219            </intent-filter>
+220        </receiver>
+221    </application>
+222
+223</manifest>

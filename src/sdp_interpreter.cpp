@@ -4,29 +4,37 @@
 #include "board.hpp"
 #include "font_builtin.hpp"
 #include "input_event.hpp"
+#include "motor.hpp"
 
 #include <cstring>
 
 namespace sdp {
 namespace {
 
-// scale multiplies every glyph pixel into a scale×scale block, so the 3×5
-// built-in font stays usable on a 240px panel where 1:1 is unreadable.
-void draw_char(Renderer* r, std::uint16_t x, std::uint16_t y, char c,
-               std::uint16_t color, std::uint8_t scale) {
-  using namespace font::builtin3x5;
-  const int cp = static_cast<int>(c);
-  if (cp < static_cast<int>(kFirstCodepoint) ||
-      cp >= static_cast<int>(kFirstCodepoint + kGlyphCount)) {
+// scale multiplies every glyph pixel into a scale×scale block, so a built-in
+// font stays usable on a 240px panel where 1:1 is unreadable.
+//
+// The font id carried by every text op used to be discarded and font 0
+// hardcoded here. It now selects a table: 0 is the 3x5 (dense, for the
+// diagnostic overlay), 1 the 5x7 (for anything a person reads). font::describe
+// falls back to 0 for an unknown id rather than faulting — this is a
+// BLE-facing value.
+void draw_char(Renderer* r, const font::Desc& f, std::uint16_t x,
+               std::uint16_t y, char c, std::uint16_t color,
+               std::uint8_t scale) {
+  const int cp = static_cast<int>(static_cast<unsigned char>(c));
+  if (cp < static_cast<int>(f.first_codepoint) ||
+      cp >= static_cast<int>(f.first_codepoint + f.glyph_count)) {
     // Unknown glyph: filled cell placeholder (matches emulator).
-    r->fill_rect(x, y, static_cast<std::uint16_t>(kCellWidth * scale),
-                 static_cast<std::uint16_t>(kCellHeight * scale), color);
+    r->fill_rect(x, y, static_cast<std::uint16_t>(f.cell_width * scale),
+                 static_cast<std::uint16_t>(f.cell_height * scale), color);
     return;
   }
-  const std::uint8_t* g = kRows[static_cast<std::uint8_t>(cp - kFirstCodepoint)];
-  for (std::uint16_t row = 0u; row < kCellHeight; ++row) {
-    for (std::uint16_t col = 0u; col < kCellWidth; ++col) {
-      if (g[row] & (1u << (kCellWidth - 1u - col))) {
+  const std::uint8_t* g =
+      f.rows + static_cast<std::size_t>(cp - f.first_codepoint) * f.cell_height;
+  for (std::uint16_t row = 0u; row < f.cell_height; ++row) {
+    for (std::uint16_t col = 0u; col < f.cell_width; ++col) {
+      if (g[row] & (1u << (f.cell_width - 1u - col))) {
         r->fill_rect(static_cast<std::uint16_t>(x + col * scale),
                      static_cast<std::uint16_t>(y + row * scale), scale, scale,
                      color);
@@ -35,18 +43,19 @@ void draw_char(Renderer* r, std::uint16_t x, std::uint16_t y, char c,
   }
 }
 
-void draw_text_run(Renderer* r, std::uint8_t x, std::uint8_t y,
-                   std::uint16_t color, std::uint8_t al, std::uint8_t len,
-                   const std::uint8_t* utf8, std::uint8_t scale) {
+void draw_text_run(Renderer* r, std::uint8_t font_id, std::uint8_t x,
+                   std::uint8_t y, std::uint16_t color, std::uint8_t al,
+                   std::uint8_t len, const std::uint8_t* utf8,
+                   std::uint8_t scale) {
+  const font::Desc& f = font::describe(font_id);
   const std::uint16_t advance =
-      static_cast<std::uint16_t>(font::builtin3x5::kAdvance * scale);
+      static_cast<std::uint16_t>(f.advance * scale);
   // Trailing advance is inter-glyph spacing, not ink, so alignment measures the
   // last cell rather than its gap.
   const std::uint16_t pixel_w =
       (len == 0u) ? 0u
                   : static_cast<std::uint16_t>((len - 1u) * advance +
-                                               font::builtin3x5::kCellWidth *
-                                                   scale);
+                                               f.cell_width * scale);
   std::uint16_t start_x = x;
   if (al == align::CENTER) {
     start_x = (pixel_w / 2u < x) ? static_cast<std::uint16_t>(x - pixel_w / 2u)
@@ -55,7 +64,7 @@ void draw_text_run(Renderer* r, std::uint8_t x, std::uint8_t y,
     start_x = (pixel_w < x) ? static_cast<std::uint16_t>(x - pixel_w) : 0u;
   }
   for (std::uint8_t i = 0u; i < len; ++i) {
-    draw_char(r, static_cast<std::uint16_t>(start_x + i * advance), y,
+    draw_char(r, f, static_cast<std::uint16_t>(start_x + i * advance), y,
               static_cast<char>(utf8[i]), color, scale);
   }
 }
@@ -93,6 +102,7 @@ struct MetaSink : Sink {
     std::uint16_t id = 0u;
     std::uint8_t x = 0u, y = 0u, w = 0u, h = 0u;
     std::uint8_t flags = 0u;
+    bool in_scroll = false;
   };
   Frame stack[kMaxElemDepth] = {};
   std::uint32_t depth = 0u;
@@ -102,10 +112,21 @@ struct MetaSink : Sink {
   std::uint16_t* scroll_content_h = nullptr;
   bool* have_scroll = nullptr;
 
+  // Hit rects are consumed in SCREEN space — input::poll() reports where the
+  // finger landed on the panel — but an element inside a scroll region is
+  // declared in CONTENT space. Without this mapping a scrolled row's tap
+  // target stayed at its unscrolled position and every tap on it missed.
+  // Mirrors DrawSink::map_y (see end_elem) so the pixels and the hit rect
+  // move together.
+  std::uint16_t scroll_offset = 0u;
+  bool in_scroll = false;
+  std::uint8_t region_y = 0u;
+  std::uint8_t region_h = 0u;
+
   void begin_elem(std::uint16_t id, std::uint8_t x, std::uint8_t y,
                   std::uint8_t w, std::uint8_t h, std::uint8_t flags) override {
     if (depth >= kMaxElemDepth) return;
-    stack[depth++] = Frame{id, x, y, w, h, flags};
+    stack[depth++] = Frame{id, x, y, w, h, flags, in_scroll};
   }
 
   void end_elem() override {
@@ -114,7 +135,29 @@ struct MetaSink : Sink {
     if ((f.flags & elem_flags::NO_HIT) != 0u) return;
     if (hits == nullptr || hit_count == nullptr) return;
     if (*hit_count >= hit_cap) return;
-    hits[*hit_count] = input::HitRect{f.id, f.x, f.y, f.w, f.h, f.flags};
+    std::uint8_t y = f.y;
+    std::uint8_t h = f.h;
+    if (f.in_scroll) {
+      const int top = static_cast<int>(region_y) + static_cast<int>(f.y) -
+                      static_cast<int>(scroll_offset);
+      int bottom = top + static_cast<int>(f.h);
+      // Clip to the region: a row scrolled half off the top must not keep a
+      // tap target hanging above the list.
+      const int limit = static_cast<int>(region_y) + static_cast<int>(region_h);
+      int t = top < static_cast<int>(region_y) ? static_cast<int>(region_y) : top;
+      if (bottom > limit) bottom = limit;
+      // Fully scrolled out keeps its slot with zero height rather than being
+      // dropped: hit_test never matches h == 0, and a stable entry count means
+      // consumers holding (pointer, count) — InputRouter does — cannot end up
+      // reading a stale slot past the end after a scroll changes the tally.
+      if (bottom <= t) {
+        t = static_cast<int>(region_y);
+        bottom = t;
+      }
+      y = static_cast<std::uint8_t>(t);
+      h = static_cast<std::uint8_t>(bottom - t);
+    }
+    hits[*hit_count] = input::HitRect{f.id, f.x, y, f.w, h, f.flags};
     // DISABLED stays in the table for layout; input layer may filter later.
     ++(*hit_count);
   }
@@ -125,7 +168,12 @@ struct MetaSink : Sink {
     if (scroll_h) *scroll_h = h;
     if (scroll_content_h) *scroll_content_h = content_h;
     if (have_scroll) *have_scroll = true;
+    in_scroll = true;
+    region_y = y;
+    region_h = h;
   }
+
+  void clip_clear() override { in_scroll = false; }
 };
 
 // Draws into Renderer for one filtered tile.
@@ -219,23 +267,21 @@ struct DrawSink : Sink {
   void text(std::uint8_t font, std::uint8_t x, std::uint8_t y,
             std::uint16_t color, std::uint8_t al, std::uint8_t len,
             const std::uint8_t* utf8) override {
-    (void)font;
-    draw_text_run(r, x, map_y(y), color, al, len, utf8, 1u);
+    draw_text_run(r, font, x, map_y(y), color, al, len, utf8, 1u);
   }
 
   void text_scaled(std::uint8_t font, std::uint8_t x, std::uint8_t y,
                    std::uint16_t color, std::uint8_t al, std::uint8_t scale,
                    std::uint8_t len, const std::uint8_t* utf8) override {
-    (void)font;
-    draw_text_run(r, x, map_y(y), color, al, len, utf8, scale);
+    draw_text_run(r, font, x, map_y(y), color, al, len, utf8, scale);
   }
 
   void text_box(std::uint8_t font, std::uint8_t x, std::uint8_t y,
                 std::uint8_t w, std::uint8_t h, std::uint16_t color,
                 std::uint8_t al, std::uint8_t flags, std::uint8_t len,
                 const std::uint8_t* utf8) override {
-    (void)font; (void)w; (void)h; (void)flags;
-    draw_text_run(r, x, map_y(y), color, al, len, utf8, 1u);
+    (void)w; (void)h; (void)flags;
+    draw_text_run(r, font, x, map_y(y), color, al, len, utf8, 1u);
   }
 
   void icon(std::uint8_t atlas, std::uint16_t id, std::uint8_t x, std::uint8_t y,
@@ -330,21 +376,11 @@ struct DrawSink : Sink {
 };
 
 struct SideEffectSink : Sink {
+  // Timings live in one table (slate::motor::pattern_desc) so a phone-pushed
+  // HAPTIC and a locally raised one feel the same. Returns immediately — this
+  // runs on the app task, right after a display list has been applied.
   void haptic(std::uint8_t pattern) override {
-    std::uint32_t ms = 30u;
-    switch (pattern) {
-      case haptic_pattern::TICK:   ms = 20u; break;
-      case haptic_pattern::SHORT:  ms = 40u; break;
-      case haptic_pattern::DOUBLE: ms = 40u; break;
-      case haptic_pattern::LONG:   ms = 120u; break;
-      case haptic_pattern::ERROR:  ms = 80u; break;
-      default: break;
-    }
-    board::pulse_motor(ms);
-    if (pattern == haptic_pattern::DOUBLE) {
-      board::busy_wait_ms(40u);
-      board::pulse_motor(ms);
-    }
+    slate::motor::play(pattern);
   }
 
   void backlight(std::uint8_t level) override {
@@ -430,6 +466,7 @@ void Interpreter::rebuild_hits_and_scroll_meta() {
   scroll_content_h_ = 0u;
 
   MetaSink meta;
+  meta.scroll_offset = scroll_offset_;
   meta.hits = hit_rects_;
   meta.hit_count = &hit_count_;
   meta.hit_cap = kMaxHitElems;
@@ -491,6 +528,11 @@ void Interpreter::set_scroll_offset(std::uint16_t offset) {
           ? static_cast<std::uint16_t>(scroll_content_h_ - scroll_h_)
           : 0u;
   scroll_offset_ = (offset > max_off) ? max_off : offset;
+  // Hit rects are stored in screen space, so they are only correct for the
+  // offset they were built at — scrolling the pixels without rebuilding them
+  // leaves every tap target at the position the row used to occupy.
+  rebuild_hits_and_scroll_meta();
+  input::set_hit_rects(hit_rects_, hit_count_);
   rerender_retained();
 }
 

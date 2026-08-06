@@ -5,9 +5,51 @@
 
 ---
 
-## Current state (5 Aug 2026, 00:30)
+## Current state (5 Aug 2026, 21:40)
 
-**Firmware on the watch:** `EB90B288AE1F`. **Companion:** `0.2.1-p11 (build 12)`.
+**Firmware on the watch:** `16D04B4EF949`. **Companion:** `0.2.3-p13 (build 14)`.
+
+### N-31 CLOSED and P-1 CLOSED (5 Aug, 21:29) — verified on hardware
+
+Line 3 `0.16/31.0.0.3/244.0.8.6`: **244 touch interrupts, 0 read failures**,
+8 touches decoded, 6 hits. Companion log shows three `notify len=7` input
+events, each followed by a state-change push. The `timer` JS sub-app counted
+down and paused on tap.
+
+That satisfies P-1's done-condition — *"a display list composed on the phone is
+visibly rendered on the watch, a tap on it is received by the phone"* — and it
+does so against a **JS sub-app**, which is what this file insisted on. `dl_ok`
+31, frame drops 0, parse 0 ms, render 222 ms (max since boot, dominated by the
+local face rather than the sub-app list).
+
+### N-31 root cause (5 Aug, 21:00) — the TWIM SHORTS constants
+
+The TWIM `SHORTS` bit positions in `nrf52832_regs.hpp` were shifted against
+the nRF52832 PS and against Nordic's own `nrf52_bitfields.h`, vendored in
+`third_party/nrfx/mdk/`: `LASTTX_STOP` was 8 (that bit is LASTTX_SUSPEND) and
+`LASTTX_STARTRX` was 10 (that bit is LASTRX_STARTTX).
+
+Consequence: `twi::write` suspended instead of stopping, and `twi::write_read`
+never issued the repeated START. Neither raised `EVENTS_STOPPED`, so both died
+on their timeout — **every I2C transfer since bring-up, on every device**.
+Plain `twi::read` had the one correct short, and nothing uses it. Fixed in
+`16D04B4EF949`.
+
+**The wrong turn, kept on the record.** The previous entry here blamed the
+SCL/SDA pin drive (`S0S1` where InfiniTime uses open-drain `S0D1`). That is a
+genuine divergence and is fixed — but `F4A879DE6880` shipped with the fix and
+measured `5.5.0.0`, unchanged. Three separate theories were tried against this
+symptom (bus wake, full re-init, pin drive) because the diagnostic counted
+failures without recording their cause. Diag line 3's touch group now ends
+with the `twi::Status` of the last read; that one field distinguishes all
+three classes of fault without a flash cycle.
+
+### Pre-existing host-test failure
+
+`ctest -R ble_link` fails: `drop/reject: got 0 want 1`. Not caused by the
+5 Aug mirroring work (nothing in `ble_link.cpp` or its test was touched) and
+not yet investigated. It sits on the reassembler path that `status.md` flags
+as never examined.
 
 **P-1's display half is PROVEN (5 Aug, 13:22).** The `timer` **JS sub-app**
 renders on the watch reliably — three presses, three pushes, three CREDITs,
@@ -23,10 +65,10 @@ What made it reliable, in order of contribution:
 | Inter-message gap 30 ms → **250 ms** | The real one. The pre-display CONTROL and the list are a back-to-back pair; 30 ms cleared the nominal 20 ms drain but not a 230 ms repaint, so the CONTROL held the single-slot inbox and the **list** was discarded |
 | Credit gate on display pushes | Correct in principle, but it never engages in practice — presses are further apart than its 1.5 s timeout |
 
-**Still open:** taps (`touch.hit` = `0.0`, N-31 — the `buses_wake()` fix did
-**not** work, so the IRQ is not reaching the driver at all), and a long-run
-degradation where the watch stops replying entirely until reconnect (see
-below).
+**Still open:** taps (N-31 — superseded by the entry at the top of this file:
+the IRQ *does* reach the driver, one per tap; it was the I2C read underneath
+that never completed), and a long-run degradation where the watch stops
+replying entirely until reconnect (see below).
 
 ### The sub-app stack — what actually exists
 
@@ -58,7 +100,8 @@ treat that correlation as unexplained, not as a cause.
 | **N-34** | Ambient `ClockApp` re-renders while buried and overwrites any focused app | Open. Fix: `RefreshPolicy.Manual`, or remove the app and keep a stack base another way |
 | **N-33** | `transfer_active()` flickers between chunks, so the face and OTA banner alternated | **Fixed** (3 s latch) — confirmed on hardware |
 | **N-32** | `SdpWriteQueue` sequences never reset across reconnects | Fixed, but **did not** stop the frame drops — cause still open |
-| **N-31** | Touch dead outside `State::Active` — `buses_idle()` disables TWIM1, which the CST816S needs | Open. Mitigated only |
+| **N-31** | Touch dead. **Cause:** TWIM `SHORTS` bit positions were shifted in `nrf52832_regs.hpp`, so writes suspended instead of stopping and write_read never issued the repeated START — every I2C transfer timed out, on every device. Two earlier theories were wrong: `buses_idle()` (ENABLE=0 preserves PSEL/FREQUENCY/PIN_CNF) and the `S0S1` pin drive (fixed, but changed nothing) | **CLOSED** 5 Aug — `244.0` irq/readfail on hardware |
+| **N-36** | App-task stall 887 ms with 16 inbox drops, unchanged by the haptic fix. Worst phase is 3 (session/core tick, 444 ms) and render is 222 ms — the **face repaint**, not vibration | Open — new, and now the largest remaining defect |
 | **N-30** | Session stale path discarded the remote screen | Fixed |
 | **N-29** | Local face repainted over phone-pushed screens | Fixed — single guard inside `Core::show_current()` |
 | **N-28** | CONTROL + DISPLAY written back-to-back; inbox dropped the second | Fixed (30 ms pacing + stall watchdog) |
@@ -117,10 +160,19 @@ behaviour is the clock overwriting the screen or the frame drops.
 ### Diagnostic overlay (firmware `EF53E080F129`)
 
 ```
-line 1: reset/uptime/paints/button/stall/ble.rc/tickCatchup
+line 1: reset/uptime/paints/stall/tickCatchup
 line 2: phase.ms/mV/parse.render
-line 3: frameDrop.inboxDrop/applied.rejected.dropped.sessState/touch.hit
+line 3: frameDrop.inboxDrop/applied.rejected.dropped.sessState/irq.readfail.touch.hit.twiStatus
 ```
+
+Corrected 5 Aug against `local_ui.cpp`: line 1 no longer carries the raw
+button level or the BLE stage/rc (both dropped when the SDP counters were
+added), and the touch group on line 3 is now **five** fields, not two — IRQ
+latches, read failures, touch events, hits, and (added 5 Aug) the
+`twi::Status` of the last read: `0` Ok, `1` Timeout, `2` AddrNack,
+`3` DataNack, `4` BusError. `9.9.0.0` therefore read as "nine interrupts, nine
+failed reads, nothing decoded" — with no way to tell why they failed, which is
+what the fifth field is for.
 
 Line 3 reads left to right along the message path — reassembly, inbox, session,
 interpreter. **The first non-zero drop counter is where the message died.**
