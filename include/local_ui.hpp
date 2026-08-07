@@ -29,5 +29,23 @@ std::size_t build_screen(const ViewModel& vm, std::uint8_t* out, std::size_t cap
 std::size_t build_ota_banner(std::uint8_t* out, std::size_t cap,
                              std::uint8_t pct);
 
+/**
+ * HH:MM only, as a band (y 56..95), for the once-a-minute rollover.
+ * Emits no CLEAR, so untouched tiles are culled.
+ */
+std::size_t build_clock_band(std::uint8_t* out, std::size_t cap);
+
+#if SLATE_DIAG_OVERLAY
+/**
+ * The three diagnostic lines only, as a band (y 16..51).
+ *
+ * The periodic overlay refresh used to repaint the entire face — ~238 ms of
+ * full-screen SPI every 2 s, on the task that also drains the SDP inbox
+ * (N-36). Emits no CLEAR so untouched tiles are culled.
+ */
+std::size_t build_diag_banner(std::uint8_t* out, std::size_t cap,
+                              const local::State& st);
+#endif
+
 }  // namespace ui
 }  // namespace slate

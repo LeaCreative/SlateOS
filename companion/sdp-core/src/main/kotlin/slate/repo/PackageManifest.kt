@@ -65,5 +65,13 @@ object HostCapabilities {
         "slate.log",
         "slate.nav",
         "slate.camera",
+        "slate.map",
+        /**
+         * Buzzing the handset has been bindable since 6 Aug but had no token
+         * here, so `examples/vibrate` could not declare the one capability it
+         * cannot run without. An unknown entry in `requires` is a hard reject,
+         * so the omission forced apps to under-declare.
+         */
+        "slate.phone",
     )
 }

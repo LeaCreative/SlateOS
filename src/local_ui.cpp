@@ -134,6 +134,11 @@ void fmt_diag(char* o, std::size_t cap, const local::State& st) {
   append("/");
   fmt_u32(part, sizeof(part), st.diag_tick_catchup);
   append(part);
+  append("/");
+  // Stall episodes. Read against uptime: flat means a one-off at connect,
+  // climbing means it recurs (N-36).
+  fmt_u32(part, sizeof(part), st.diag_stall_events);
+  append(part);
   o[i] = '\0';
 }
 
@@ -546,6 +551,98 @@ std::size_t build_disconnected(W& w, const ViewModel&) {
 // 240x40 band. The renderer culls tiles with no content (N-18), so this costs
 // ~5 tile passes instead of 30 — cheap enough to draw during a transfer, when
 // the app task is otherwise standing back off the SPI bus (N-22).
+#if SLATE_DIAG_OVERLAY
+// The three diagnostic lines on their own, without touching the rest of the
+// face.
+//
+// The overlay refreshes every 2 s, and it used to do that by repainting the
+// WHOLE screen: 240x240 is 115200 B of SPI plus thirty tile passes that each
+// re-parse the display list, measured at 222-238 ms. Roughly a 12 % duty cycle
+// spent redrawing a clock that had not changed, in order to update three lines
+// of text — and it lands on the app task, which is also what drains the SDP
+// inbox and reads the touch panel (N-36).
+//
+// Emits no CLEAR, exactly like build_ota_banner: the renderer culls tiles the
+// list never touches (N-18), so this costs ~5 tile passes instead of 30. The
+// band is filled first because without a CLEAR the previous text would still
+// be there underneath.
+std::size_t build_diag_banner(std::uint8_t* out, std::size_t cap,
+                              const local::State& st) {
+  if (out == nullptr || cap < 8u) {
+    return 0u;
+  }
+  W w;
+  w.p = out;
+  w.cap = cap;
+
+  // Lines sit at y=16, 28 and 40, each 10 px tall at scale 2, so 16..49 covers
+  // them. The clock starts at 56; staying under that is what keeps this a band
+  // rather than a screen.
+  constexpr std::uint8_t kTop = 16u;
+  constexpr std::uint8_t kHeight = 36u;
+  constexpr std::uint16_t kDim = 0x8410u;
+
+  w.fill(0, kTop, 240, kHeight, 0x0000u);
+  // Palette 1 must be set even though the face sets it too: this list is
+  // parsed on its own, and the interpreter rejects an unset palette entry.
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x01u);
+  w.u16(kDim);
+
+  char diag[40];
+  fmt_diag(diag, sizeof(diag), st);
+  w.text_big(4, 16, sdp::align::LEFT, 2u, 1u, diag);
+  fmt_diag2(diag, sizeof(diag), st);
+  w.text_big(4, 28, sdp::align::LEFT, 2u, 1u, diag);
+  fmt_diag3(diag, sizeof(diag), st);
+  w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
+  if (st.diag_ota_shown) {
+    fmt_diag_ota(diag, sizeof(diag), st);
+    w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
+  }
+
+  w.b(sdp::op::COMMIT);
+  w.b(0x00u);
+  return w.ok ? w.n : 0u;
+}
+#endif
+
+// HH:MM on its own, for the minute rollover.
+//
+// The rollover repainted the entire face once a minute, for ever, on every
+// watch: ~236 ms of SPI and thirty tile passes to change at most four glyphs.
+// The digits occupy y 56..95 and nothing else on the face changes when the
+// minute does, so this is the same band trick the diag lines and the OTA
+// banner already use — no CLEAR, so untouched tiles are culled (N-18).
+std::size_t build_clock_band(std::uint8_t* out, std::size_t cap) {
+  if (out == nullptr || cap < 8u) {
+    return 0u;
+  }
+  W w;
+  w.p = out;
+  w.cap = cap;
+
+  // Scale 8 on the 3x5 font gives 24x40 glyphs drawn from y=56.
+  constexpr std::uint8_t kY = 56u;
+  constexpr std::uint8_t kH = 40u;
+
+  w.fill(0, kY, 240, kH, 0x0000u);
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x00u);
+  w.u16(0xFFFFu);
+
+  const clock::Civil c = clock::civil_now();
+  char tbuf[8];
+  fmt2(tbuf, c.hour);
+  tbuf[2] = ':';
+  fmt2(tbuf + 3, c.minute);
+  w.text_big(120, kY, sdp::align::CENTER, 8u, 0u, tbuf);
+
+  w.b(sdp::op::COMMIT);
+  w.b(0x00u);
+  return w.ok ? w.n : 0u;
+}
+
 std::size_t build_ota_banner(std::uint8_t* out, std::size_t cap,
                              std::uint8_t pct) {
   if (out == nullptr || cap < 8u) {

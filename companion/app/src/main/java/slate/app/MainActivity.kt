@@ -90,6 +90,36 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Location is requested separately from [permissionLauncher] because the
+     * answer has a side effect: the link service's foreground-service type is
+     * fixed when it starts, so a grant that arrives afterwards does nothing for
+     * background fixes until the service re-asserts it.
+     *
+     * Approximate-only counts as granted. The user may allow coarse and refuse
+     * precise, and that is a real grant, not a refusal.
+     */
+    private val locationLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { granted ->
+        if (LinkForegroundService.hasLocationPermission(this)) {
+            LinkForegroundService.refreshForegroundServiceType(this)
+        }
+        val precise = granted[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarse = granted[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        val camera = granted[Manifest.permission.CAMERA]
+        val parts = mutableListOf<String>()
+        when {
+            precise -> parts += "location: precise"
+            coarse -> parts += "location: approximate only (low accuracy fixes)"
+            granted.containsKey(Manifest.permission.ACCESS_COARSE_LOCATION) ->
+                parts += "location: refused — sub-apps will be told 'denied'"
+        }
+        if (camera == true) parts += "camera: granted"
+        if (camera == false) parts += "camera: refused"
+        statusView.text = parts.joinToString(" · ").ifBlank { "Nothing changed" }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -137,6 +167,32 @@ class MainActivity : ComponentActivity() {
 
         root.addView(button("1. Grant permissions") {
             permissionLauncher.launch(companionPermissions())
+        })
+        // One grant button for everything sub-apps need, now that they are
+        // opened from the watch rather than from here. The camera grant used to
+        // hang off the "Open Camera" button; with that gone there would
+        // otherwise be no way to give it, and Camera would fail from the
+        // launcher with nothing to explain why.
+        root.addView(button("1c. Grant sub-app permissions (location, camera)") {
+            val wanted = mutableListOf<String>()
+            if (!LinkForegroundService.hasLocationPermission(this)) {
+                wanted += Manifest.permission.ACCESS_COARSE_LOCATION
+                wanted += Manifest.permission.ACCESS_FINE_LOCATION
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                wanted += Manifest.permission.CAMERA
+            }
+            if (wanted.isEmpty()) {
+                // Nothing to ask for, but the service may have started before
+                // the location grant and be running without the location FGS
+                // type — so re-assert it rather than doing nothing.
+                LinkForegroundService.refreshForegroundServiceType(this)
+                statusView.text = "Already granted — foreground service type refreshed"
+                return@button
+            }
+            locationLauncher.launch(wanted.toTypedArray())
         })
         root.addView(button("1b. Notification access (system settings)") {
             SlateNotificationListener.openListenerSettings(this)
@@ -203,25 +259,22 @@ class MainActivity : ComponentActivity() {
             LinkForegroundService.openNotifications(this)
             statusView.text = "Requested Notifications focus"
         })
-        root.addView(button("Open Timer (JS sub-app)") {
-            LinkForegroundService.openTimer(this)
-            statusView.text = "Requested Timer JS focus"
-        })
-        root.addView(button("Open Navigation (JS)") {
-            LinkForegroundService.openNavigation(this)
-            statusView.text = "Requested Navigation JS focus (one DL / maneuver)"
-        })
-        root.addView(button("Open Camera (JS + PATCH)") {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissionLauncher.launch(arrayOf(Manifest.permission.CAMERA))
-                statusView.text = "Grant camera, then tap Open Camera again"
-                return@button
-            }
-            LinkForegroundService.openCamera(this)
-            statusView.text = "Requested Camera JS focus (RGB332 PATCH stream)"
-        })
+        // JS sub-apps are deliberately NOT launched from here. They are managed
+        // in the repository screen and opened from the watch's own launcher
+        // (swipe right-to-left), which is the product's actual path — a phone
+        // button that focuses a watch screen is a bring-up shim, and keeping
+        // one per sub-app meant every new sub-app needed a code change to be
+        // reachable. TestApp and Notifications stay: they are Kotlin apps, not
+        // in the installed store, and so cannot appear in the launcher at all.
+        root.addView(
+            text(
+                "JS sub-apps: swipe right-to-left on the watch to open the " +
+                    "launcher. Show/hide them and edit their settings under " +
+                    "Sub-app repository.",
+                13f,
+                false,
+            ),
+        )
         root.addView(button("Script console") {
             startActivity(Intent(this, DevConsoleActivity::class.java))
         })

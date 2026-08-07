@@ -42,7 +42,7 @@ class BindingSurface(
                         "timer" -> handleTimer(m)
                         "http" -> handleHttp(m)
                         "notifications", "media", "location", "health", "haptic",
-                        "nav", "camera", "phone",
+                        "nav", "camera", "phone", "map",
                         -> {
                             val perm = when (m.adapter) {
                                 "notifications" -> ScriptPermission.Notifications
@@ -52,6 +52,12 @@ class BindingSurface(
                                 "nav" -> ScriptPermission.Navigation
                                 "camera" -> ScriptPermission.Camera
                                 "phone" -> ScriptPermission.Vibrate
+                                // The map is built from the user's position, so
+                                // it is exactly as sensitive as reading it
+                                // directly and is gated the same way. A sub-app
+                                // that can see where it is on a map knows where
+                                // it is.
+                                "map" -> ScriptPermission.Location
                                 else -> null
                             }
                             if (perm != null && !effective(perm)) {

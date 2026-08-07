@@ -16,9 +16,30 @@ import slate.host.UpdateWatchScreen
 class Compositor(
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val pushToWatch: suspend (bytes: ByteArray) -> Boolean,
-    private val onAdapterCommand: (HostOutbound.AdapterCommand) -> Unit = {},
+    /**
+     * An app asked the host to do something off-watch.
+     *
+     * The **app id is passed** because the host has to route the answer back to
+     * whoever asked. Without it, an adapter that replies — location, nav,
+     * camera — can only guess, and the existing ones guess by hardcoding a
+     * single app id (`ScriptRuntimeHost.NAV_ID`, `CAMERA_ID`). That is why
+     * those adapters serve exactly one sub-app each. `reg` is in scope at the
+     * call site, so the id costs nothing to supply and any number of sub-apps
+     * can share an adapter.
+     */
+    private val onAdapterCommand: (appId: String, cmd: HostOutbound.AdapterCommand) -> Unit =
+        { _, _ -> },
     private val onScreenStackOp: (StackOp) -> Unit = {},
     private val onScreenPop: () -> Unit = {},
+    /**
+     * A display list an app produced was discarded before reaching the watch.
+     *
+     * Every path in maybePush() used to return false in silence, so a sub-app
+     * that focused fine and then showed nothing was indistinguishable from one
+     * that never ran — which is exactly how slate.image presented. If a screen
+     * does not appear, this says why in one line.
+     */
+    private val onPushDropped: (appId: String, reason: String, bytes: Int) -> Unit = { _, _, _ -> },
 ) {
     data class StackEntry(
         val appId: String,
@@ -31,6 +52,11 @@ class Compositor(
         var lastPeriodicMs: Long = 0L,
         var created: Boolean = false,
         var started: Boolean = false,
+        /**
+         * Bytes this app's current screen occupies on the watch, or 0 if it has
+         * none. Returned to the credit window when the screen goes away.
+         */
+        var onWatchBytes: Int = 0,
     )
 
     private val apps = LinkedHashMap<String, Registered>()
@@ -49,6 +75,12 @@ class Compositor(
     val freeCreditBytes: Int get() = credit.freeBytes
 
     fun setCredit(freeBytes: Int) = credit.setAdvertised(freeBytes)
+
+    /** Last app whose display list actually reached the transport. */
+    @Volatile
+    private var lastPushedAppId: String? = null
+
+    fun lastPushSucceededFor(appId: String): Boolean = lastPushedAppId == appId
 
     fun register(endpoint: SlateAppEndpoint) {
         apps[endpoint.manifest.id] = Registered(endpoint)
@@ -237,7 +269,31 @@ class Compositor(
         }
     }
 
+    /**
+     * Hand back the credit an app's screen was holding.
+     *
+     * The window only decrements. It is refreshed solely by a CREDIT from the
+     * watch, and the watch advertises its full buffer when no remote screen is
+     * up and ZERO when one is — and CompositorHost ignores a zero. So from the
+     * moment anything is pushed, the window can only shrink, until the user
+     * returns to the watch face.
+     *
+     * That leak is what stopped large sub-apps launching: the launcher's own
+     * 165 B screen was enough to put a 3987 B app over the edge of a 4096 B
+     * window, and repeated launcher opens made it progressively worse. A
+     * screen that is no longer on the watch must not keep holding credit.
+     */
+    private fun releaseCredit(appId: String) {
+        apps[appId]?.let { reg ->
+            if (reg.onWatchBytes > 0) {
+                credit.refund(reg.onWatchBytes)
+                reg.onWatchBytes = 0
+            }
+        }
+    }
+
     private suspend fun blur(appId: String) {
+        releaseCredit(appId)
         val reg = apps[appId] ?: return
         applyOutbound(reg, reg.endpoint.dispatch(HostInbound.Blur))
     }
@@ -262,7 +318,8 @@ class Compositor(
                 }
                 HostOutbound.RelinquishFocus -> relinquishFocus(reg.endpoint.manifest.id)
                 is HostOutbound.Log -> Unit
-                is HostOutbound.AdapterCommand -> onAdapterCommand(m)
+                is HostOutbound.AdapterCommand ->
+                    onAdapterCommand(reg.endpoint.manifest.id, m)
                 HostOutbound.InputHandled, HostOutbound.InputUnhandled -> Unit
             }
         }
@@ -287,6 +344,21 @@ class Compositor(
      * Privileged host push (camera PATCH stream). Only while [appId] is focused;
      * still subject to credit / quota.
      */
+    /**
+     * Draw a host-owned screen that belongs to no sub-app.
+     *
+     * Used for conditions the user must see when there is no app to show them —
+     * a sub-app that failed to start, for instance. It bypasses the focus stack
+     * on purpose: the app in question is precisely the one that is not running.
+     */
+    suspend fun pushSystemScreen(bytes: ByteArray): Boolean =
+        maybePush(
+            appId = SYSTEM_UI_ID,
+            priority = PriorityClass.NORMAL,
+            focused = true,
+            bytes = bytes,
+        )
+
     suspend fun pushHostDisplayList(appId: String, bytes: ByteArray): Boolean {
         if (focusedAppId != appId) return false
         val entry = stack.lastOrNull() ?: return false
@@ -299,18 +371,36 @@ class Compositor(
         focused: Boolean,
         bytes: ByteArray,
     ): Boolean {
-        if (!linkConnected && appId != SYSTEM_UI_ID) return false
+        if (!linkConnected && appId != SYSTEM_UI_ID) {
+            onPushDropped(appId, "link down", bytes.size)
+            return false
+        }
         if (appId != SYSTEM_UI_ID) {
             if (!quota.tryConsume(appId, priority, focused || priority == PriorityClass.AMBIENT)) {
+                onPushDropped(appId, "push quota", bytes.size)
                 return false
             }
         }
         if (!credit.tryReserve(bytes.size)) {
+            onPushDropped(
+                appId,
+                "credit: need ${bytes.size} B, window has ${credit.freeBytes} B",
+                bytes.size,
+            )
             return false
         }
         val ok = pushToWatch(bytes)
-        if (!ok) {
+        if (ok) {
+            lastPushedAppId = appId
+            apps[appId]?.let { reg ->
+                // One screen per app: the new list replaces the old one on the
+                // watch, so give back what the old one was holding.
+                if (reg.onWatchBytes > 0) credit.refund(reg.onWatchBytes)
+                reg.onWatchBytes = bytes.size
+            }
+        } else {
             credit.refund(bytes.size)
+            onPushDropped(appId, "transport refused the write", bytes.size)
         }
         return ok
     }

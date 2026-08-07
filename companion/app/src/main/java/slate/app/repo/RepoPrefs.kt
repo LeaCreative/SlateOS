@@ -90,6 +90,39 @@ class RepoPrefs(context: Context) {
         prefs.edit().putString("third_party", next.toString()).apply()
     }
 
+    /**
+     * Whether an installed sub-app appears in the watch's launcher.
+     *
+     * Stored as an opt-OUT set so a newly installed app shows up without
+     * needing a preference written for it first — the alternative silently
+     * hides anything installed before this existed.
+     */
+    fun showsInLauncher(appId: String): Boolean = appId !in hiddenFromLauncher()
+
+    fun setShowsInLauncher(appId: String, show: Boolean) {
+        val next = hiddenFromLauncher().toMutableSet()
+        if (show) next.remove(appId) else next.add(appId)
+        prefs.edit()
+            .putStringSet("launcher_hidden", next)
+            .apply()
+    }
+
+    fun hiddenFromLauncher(): Set<String> =
+        prefs.getStringSet("launcher_hidden", emptySet()) ?: emptySet()
+
+    /**
+     * Current value of a declared sub-app setting, or null if never set.
+     *
+     * Kept per app id and key so uninstalling and reinstalling keeps the user's
+     * choices, which is what a repository update should do.
+     */
+    fun subAppSetting(appId: String, key: String): String? =
+        prefs.getString("setting:$appId:$key", null)
+
+    fun setSubAppSetting(appId: String, key: String, value: String) {
+        prefs.edit().putString("setting:$appId:$key", value).apply()
+    }
+
     fun userGrantedSensitive(appId: String): Set<ScriptPermission> {
         val raw = prefs.getString("grant:$appId", "") ?: ""
         if (raw.isBlank()) return emptySet()

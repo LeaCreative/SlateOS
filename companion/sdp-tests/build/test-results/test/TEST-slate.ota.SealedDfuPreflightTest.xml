@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.ota.SealedDfuPreflightTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:55.059Z" hostname="DAN01" time="0.031">
+<testsuite name="slate.ota.SealedDfuPreflightTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:28.688Z" hostname="DAN01" time="0.03">
   <properties/>
   <testcase name="nordicDfuPlusVersion()" classname="slate.ota.SealedDfuPreflightTest" time="0.025"/>
   <testcase name="pinedfuBlocked()" classname="slate.ota.SealedDfuPreflightTest" time="0.004"/>
-  <testcase name="slateUsesOta()" classname="slate.ota.SealedDfuPreflightTest" time="0.0"/>
+  <testcase name="slateUsesOta()" classname="slate.ota.SealedDfuPreflightTest" time="0.001"/>
   <testcase name="infinitimeByName()" classname="slate.ota.SealedDfuPreflightTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

@@ -5,6 +5,7 @@
 #include "font_builtin.hpp"
 #include "input_event.hpp"
 #include "motor.hpp"
+#include "wdt.hpp"
 
 #include <cstring>
 
@@ -67,6 +68,27 @@ void draw_text_run(Renderer* r, std::uint8_t font_id, std::uint8_t x,
     draw_char(r, f, static_cast<std::uint16_t>(start_x + i * advance), y,
               static_cast<char>(utf8[i]), color, scale);
   }
+}
+
+// Integer square root, for circle scanline spans. No <cmath> in a freestanding
+// build, and this is exact for the u32 range we feed it.
+std::uint32_t isqrt_u32(std::uint32_t v) {
+  std::uint32_t rem = v;
+  std::uint32_t root = 0u;
+  std::uint32_t bit = 1u << 30;
+  while (bit > rem) {
+    bit >>= 2;
+  }
+  while (bit != 0u) {
+    if (rem >= root + bit) {
+      rem -= root + bit;
+      root = (root >> 1) + bit;
+    } else {
+      root >>= 1;
+    }
+    bit >>= 2;
+  }
+  return root;
 }
 
 void stroke_rect(Renderer* r, std::uint8_t x, std::uint8_t y, std::uint8_t w,
@@ -229,8 +251,40 @@ struct DrawSink : Sink {
               std::uint16_t color, Style st) override {
     const std::uint8_t yy = map_y(cy);
     if (st.mode == style::ModeFill || st.mode == style::ModeFillStroke) {
-      for (std::uint8_t rr = 0u; rr <= rad; ++rr) {
-        r->draw_circle(cx, yy, rr, color);
+      // Scanline spans, not concentric outlines.
+      //
+      // This used to fill by drawing rad+1 Bresenham circles. A single r=120
+      // disk is then ~58,000 plotted points, and the renderer replays the whole
+      // list once per tile — thirty times. A sub-app drawing a few big discs
+      // (examples/image-vector) took the app task past the ~7 s bootloader
+      // watchdog and reset the watch: a display list must never be able to do
+      // that, and this is the O(r) form of the same shape.
+      //
+      // fill_rect already clips to the display and culls to the active tile
+      // band (N-18), so off-screen spans cost almost nothing — which matters
+      // because painter's-algorithm art deliberately runs discs off the edge.
+      const std::int32_t r2 =
+          static_cast<std::int32_t>(rad) * static_cast<std::int32_t>(rad);
+      for (std::int32_t dy = -static_cast<std::int32_t>(rad);
+           dy <= static_cast<std::int32_t>(rad); ++dy) {
+        const std::int32_t y = static_cast<std::int32_t>(yy) + dy;
+        if (y < 0 || y >= static_cast<std::int32_t>(kDisplaySize)) {
+          continue;
+        }
+        const std::int32_t dx = static_cast<std::int32_t>(
+            isqrt_u32(static_cast<std::uint32_t>(r2 - dy * dy)));
+        std::int32_t x0 = static_cast<std::int32_t>(cx) - dx;
+        std::int32_t x1 = static_cast<std::int32_t>(cx) + dx;
+        if (x1 < 0 || x0 >= static_cast<std::int32_t>(kDisplaySize)) {
+          continue;
+        }
+        if (x0 < 0) x0 = 0;
+        if (x1 > static_cast<std::int32_t>(kDisplaySize) - 1) {
+          x1 = static_cast<std::int32_t>(kDisplaySize) - 1;
+        }
+        r->fill_rect(static_cast<std::uint16_t>(x0),
+                     static_cast<std::uint16_t>(y),
+                     static_cast<std::uint16_t>(x1 - x0 + 1), 1u, color);
       }
     }
     if (st.mode == style::ModeStroke || st.mode == style::ModeFillStroke) {
@@ -498,6 +552,12 @@ void Interpreter::render_retained_to_display() {
   draw.scroll_offset = scroll_offset_;
 
   for (std::uint32_t t = 0u; t < kTileCount; ++t) {
+    // Pet between tile passes. A render is one iteration of the app loop, and
+    // the loop is the only thing that feeds the dog — so an expensive list
+    // (a sub-app's, arriving over BLE) could starve it and reset the watch.
+    // Same reasoning as the bounded flash helpers in ota_slot::erase_all: the
+    // app task is alive and making progress, it is just busy.
+    slate::wdt::pet_service();
     renderer_->set_tile_filter(static_cast<std::int32_t>(t));
     renderer_->clear_clip();
     renderer_->clear_tile_buffer(0x0000u);

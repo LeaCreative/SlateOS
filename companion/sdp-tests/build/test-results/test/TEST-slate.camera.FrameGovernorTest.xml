@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.camera.FrameGovernorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:54.537Z" hostname="DAN01" time="0.085">
+<testsuite name="slate.camera.FrameGovernorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:27.223Z" hostname="DAN01" time="0.157">
   <properties/>
-  <testcase name="fpsHintFor60x60()" classname="slate.camera.FrameGovernorTest" time="0.079"/>
-  <testcase name="dropsWhenOverBudget()" classname="slate.camera.FrameGovernorTest" time="0.004"/>
+  <testcase name="fpsHintFor60x60()" classname="slate.camera.FrameGovernorTest" time="0.149"/>
+  <testcase name="dropsWhenOverBudget()" classname="slate.camera.FrameGovernorTest" time="0.006"/>
   <testcase name="dropsWhenInFlightFull()" classname="slate.camera.FrameGovernorTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

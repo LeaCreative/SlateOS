@@ -25,6 +25,15 @@ object BundledPackageSeeder {
         val permissions: Set<ScriptPermission>,
     )
 
+    /**
+     * These permission sets MUST match the `permissions` array in each demo's
+     * `manifest.json` under companion/examples. They are what gets recorded as
+     * the installed grant; the manifest is what the runtime re-derives from at
+     * registration. Letting them drift means the repository screen shows one
+     * thing and the sub-app is bound with another. Any app that declares
+     * `settings` needs Storage here as well, because reading a setting is
+     * reading the store (docs/subapp-rules.md §5.2).
+     */
     val DEMOS: List<Bundled> = listOf(
         Bundled(
             "slate.timer",
@@ -36,7 +45,7 @@ object BundledPackageSeeder {
             "slate.navigation",
             ScriptResources.NAV_MANIFEST,
             ScriptResources.NAV_MAIN,
-            setOf(ScriptPermission.Navigation),
+            setOf(ScriptPermission.Navigation, ScriptPermission.Storage),
         ),
         Bundled(
             "slate.camera",
@@ -48,7 +57,19 @@ object BundledPackageSeeder {
             "slate.vibrate",
             ScriptResources.VIBRATE_MANIFEST,
             ScriptResources.VIBRATE_MAIN,
-            setOf(ScriptPermission.Vibrate),
+            setOf(ScriptPermission.Vibrate, ScriptPermission.Storage),
+        ),
+        Bundled(
+            "slate.location",
+            ScriptResources.LOCATION_MANIFEST,
+            ScriptResources.LOCATION_MAIN,
+            setOf(ScriptPermission.Location, ScriptPermission.Storage),
+        ),
+        Bundled(
+            "slate.map",
+            ScriptResources.MAP_MANIFEST,
+            ScriptResources.MAP_MAIN,
+            setOf(ScriptPermission.Location, ScriptPermission.Storage),
         ),
     )
 
@@ -56,8 +77,17 @@ object BundledPackageSeeder {
         val store = InstalledStore.create(context)
         var installed = 0
         for (demo in DEMOS) {
-            if (store.get(demo.id) != null) continue
             val manifestText = ScriptResources.read(demo.manifestRes)
+            // Reinstall when the bundled version differs from what is installed.
+            // This used to skip any id already present, so editing a bundled
+            // demo's manifest — adding settings, say — never reached a device
+            // that had an older copy, and the change looked like it had done
+            // nothing.
+            val existing = store.get(demo.id)
+            if (existing != null) {
+                val bundledVersion = ManifestParser.parse(manifestText).version
+                if (existing.version == bundledVersion) continue
+            }
             val mainText = ScriptResources.read(demo.mainRes)
             val zip = zipOf(
                 "manifest.json" to manifestText.toByteArray(Charsets.UTF_8),

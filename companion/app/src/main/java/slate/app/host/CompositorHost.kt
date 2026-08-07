@@ -21,8 +21,11 @@ import slate.app.link.LinkLog
 import slate.app.link.PhoneId
 import slate.app.link.SharedLink
 import slate.app.link.SlateGattClient
+import slate.app.location.LocationAdapter
+import slate.app.map.MapAdapter
 import slate.app.nav.NavAdapter
 import slate.app.repo.InstalledStore
+import slate.app.repo.RepoPrefs
 import slate.app.notif.NotifChange
 import slate.app.notif.NotifPrefs
 import slate.app.notif.NotifStore
@@ -108,7 +111,10 @@ class CompositorHost(
             // when the list arrives behind it.
             sendListNow(bytes)
         },
-        onAdapterCommand = { cmd -> handleAdapter(cmd) },
+        onAdapterCommand = { appId, cmd -> handleAdapter(appId, cmd) },
+        onPushDropped = { appId, reason, bytes ->
+            LinkLog.w("pushToWatch DROPPED: $appId, $bytes B — $reason")
+        },
         onScreenStackOp = { op ->
             session.scheduleDisplay(
                 when (op) {
@@ -137,10 +143,16 @@ class CompositorHost(
      * Only JS sub-apps live in that store — Kotlin apps are registered in code
      * and are deliberately not launchable from the watch.
      */
+    // Sub-apps are reached from the watch launcher and managed in the
+    // repository screen — there are deliberately no per-sub-app open helpers
+    // here any more. One method per sub-app meant a code change was needed
+    // before a newly installed one could be opened at all, which is backwards
+    // for downloaded apps.
     private val launcher = LauncherApp {
-        InstalledStore.create(context).list().map {
-            LauncherApp.Entry(id = it.id, name = it.manifest().name)
-        }
+        val prefs = RepoPrefs(context)
+        InstalledStore.create(context).list()
+            .filter { prefs.showsInLauncher(it.id) }
+            .map { LauncherApp.Entry(id = it.id, name = it.manifest().name) }
     }
     private val scripts = ScriptRuntimeHost(context, scope, compositor)
 
@@ -148,6 +160,18 @@ class CompositorHost(
     private var navAdapter: NavAdapter? = null
     private var cameraSession: CameraPreviewSession? = null
     private var navSubscribed = false
+
+    // Location serves any sub-app, so unlike nav/camera the subscriber has to
+    // be remembered rather than assumed. Null means nothing is listening and
+    // the GPS is not being held on by us.
+    private var locationAdapter: LocationAdapter? = null
+    private var locationSubscriberId: String? = null
+
+    // The map holds its own location subscription rather than sharing the one
+    // above: the two are independent features and only one sub-app holds focus
+    // at a time, so entangling their lifecycles would buy nothing.
+    private var mapAdapter: MapAdapter? = null
+    private var mapSubscriberId: String? = null
 
     /** Last display list pushed, for duplicate coalescing. */
     private var lastPushDigest: Int = 0
@@ -204,13 +228,25 @@ class CompositorHost(
                     if (!wasConnected) {
                         session.onLinkUp()
                     }
-                    // Restored. Removing this was the only behavioural change
-                    // coincident with display pushes ceasing to arrive, and
-                    // the compositor's focus and quota logic both reference an
-                    // AMBIENT entry in the stack — so an empty stack base is a
-                    // plausible reason pushes stop landing. ClockApp's screen
-                    // is unwanted, but proving that is what matters first.
-                    ensureAmbient()
+                    // No ambient base. ClockApp used to sit at the bottom of
+                    // the stack, so relinquishing the last sub-app focused it
+                    // and pushed its small-digit clock over the watch's own
+                    // face (N-34) — visible as soon as exiting a sub-app
+                    // started working reliably.
+                    //
+                    // It was reinstated on a correlation nobody could explain:
+                    // pushes stopped landing when it was removed. Those causes
+                    // are now known and fixed — the TWIM SHORTS constants
+                    // (N-31), the sandbox crash (N-38) and the stale stack
+                    // (N-39) — so the correlation no longer justifies it.
+                    //
+                    // With an empty stack the watch falls back to its own local
+                    // face, which is the big-digit one and is what should be
+                    // underneath a sub-app anyway (N-27 local_back).
+                    //
+                    // If display pushes stop landing again — dl_ok flat on diag
+                    // line 3 when a sub-app is opened — the ambient base did
+                    // matter and this is the change to revert.
                     startTicker()
                     startNotifBridge()
                 } else {
@@ -236,41 +272,18 @@ class CompositorHost(
         notifJob = null
         stopNav()
         stopCamera()
+        // Leaving a location listener registered past the service outlives the
+        // sub-app that asked for it and keeps the GPS warm for nobody.
+        stopLocation()
+        stopMap()
         serviceLifecycle.destroy()
         scripts.close()
         _confirmUi.value = ConfirmUi.Idle
         SharedLink.publishConfirmUi(ConfirmUi.Idle)
     }
 
-    suspend fun openTimer() {
-        scripts.ensureRegistered(ScriptRuntimeHost.TIMER_ID)
-        compositor.requestFocus(
-            ScriptRuntimeHost.TIMER_ID,
-            PriorityClass.NORMAL,
-            FocusReason.UserNavigation,
-            StackOp.Push,
-        )
-    }
 
-    suspend fun openNavigation() {
-        scripts.ensureRegistered(ScriptRuntimeHost.NAV_ID)
-        compositor.requestFocus(
-            ScriptRuntimeHost.NAV_ID,
-            PriorityClass.NORMAL,
-            FocusReason.UserNavigation,
-            StackOp.Push,
-        )
-    }
 
-    suspend fun openCamera() {
-        scripts.ensureRegistered(ScriptRuntimeHost.CAMERA_ID)
-        compositor.requestFocus(
-            ScriptRuntimeHost.CAMERA_ID,
-            PriorityClass.NORMAL,
-            FocusReason.UserNavigation,
-            StackOp.Push,
-        )
-    }
 
     fun setWatchProtocolVersion(version: Int) {
         compositor.watchProtocolVersion = version
@@ -300,6 +313,11 @@ class CompositorHost(
         session.helloOffer?.let { offer ->
             compositor.watchProtocolVersion = offer.protocolVersion
         }
+        // Only a positive advertisement refreshes the window. The watch sends
+        // its full buffer at depth 0 and zero while a screen is up, and zeroing
+        // here would stall every push until the user went back to the face.
+        // The zero case is handled by releasing credit when a screen goes away
+        // (Compositor.releaseCredit) rather than by trusting this number.
         if (session.freeCreditBytes > 0) {
             compositor.setCredit(session.freeCreditBytes)
         }
@@ -494,6 +512,42 @@ class CompositorHost(
         }
     }
 
+    /**
+     * Tell the user on the watch that a sub-app did not start.
+     *
+     * Without this the tap does nothing at all: the launcher closes, no screen
+     * arrives, and the watch is left on whatever was underneath. "Nothing
+     * happened" is indistinguishable from a dropped push, and it is the exact
+     * ambiguity N-47 was filed about on the display path.
+     */
+    private suspend fun showLaunchFailure(appId: String, cause: Throwable) {
+        val name = try {
+            InstalledStore.create(context).get(appId)?.manifest()?.name ?: appId
+        } catch (_: Throwable) {
+            appId
+        }
+        val bytes = displayList {
+            palette(0, slate.wire.Colors.BLACK)
+            palette(1, slate.wire.Colors.WHITE)
+            palette(2, slate.wire.rgb(0xFD20))
+            clear(slate.wire.pal(0))
+            textScaled(
+                font = 1, x = 120, y = 78, align = SdpWire.Align.CENTER,
+                color = slate.wire.pal(2), scale = 2, text = "Did not start",
+            )
+            textScaled(
+                font = 1, x = 120, y = 110, align = SdpWire.Align.CENTER,
+                color = slate.wire.pal(1), scale = 2, text = name.take(16),
+            )
+            textScaled(
+                font = 1, x = 120, y = 140, align = SdpWire.Align.CENTER,
+                color = slate.wire.pal(1), scale = 1, text = "See the phone log",
+            )
+            commit()
+        }
+        compositor.pushSystemScreen(bytes)
+    }
+
     /** Swipe-left, or the phone-side button. */
     suspend fun openLauncher() {
         val deny = compositor.requestFocus(
@@ -508,9 +562,24 @@ class CompositorHost(
     /**
      * Replace the launcher with the chosen sub-app rather than stacking on it,
      * so BACK from the sub-app returns to the watch face, not to the drawer.
+     *
+     * Registration is allowed to fail. A sub-app is downloaded JavaScript and
+     * its runtime is a bindable system service that can be reclaimed; neither
+     * is reliable enough to put the BLE link behind. This used to be unguarded,
+     * so a failure inside `ensureRegistered` propagated out of the coroutine in
+     * [onInputMessage] and killed the companion — the watch then sat on the
+     * sub-app's retained screen while the phone came back knowing nothing about
+     * it, which is the state the operator hit needing a reconnect.
      */
     private suspend fun launchFromLauncher(appId: String) {
-        scripts.ensureRegistered(appId)
+        try {
+            scripts.ensureRegistered(appId)
+        } catch (t: Throwable) {
+            LinkLog.e("launcher: $appId failed to start", t)
+            ScriptConsole.log(appId, "error", "failed to start: ${t.message}")
+            showLaunchFailure(appId, t)
+            return
+        }
         val deny = compositor.requestFocus(
             appId,
             PriorityClass.NORMAL,
@@ -518,6 +587,14 @@ class CompositorHost(
             StackOp.Replace,
         )
         LinkLog.i("launcher -> $appId" + if (deny != null) " DENIED: $deny" else "")
+        // Focus can succeed while the app yields nothing to draw — a script
+        // that threw, or one whose list never got past maybePush. Without this
+        // the log shows a successful launch and the watch shows the old screen.
+        if (deny == null && compositor.focusedAppId == appId &&
+            !compositor.lastPushSucceededFor(appId)
+        ) {
+            LinkLog.w("launcher -> $appId focused but produced NO display list")
+        }
     }
 
     suspend fun openTestApp() {
@@ -554,6 +631,12 @@ class CompositorHost(
     private fun onLinkLost() {
         navAdapter?.notifyDisconnected()
         stopCamera()
+        // resetStack() below drops every sub-app's screen, so the app that
+        // subscribed can no longer draw a fix and has no way to unsubscribe.
+        // Holding the GPS on for it would be a battery leak triggered by a
+        // dropped connection (N-39 was the same class of bug: host state
+        // surviving a link the watch had already forgotten).
+        stopLocation()
         // The watch reverts to its local face on disconnect, so anything left
         // on the host's stack is stale the moment the link drops.
         scope.launch { compositor.resetStack() }
@@ -639,15 +722,134 @@ class CompositorHost(
         }
     }
 
-    private fun handleAdapter(cmd: HostOutbound.AdapterCommand) {
+    private fun handleAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
         when (cmd.adapter) {
             "notifications" -> handleNotifAdapter(cmd)
             "nav" -> handleNavAdapter(cmd)
             "camera" -> handleCameraAdapter(cmd)
             "haptic" -> handleHaptic(cmd)
             "phone" -> handlePhoneAdapter(cmd)
+            "location" -> handleLocationAdapter(appId, cmd)
+            "map" -> handleMapAdapter(appId, cmd)
             else -> Unit
         }
+    }
+
+    /**
+     * The OSM vector map.
+     *
+     * The host owns the screen while this is running: [MapAdapter] renders the
+     * map and pushes it with [Compositor.pushHostDisplayList], the same
+     * privileged path the camera preview uses. The sub-app draws status screens
+     * only, and declares `refreshPolicy: "manual"` so the compositor does not
+     * repaint it over the map.
+     *
+     * There is no refresh command to handle, by design — see `slate.map` in
+     * shared-js/slate_host.js. The companion decides when to redraw.
+     */
+    private fun handleMapAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        when (cmd.command) {
+            "subscribe" -> {
+                val radius = try {
+                    JSONObject(cmd.payloadJson).optDouble("radiusM", MapAdapter.DEFAULT_RADIUS_M)
+                } catch (_: Throwable) {
+                    MapAdapter.DEFAULT_RADIUS_M
+                }
+                stopMap()
+                mapSubscriberId = appId
+                mapAdapter = MapAdapter(
+                    context = context,
+                    scope = scope,
+                    onDisplayList = { bytes ->
+                        val target = mapSubscriberId ?: return@MapAdapter
+                        scope.launch { compositor.pushHostDisplayList(target, bytes) }
+                    },
+                    onStatus = { json ->
+                        val target = mapSubscriberId ?: return@MapAdapter
+                        scope.launch { compositor.dispatchSystemEvent(target, "map", json) }
+                    },
+                ).also { it.start(radius) }
+                LinkLog.i("map.subscribe for $appId r=${radius.toInt()}m")
+            }
+            "unsubscribe" -> {
+                if (mapSubscriberId == appId || mapSubscriberId == null) {
+                    stopMap()
+                    LinkLog.i("map.unsubscribe for $appId")
+                }
+            }
+        }
+    }
+
+    private fun stopMap() {
+        mapAdapter?.stop()
+        mapAdapter = null
+        mapSubscriberId = null
+    }
+
+    /**
+     * The phone's position, for whichever sub-app asked.
+     *
+     * Unlike nav and camera, this is not bound to one app id: the subscriber is
+     * whoever issued the command, so any sub-app holding the `location`
+     * permission can use it. The permission check itself already happened —
+     * `BindingSurface.filterOutbound` drops a location command from an app that
+     * does not declare it, so a command arriving here is authorised.
+     *
+     * One subscriber at a time. A second subscribe replaces the first rather
+     * than running two listeners, and the previous app is told it lost the
+     * stream instead of simply going quiet.
+     */
+    private fun handleLocationAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        when (cmd.command) {
+            "subscribe", "request" -> {
+                val o = try {
+                    JSONObject(cmd.payloadJson)
+                } catch (_: Throwable) {
+                    JSONObject()
+                }
+                if (locationSubscriberId != null && locationSubscriberId != appId) {
+                    emitLocationStatus(locationSubscriberId!!, "unavailable")
+                }
+                stopLocation()
+                locationSubscriberId = appId
+                val adapter = LocationAdapter(context) { json ->
+                    val target = locationSubscriberId ?: return@LocationAdapter
+                    scope.launch {
+                        compositor.dispatchSystemEvent(target, "location", json)
+                    }
+                }
+                locationAdapter = adapter
+                val status = if (cmd.command == "request") {
+                    adapter.requestSingle()
+                } else {
+                    adapter.subscribe(
+                        minIntervalMs = o.optLong("minIntervalMs", 5000L),
+                        minDistanceM = o.optDouble("minDistanceM", 0.0).toFloat(),
+                    )
+                }
+                LinkLog.i("location.${cmd.command} for $appId -> ${status.wire}")
+                // A terminal state means no fix is ever coming; do not leave a
+                // listener and a subscriber id behind pretending otherwise.
+                if (status != LocationAdapter.Status.Searching) stopLocation()
+            }
+            "unsubscribe" -> {
+                if (locationSubscriberId == appId || locationSubscriberId == null) {
+                    stopLocation()
+                    LinkLog.i("location.unsubscribe for $appId")
+                }
+            }
+        }
+    }
+
+    private fun emitLocationStatus(appId: String, state: String) {
+        val json = JSONObject().put("type", "status").put("state", state).toString()
+        scope.launch { compositor.dispatchSystemEvent(appId, "location", json) }
+    }
+
+    private fun stopLocation() {
+        locationAdapter?.stop()
+        locationAdapter = null
+        locationSubscriberId = null
     }
 
     private fun handleNotifAdapter(cmd: HostOutbound.AdapterCommand) {
@@ -821,18 +1023,6 @@ class CompositorHost(
         cameraSession = null
     }
 
-    private suspend fun ensureAmbient() {
-        if (compositor.stackSnapshot.any { it.appId == clock.manifest.id }) return
-        val deny = compositor.requestFocus(
-            clock.manifest.id,
-            PriorityClass.AMBIENT,
-            FocusReason.UserNavigation,
-            StackOp.Push,
-        )
-        if (deny != null) {
-            LinkLog.w("ambient clock focus denied: $deny")
-        }
-    }
 
     private fun startTicker() {
         if (tickJob?.isActive == true) return

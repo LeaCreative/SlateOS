@@ -8,6 +8,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import slate.app.repo.BundledPackageSeeder
+import java.io.File
+import slate.script.SubAppSetting
 import slate.app.repo.InstalledStore
 import slate.app.repo.RepoPrefs
 import slate.compositor.Compositor
@@ -38,7 +40,28 @@ class ScriptRuntimeHost(
     suspend fun ensureTimerRegistered() = ensureRegistered(TIMER_ID)
 
     suspend fun ensureRegistered(appId: String) {
-        if (apps.containsKey(appId)) return
+        val already = apps[appId]
+        if (already != null) {
+            // Re-seed the declared settings even though the app is already
+            // running. This used to return immediately, which meant settings
+            // were read exactly once per service lifetime: a user could change
+            // the map radius or the timer duration, reopen the app, and see no
+            // difference at all until something restarted the link service.
+            // §5.2 promises the script that settings are read at focus, and
+            // this is the only place that promise can be kept.
+            InstalledStore.create(context).get(appId)?.let { installed ->
+                val settings = settingsFor(appId, installed)
+                if (settings.isNotEmpty()) {
+                    already.seedSettings(settings)
+                    ScriptConsole.log(
+                        appId,
+                        "info",
+                        "settings refreshed: " + settings.entries.joinToString { "${it.key}=${it.value}" },
+                    )
+                }
+            }
+            return
+        }
         ensureSeeded()
         if (apps.isEmpty() && lastRenderIpcMs < 0) {
             probeIpc()
@@ -74,11 +97,39 @@ class ScriptRuntimeHost(
             sourceCeiling = ceiling,
             onTimerSet = { id, ms -> scheduleTimer(appId, id, ms) },
             onTimerClear = { id -> clearTimer(id) },
+            initialStore = settingsFor(appId, installed),
         )
         ep.installRuntime(appJs = installed.entryJs())
         compositor.register(ep)
         apps[appId] = ep
         ScriptConsole.log(appId, "info", "registered from InstalledStore v${installed.version}")
+    }
+
+    /**
+     * Declared settings as store entries: the user's value where they set one,
+     * the manifest default otherwise.
+     *
+     * Read at registration, so a change takes effect the next time the sub-app
+     * is opened rather than mid-session — which is what docs/subapp-rules.md
+     * §5.2 tells script authors to expect.
+     */
+    private fun settingsFor(
+        appId: String,
+        installed: InstalledStore.InstalledApp,
+    ): Map<String, String> {
+        val declared = try {
+            SubAppSetting.parseAll(
+                File(installed.dir, "manifest.json").readText(Charsets.UTF_8),
+            )
+        } catch (_: Throwable) {
+            emptyList()
+        }
+        if (declared.isEmpty()) return emptyMap()
+        val prefs = RepoPrefs(context)
+        return declared.associate { setting ->
+            val raw = prefs.subAppSetting(appId, setting.key) ?: setting.defaultValue
+            setting.key to setting.sanitise(raw)
+        }
     }
 
     private suspend fun probeIpc() {
@@ -131,5 +182,7 @@ class ScriptRuntimeHost(
         const val NAV_ID = "slate.navigation"
         const val CAMERA_ID = "slate.camera"
         const val VIBRATE_ID = "slate.vibrate"
+        const val LOCATION_ID = "slate.location"
+        const val MAP_ID = "slate.map"
     }
 }

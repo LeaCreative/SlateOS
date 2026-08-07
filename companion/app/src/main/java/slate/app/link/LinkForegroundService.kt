@@ -17,6 +17,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,7 +41,25 @@ import slate.session.ConfirmStatus
  */
 class LinkForegroundService : Service() {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    /**
+     * Last line of defence for the BLE link.
+     *
+     * `SupervisorJob` stops one failed child cancelling its siblings, but it
+     * does nothing about an **uncaught** exception: that goes to the thread's
+     * default handler, which on Android means the process dies. Every sub-app
+     * launch, adapter callback and compositor push runs in this scope, so
+     * without a handler here any one of them can take the link down — and one
+     * did, repeatedly (the JS sandbox rebind, 6-7 Aug).
+     *
+     * Individual call sites still catch what they can act on. This exists so
+     * that the ones nobody anticipated cost a log line instead of the link.
+     */
+    private val crashGuard = CoroutineExceptionHandler { _, t ->
+        LinkLog.e("uncaught in link service scope — link kept alive", t)
+    }
+
+    private val scope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + crashGuard)
     private var rttJob: Job? = null
     private var heartbeatJob: Job? = null
     private var reconnectJob: Job? = null
@@ -48,6 +67,9 @@ class LinkForegroundService : Service() {
     private lateinit var client: SlateGattClient
     private var compositorHost: CompositorHost? = null
     private var repoScheduler: RepoUpdateScheduler? = null
+
+    /** Kept so [refreshForegroundType] can re-post the notification unchanged. */
+    private var lastNotificationText: String = "Slate link starting…"
 
     override fun onCreate() {
         super.onCreate()
@@ -64,12 +86,7 @@ class LinkForegroundService : Service() {
         val notification = buildNotification("Slate link starting…")
         try {
             if (Build.VERSION.SDK_INT >= 34) {
-                ServiceCompat.startForeground(
-                    this,
-                    NOTIF_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
-                )
+                ServiceCompat.startForeground(this, NOTIF_ID, notification, foregroundTypes())
             } else {
                 @Suppress("DEPRECATION")
                 startForeground(NOTIF_ID, notification)
@@ -87,6 +104,7 @@ class LinkForegroundService : Service() {
                 } else {
                     "Idle — ${m.notes.ifBlank { "not connected" }}"
                 }
+                lastNotificationText = text
                 getSystemService(NotificationManager::class.java)
                     .notify(NOTIF_ID, buildNotification(text))
                 if (m.connected) {
@@ -97,6 +115,52 @@ class LinkForegroundService : Service() {
                     stopHeartbeat()
                 }
             }
+        }
+    }
+
+    /**
+     * Foreground-service types this service may claim **right now**.
+     *
+     * `location` is added only when the runtime permission is actually held.
+     * From Android 14, `startForeground` with a type the app lacks permission
+     * for throws `SecurityException`, and the catch above calls `stopSelf()` —
+     * so claiming `location` unconditionally would kill the entire link
+     * service on every phone where the user never granted it. The BLE link
+     * matters more than any sub-app; it must not depend on this.
+     *
+     * The type is fixed at `startForeground` time, so a grant that arrives
+     * later needs [refreshForegroundType] to take effect. Without the
+     * `location` type, a sub-app's fixes stop as soon as the app is backgrounded
+     * — which is the normal case for a watch companion.
+     */
+    private fun foregroundTypes(): Int {
+        var types = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+        if (hasLocationPermission(this)) {
+            types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+        }
+        return types
+    }
+
+    /**
+     * Re-assert the foreground type after a permission change.
+     *
+     * Safe to call at any time: on failure the service keeps whatever type it
+     * already had rather than stopping, because losing the link to gain a
+     * location type would be a bad trade.
+     */
+    private fun refreshForegroundType() {
+        if (Build.VERSION.SDK_INT < 34) return
+        val types = foregroundTypes()
+        try {
+            ServiceCompat.startForeground(
+                this,
+                NOTIF_ID,
+                buildNotification(lastNotificationText),
+                types,
+            )
+            LinkLog.i("FGS type refreshed: location=${hasLocationPermission(this)}")
+        } catch (t: SecurityException) {
+            LinkLog.e("FGS type refresh refused; keeping previous type", t)
         }
     }
 
@@ -156,21 +220,7 @@ class LinkForegroundService : Service() {
                     compositorHost?.openNotifications()
                 }
             }
-            ACTION_OPEN_TIMER -> {
-                scope.launch {
-                    compositorHost?.openTimer()
-                }
-            }
-            ACTION_OPEN_NAVIGATION -> {
-                scope.launch {
-                    compositorHost?.openNavigation()
-                }
-            }
-            ACTION_OPEN_CAMERA -> {
-                scope.launch {
-                    compositorHost?.openCamera()
-                }
-            }
+            ACTION_REFRESH_FGS_TYPE -> refreshForegroundType()
         }
         return START_STICKY
     }
@@ -340,9 +390,7 @@ class LinkForegroundService : Service() {
         const val ACTION_PRESENCE_DISAPPEARED = "slate.app.PRESENCE_DISAPPEARED"
         const val ACTION_OPEN_TEST_APP = "slate.app.OPEN_TEST_APP"
         const val ACTION_OPEN_NOTIFICATIONS = "slate.app.OPEN_NOTIFICATIONS"
-        const val ACTION_OPEN_TIMER = "slate.app.OPEN_TIMER"
-        const val ACTION_OPEN_NAVIGATION = "slate.app.OPEN_NAVIGATION"
-        const val ACTION_OPEN_CAMERA = "slate.app.OPEN_CAMERA"
+        const val ACTION_REFRESH_FGS_TYPE = "slate.app.REFRESH_FGS_TYPE"
         const val EXTRA_ADDRESS = "address"
 
         @Volatile
@@ -350,6 +398,37 @@ class LinkForegroundService : Service() {
             private set
 
         private const val HEARTBEAT_MS = 2_000L
+
+        /**
+         * Either location grant counts. The user can allow approximate while
+         * refusing precise, and a watch face showing a town name is perfectly
+         * served by the coarse one — treating that as "denied" would refuse a
+         * capability the user actually granted.
+         */
+        fun hasLocationPermission(context: Context): Boolean =
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION,
+            ) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                ) == PackageManager.PERMISSION_GRANTED
+
+        /**
+         * Tell a running service to re-evaluate its foreground type.
+         *
+         * Call after the user grants or revokes location. Does nothing when the
+         * service is not running — it will compute the right type on its next
+         * start anyway.
+         */
+        fun refreshForegroundServiceType(context: Context) {
+            if (instance == null) return
+            val i = Intent(context, LinkForegroundService::class.java)
+            i.action = ACTION_REFRESH_FGS_TYPE
+            runCatching { context.startForegroundService(i) }
+                .onFailure { LinkLog.e("Unable to refresh FGS type", it) }
+        }
 
         fun start(context: Context, address: String? = null): Boolean {
             if (!hasBluetoothPermission(context)) {
@@ -393,29 +472,8 @@ class LinkForegroundService : Service() {
             )
         }
 
-        fun openTimer(context: Context) {
-            context.startService(
-                Intent(context, LinkForegroundService::class.java).apply {
-                    action = ACTION_OPEN_TIMER
-                },
-            )
-        }
 
-        fun openNavigation(context: Context) {
-            context.startService(
-                Intent(context, LinkForegroundService::class.java).apply {
-                    action = ACTION_OPEN_NAVIGATION
-                },
-            )
-        }
 
-        fun openCamera(context: Context) {
-            context.startService(
-                Intent(context, LinkForegroundService::class.java).apply {
-                    action = ACTION_OPEN_CAMERA
-                },
-            )
-        }
     }
 }
 

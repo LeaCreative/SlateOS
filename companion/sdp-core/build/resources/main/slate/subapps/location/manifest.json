@@ -1,0 +1,25 @@
+{
+  "id": "slate.location",
+  "name": "Where Am I",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["location", "storage"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.invalidate", "slate.location", "slate.store", "slate.log"],
+  "settings": [
+    {
+      "key": "updateSec",
+      "label": "Update interval",
+      "type": "int",
+      "default": 5,
+      "min": 1,
+      "max": 300,
+      "unit": "s",
+      "help": "How often the phone is asked for a fix. Applies next time you open it."
+    }
+  ]
+}

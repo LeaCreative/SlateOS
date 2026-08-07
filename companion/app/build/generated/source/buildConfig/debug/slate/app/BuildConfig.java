@@ -7,6 +7,6 @@ public final class BuildConfig {
   public static final boolean DEBUG = Boolean.parseBoolean("true");
   public static final String APPLICATION_ID = "slate.app.debug";
   public static final String BUILD_TYPE = "debug";
-  public static final int VERSION_CODE = 19;
-  public static final String VERSION_NAME = "0.4.0-p18";
+  public static final int VERSION_CODE = 35;
+  public static final String VERSION_NAME = "0.7.6-p34";
 }

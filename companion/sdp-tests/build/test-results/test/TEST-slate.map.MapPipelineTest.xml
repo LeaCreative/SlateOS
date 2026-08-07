@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.map.MapPipelineTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:28.167Z" hostname="DAN01" time="0.381">
+  <properties/>
+  <testcase name="classificationMapsTheTagsThatMatter()" classname="slate.map.MapPipelineTest" time="0.0"/>
+  <testcase name="radiusMapsToTheEdgeOfTheInscribedCircle()" classname="slate.map.MapPipelineTest" time="0.006"/>
+  <testcase name="aWayCrossingTheScreenIsClippedToTheViewport()" classname="slate.map.MapPipelineTest" time="0.001"/>
+  <testcase name="aWayEntirelyOffScreenProducesNothing()" classname="slate.map.MapPipelineTest" time="0.0"/>
+  <testcase name="everyRenderedListIsAcceptedByTheParser()" classname="slate.map.MapPipelineTest" time="0.093"/>
+  <testcase name="simplificationKeepsTheShapeAndDropsCollinearPoints()" classname="slate.map.MapPipelineTest" time="0.001"/>
+  <testcase name="aWayThatLeavesAndReturnsBecomesTwoRuns()" classname="slate.map.MapPipelineTest" time="0.001"/>
+  <testcase name="importantWaysSurviveTheBudgetAndTrivialOnesDoNot()" classname="slate.map.MapPipelineTest" time="0.001"/>
+  <testcase name="movingTheViewerMovesTheMapWithoutRefetching()" classname="slate.map.MapPipelineTest" time="0.0"/>
+  <testcase name="northIsUp()" classname="slate.map.MapPipelineTest" time="0.0"/>
+  <testcase name="budgetIsNeverExceededNoMatterHowMuchDataArrives()" classname="slate.map.MapPipelineTest" time="0.27"/>
+  <testcase name="emptyDataStillProducesAValidScreen()" classname="slate.map.MapPipelineTest" time="0.004"/>
+  <testcase name="scaleBarUsesRoundNumbers()" classname="slate.map.MapPipelineTest" time="0.0"/>
+  <testcase name="centreProjectsToTheCentreOfTheScreen()" classname="slate.map.MapPipelineTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

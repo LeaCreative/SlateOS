@@ -268,16 +268,62 @@ object TextLayout {
     fun drawTextRun(
         fb: Framebuffer, x: Int, y: Int, color: Int, align: Int, text: String,
         fontId: Int = 0,
+    ) = drawTextRunScaled(fb, x, y, color, align, text, fontId, scale = 1)
+
+    /**
+     * One glyph, each source pixel drawn as a `scale` x `scale` block.
+     *
+     * Mirrors `draw_glyph_scaled` in sdp_interpreter.cpp. Scale 1 is the same
+     * pixels as [drawChar], so the unscaled path stays byte-identical.
+     */
+    fun drawCharScaled(
+        fb: Framebuffer, x: Int, y: Int, c: Char, color: Int, fontId: Int, scale: Int,
     ) {
+        val s = if (scale < 1) 1 else scale
+        if (s == 1) {
+            drawChar(fb, x, y, c, color, fontId)
+            return
+        }
         val f = font(fontId)
-        val pixelW = pixelWidth(fontId, 1, text)
+        val rows = f.rowsFor(c.code)
+        if (rows == null) {
+            fb.fillRect(x, y, f.cellWidth * s, f.cellHeight * s, color)
+            return
+        }
+        for (row in 0 until f.cellHeight) {
+            val g = rows[row].toInt() and 0xFF
+            for (col in 0 until f.cellWidth) {
+                if (g and (1 shl (f.cellWidth - 1 - col)) != 0) {
+                    fb.fillRect(x + col * s, y + row * s, s, s, color)
+                }
+            }
+        }
+    }
+
+    /**
+     * TEXT_SCALED (0xE0) on the desktop.
+     *
+     * The Kotlin parser skipped this opcode entirely until 7 Aug 2026 — legal,
+     * since 0xE0-0xEF is the length-prefixed extension range old firmware is
+     * *meant* to skip, but it made every preview PNG and golden image of a
+     * modern sub-app quietly wrong. Every sub-app now draws its text this way,
+     * because the 3x5 base font is not legible at arm's length, so "skipped"
+     * meant "the desktop renderer showed no text at all".
+     */
+    fun drawTextRunScaled(
+        fb: Framebuffer, x: Int, y: Int, color: Int, align: Int, text: String,
+        fontId: Int, scale: Int,
+    ) {
+        val s = if (scale < 1) 1 else scale
+        val f = font(fontId)
+        val pixelW = pixelWidth(fontId, s, text)
         var startX = x
         when (align) {
             SdpWire.Align.CENTER -> startX = if (pixelW / 2 < x) x - pixelW / 2 else 0
             SdpWire.Align.RIGHT -> startX = if (pixelW < x) x - pixelW else 0
         }
         for (i in text.indices) {
-            drawChar(fb, startX + i * f.advance, y, text[i], color, fontId)
+            drawCharScaled(fb, startX + i * f.advance * s, y, text[i], color, fontId, s)
         }
     }
 }

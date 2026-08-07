@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.notif.NotifCodecTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:54.987Z" hostname="DAN01" time="0.006">
+<testsuite name="slate.notif.NotifCodecTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:28.620Z" hostname="DAN01" time="0.019">
   <properties/>
-  <testcase name="remove_and_clear()" classname="slate.notif.NotifCodecTest" time="0.002"/>
-  <testcase name="upsert_roundTripLayout()" classname="slate.notif.NotifCodecTest" time="0.001"/>
-  <testcase name="icon_mapper_message_and_monogram()" classname="slate.notif.NotifCodecTest" time="0.003"/>
+  <testcase name="remove_and_clear()" classname="slate.notif.NotifCodecTest" time="0.004"/>
+  <testcase name="upsert_roundTripLayout()" classname="slate.notif.NotifCodecTest" time="0.003"/>
+  <testcase name="icon_mapper_message_and_monogram()" classname="slate.notif.NotifCodecTest" time="0.005"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.frame.SdpWriteQueueTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:54.776Z" hostname="DAN01" time="0.022">
+<testsuite name="slate.frame.SdpWriteQueueTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:27.535Z" hostname="DAN01" time="0.013">
   <properties/>
-  <testcase name="concurrentEnqueuesNeverInterleave()" classname="slate.frame.SdpWriteQueueTest" time="0.013"/>
-  <testcase name="clearDropsPacketsButKeepsSequence()" classname="slate.frame.SdpWriteQueueTest" time="0.0"/>
+  <testcase name="concurrentEnqueuesNeverInterleave()" classname="slate.frame.SdpWriteQueueTest" time="0.006"/>
+  <testcase name="clearDropsPacketsButKeepsSequence()" classname="slate.frame.SdpWriteQueueTest" time="0.001"/>
   <testcase name="perChannelSequencesMatchChannelSeqBehaviour()" classname="slate.frame.SdpWriteQueueTest" time="0.0"/>
-  <testcase name="endsMessageMarksOnlyTheFinalFragment()" classname="slate.frame.SdpWriteQueueTest" time="0.007"/>
+  <testcase name="endsMessageMarksOnlyTheFinalFragment()" classname="slate.frame.SdpWriteQueueTest" time="0.005"/>
   <testcase name="sequentialMessagesStayContiguous()" classname="slate.frame.SdpWriteQueueTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>

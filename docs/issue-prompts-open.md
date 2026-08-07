@@ -1,13 +1,591 @@
 # EvoTime — open work register
 
 > **This file is the single point of truth.** `issues.md` is older and now
-> partial; where they disagree, this file wins. Updated 5 August 2026.
+> partial; where they disagree, this file wins. Updated 6 August 2026.
 
 ---
 
-## Current state (5 Aug 2026, 21:40)
+## Current state (7 Aug 2026)
 
-**Firmware on the watch:** `16D04B4EF949`. **Companion:** `0.2.3-p13 (build 14)`.
+**Firmware on the watch:** `609EF4F6979A` (stamp 10:43).
+**Built, not yet flashed:** `AB044776E1FE` (stamp 23:04) — circle span fill and
+watchdog pets in the tile loop (N-44/N-45), plus the earlier N-36 step 1
+(phase 3/8 split, band-only diag and clock repaints) and the swipe-gesture
+relaxation. Several builds' worth of firmware work is queued behind one flash.
+**No firmware change on 7 Aug** — the sub-app pass is companion-only, so the
+queued image is still the one to flash.
+**Companion:** `0.7.5-p33 (build 34)` installed; **`0.7.6-p34 (build 35)` built
+and tested, NOT installed** — the Pixel was unplugged. 30 crash fix, 31
+buildings, 32 settings + map retry, 33 sandbox lifetime (N-51), 34 buildings
+reachable (N-52) + transient-504 backoff, 35 coastline.
+**Host tests:** companion 154/154. Firmware `ctest` unchanged and not re-run —
+nothing under `src/` was touched by any of this.
+
+### Confirmed on hardware (7 Aug, 17:00)
+
+Photographed against the OSM tile for the same spot: buildings, the coast road
+and the stream all match. Also confirmed from the same log:
+
+- **N-49 (settings) works.** `map.subscribe for slate.map r=140m` matched the
+  settings screen, which is the check that was stated in advance.
+- **N-52 (buildings) works.** `map: fetched 81 ways ... r=140m`, then
+  `map: pushed 931 B, 50 ways` — well inside budget, nothing dropped.
+- **The transient-504 backoff works.** `refetch deferred 4000ms` at 17:00:11.8,
+  `map: retrying fetch` at 17:00:15.8, `fetched` at 17:00:21.4. The same failure
+  cost a 30 s stall the build before.
+
+### Coastline (build 35)
+
+The land/sea border was missing because nothing asked for it. It is
+`natural=coastline` — a different tag from `waterway`, and not covered by any
+clause in the query. Worth stating plainly for anyone extending this: **the blue
+sea in a standard OSM tile is not in OSM data at all.** It comes from polygons
+generated separately from the coastline ways. The line is both the cheap option
+and the only one an Overpass query can return.
+
+Cheap, so it is requested at every radius unlike buildings: three ways and
+16 KB around Victoria, against 181 KB for buildings. Ranked directly below the
+trunk network and above every ordinary street — on a coast it is the line that
+orients the whole screen.
+
+### Map refresh intervals, as built
+
+| | trigger | cost |
+|---|---|---|
+| **Redraw** (reproject cached ways) | every location fix — `LOCATION_INTERVAL_MS` = **5 s** | free, local; the push is skipped entirely when the rendered bytes are unchanged, so standing still repaints nothing |
+| **Refetch** (network) | moved > **40%** of the view radius, or data older than **10 min** | one Overpass query, floored at 30 s apart |
+
+At a 140 m radius that means a refetch after **56 m** of walking — roughly every
+40 s at 1.4 m/s. Small radii refetch more often but each response is far
+smaller: the fetch radius is 1.6x the view, so the queried area at 140 m is
+about 12% of the area at 400 m. The two roughly cancel.
+
+Tunables are all in `MapAdapter`: `LOCATION_INTERVAL_MS`,
+`REFETCH_DISTANCE_FRACTION`, `MAX_DATA_AGE_MS`. None has been tuned against a
+real walk — that is still the open question.
+
+### N-52 — building outlines could never be fetched at any allowed setting — FIXED
+
+Reported as "buildings are not rendered" after the radius was set below the
+150 m threshold. It was not the setting and not the renderer.
+
+`OverpassClient.fetch` widens the view radius by `BBOX_MARGIN` (1.6) so movement
+inside a cached cell stays covered, then passed **that** widened value into
+`buildQuery`, whose parameter was also named `radiusM` and was what
+`wantsBuildings()` tested. So a 140 m view asked `224 <= 150` and got false. The
+widest view that could ever have requested buildings was **150 / 1.6 = 93.75 m**
+— below the 100 m minimum `examples/map/manifest.json` declares.
+
+**The feature shipped in a state where no setting could turn it on**, and every
+test passed, because the renderer tests hand `MapRenderer` data that already
+contains buildings and never build a query at all. The untested seam was the one
+that broke.
+
+Fixed by moving query construction to `sdp-core/.../map/OverpassQuery.kt` with
+`fetchRadiusM` and `viewRadiusM` as separate named parameters, and adding
+`OverpassQueryTest` (6 tests) — including one asserting the threshold is
+reachable from the radius range the manifest offers, which is the class of
+mistake that made this invisible.
+
+### "Map is busy" delays — transient 504 no longer costs 30 s
+
+`Busy` conflated two different failures. A **429** is Overpass asking us to slow
+down and deserves the full 30 s backoff; a **504/503** is its gateway timing out
+under load — transient, common, and fixed by asking again shortly. Both were
+treated as rate limits, so every gateway timeout became a 30 s stall on
+"Map is busy".
+
+Now split: `Busy(rateLimited = false)` retries after ~4 s, and the retry floor
+in `MapAdapter` dropped from 5 s to 3 s so the client's request is not silently
+stretched back out. A healthy `overpass-api.de` answers this query in about
+1.4 s, and both 504s hit while capturing the test fixtures succeeded on the very
+next attempt.
+
+### N-49 — declared settings never reached a running sub-app — FIXED
+
+**The biggest of the three, and it was not about the map.** Every sub-app that
+declares settings was affected: the timer's duration, the vibrate durations,
+navigation's units, location's interval, the map's radius.
+
+`ScriptRuntimeHost.ensureRegistered` opened with `if (apps.containsKey(appId))
+return`, and `settingsFor()` was only reached past that line. So the declared
+settings were seeded into a sub-app's store **once per link-service lifetime**.
+Changing a value and reopening the app did nothing whatsoever; only a service
+restart applied it. `docs/subapp-rules.md` §5.2 promises the script that
+settings are read at focus, and the host was not keeping that promise.
+
+Caught by an operator observation that a wrong theory would have missed:
+*"changing the radius does not change the displayed map at all."* The device
+confirmed it exactly — `shared_prefs/slate_repo.xml` held
+`setting:slate.map:radiusM = 1000` while the log read
+`map.subscribe for slate.map r=400m`, 400 being the script's own default. The
+stored value and the running value disagreed, which is the whole bug in one
+line.
+
+Fixed with `JsSlateAppEndpoint.seedSettings()`, called on every open including
+the already-registered path. Only declared keys are overwritten, so anything
+the script persisted itself (the timer's countdown) survives.
+`changedSettingsReachAnAlreadyRunningApp` pins it.
+
+**Falsifiable check on hardware:** the log line `map.subscribe for slate.map
+r=…m` must now match the radius in the settings screen. If it still reads 400
+after saving 140, this fix did not work.
+
+### N-50 — the map could stall forever on a transient Overpass 504 — FIXED
+
+Two faults compounding, from the 7 Aug log:
+
+- `map: refetch deferred 30000ms` is the **HTTP 504** branch, not the rate
+  limiter — the literal 30000 only comes from `Busy(MIN_QUERY_INTERVAL_MS)`.
+  Overpass gateway-timeouts are common; two were hit while capturing the test
+  fixtures.
+- After that, **nothing retried for 90 s**. The location stream is the map's
+  only clock, and `LOCATION_MIN_DISTANCE_M` was 5 m — so a stationary user gets
+  exactly one fix, the cached one delivered at subscribe, and never another.
+  No fix, no retry, "Map is busy" indefinitely.
+
+Fixed both: the distance filter is now 0 (the 5 s interval is the throttle, and
+redundant redraws were already suppressed by comparing rendered bytes), and a
+failed fetch schedules its own retry rather than depending on the location
+stream ticking.
+
+### Sub-apps are now launcher-only (7 Aug)
+
+The per-sub-app buttons on the companion's main screen are gone, along with
+`CompositorHost.openTimer/openNavigation/openCamera`, the three
+`ACTION_OPEN_*` intents and their static helpers. One method per sub-app meant
+a code change was needed before a newly installed one could be opened at all,
+which is backwards for downloaded apps.
+
+`Open TestApp` and `Open Notifications` **stay**: they are Kotlin apps, are not
+in `InstalledStore`, and so cannot appear in the watch launcher at all.
+
+The camera runtime permission used to hang off the removed "Open Camera"
+button. It has moved into the grant button, now **"1c. Grant sub-app
+permissions (location, camera)"**, which asks only for what is still missing.
+
+**Note for the operator:** five packages are currently hidden from the launcher
+in `shared_prefs/slate_repo.xml` — `slate.vibrate`, `slate.camera`,
+`slate.image`, `slate.image.vector`, `slate.navigation`. That is the opt-out
+checkbox in the repository screen, not a defect, but with the main-menu buttons
+gone those apps are now unreachable until they are re-enabled there.
+
+### N-51 — a dropped sandbox reference bricks JS for the whole process — FIXED
+
+The tail of N-48, and the deeper cause. After N-48 the companion no longer
+died, but Local Map then reported **"Did not start"** with
+`JS sandbox unavailable: Binding to already bound service` — thrown from the
+*first* call, meaning no sandbox reference was held and yet the service was
+bound.
+
+Read out of the androidx 1.0.0 sources rather than guessed at, after two
+theories had already been spent on this area:
+
+- `JavaScriptSandbox.bindToServiceWithCallback` gates on a private static
+  `sIsReadyToConnect.compareAndSet(true, false)` and throws
+  `IllegalStateException("Binding to already bound service")` when it is
+  already false.
+- `killImmediatelyOnThread()` — the sandbox-death path — sets `DEAD` and
+  unbinds but **does not reset the flag**.
+- `unbindService()`'s own javadoc: *"This will not, by itself, make JSE ready
+  to create a new sandbox. The JavaScriptSandbox object must still be
+  explicitly closed."*
+- `close()` is the **only** thing that resets it. There is no static recovery.
+
+So any path that loses the reference without closing bricks JS for the life of
+the process. Ours did: `awaitFuture` suspends on a
+`suspendCancellableCoroutine`, and `create()` ran in the caller's coroutine. A
+caller cancelled after the bind completed left the future's listener resuming a
+dead continuation — sandbox created, reference garbage, flag stuck false. Also
+note androidx's own cancellation listener unbinds **without** resetting the
+flag, so cancelling the bind is equally fatal; `awaitFuture` deliberately does
+not propagate cancellation, and there is a comment saying so.
+
+**Fixed** by moving creation into a `Deferred` owned by a private
+`sandboxScope`. A cancelled caller now cancels only its own `await()`; the
+Deferred keeps the reference, so `close()` is always reachable. Every failing
+path either closes or never bound.
+
+**An honest note on N-48:** the crash guard made this *worse* before it made it
+better. The process used to die and take the poisoned static with it; once it
+stopped dying, the bricked state persisted until a force-stop. That is why the
+error message now names the recovery, and why installing build 33 force-stopped
+the app first.
+
+### N-48 — the companion crash on opening a sub-app (7 Aug) — FIXED
+
+**Not the map.** Opening Local Map was the trigger, not the cause: it is the
+sub-app most likely to be opened when memory is tight, and the fault is on the
+JS sandbox path shared by every sub-app.
+
+Crash log, `08-07 10:51:52.934`:
+
+```
+FATAL EXCEPTION: main
+java.lang.IllegalStateException: Binding to already bound service
+  at androidx.javascriptengine.JavaScriptSandbox...
+  at slate.app.script.AndroidJsEngine$Companion.sharedSandbox(AndroidJsEngine.kt:104)
+  at slate.app.script.AndroidJsEngine$Companion$create$2.invokeSuspend(AndroidJsEngine.kt:129)
+```
+
+Line 129 is the **recovery** path, and it could never succeed:
+
+1. `createIsolate()` throws `IllegalStateException` — the sandbox host process
+   had been reclaimed, leaving a stale handle. Expected, and recoverable.
+2. The recovery set `shared = null` and rebound — but **never called
+   `close()`**. Dropping the reference does not release the service binding.
+3. androidx therefore refused the rebind with
+   `IllegalStateException("Binding to already bound service")`.
+4. Nothing caught it. An uncaught exception in a coroutine reaches the thread's
+   default handler, which on Android kills the process.
+
+So the "recovery" reliably converted a recoverable fault into process death.
+This is the second half of **N-38**, which was closed on 6 Aug when the sandbox
+became a process-wide singleton; the singleton was right, its recovery path was
+not.
+
+**Both halves fixed:**
+
+| | |
+|---|---|
+| `releaseSharedSandbox()` closes the old sandbox before clearing it, so the rebind can actually bind | `AndroidJsEngine.kt` |
+| A failed rebind throws `ScriptEngineException` instead of a raw `IllegalStateException` | `AndroidJsEngine.kt` |
+| `launchFromLauncher` catches registration failure, logs it, and **draws "Did not start" on the watch** rather than the tap doing nothing | `CompositorHost.kt` |
+| The link service's scope has a `CoroutineExceptionHandler` — a `SupervisorJob` alone does nothing about an *uncaught* exception | `LinkForegroundService.kt` |
+
+That last one is the general lesson: every sub-app launch, adapter callback and
+compositor push runs in the link service's scope, so **any** of them could kill
+the BLE link. Now they cost a log line.
+
+**The follow-on symptom — "after restarting, the launcher cannot be opened
+until a reconnect" — is not separately diagnosed.** The restart log shows a
+double GATT bring-up (two `onServicesDiscovered`, `writeDescriptor rc=201`),
+which is N-24's signature. It is most likely a *consequence* of dying
+mid-session rather than an independent defect, so the honest next step is: see
+whether it still happens now the crash is gone. If it does, capture the log
+from the swipe that fails to open the launcher — the current capture starts
+after the crash and shows only the restart.
+
+### `slate.map` — north-up OSM vector map (7 Aug)
+
+Built and installed; **never seen on hardware**. Open **Local Map** from the
+watch launcher after granting location.
+
+The sub-app is a *thin controller* — the Camera precedent. It cannot do this
+work itself: `slate.http` is a stub, and projecting and simplifying a few
+hundred ways would blow the 500 ms eval deadline. So the host fetches OSM data,
+projects it, renders a display list and pushes it under the app's focus with
+`pushHostDisplayList`. The script draws only the screens that exist when there
+is no map — 70 B worst case, measured.
+
+| Piece | Where |
+|---|---|
+| `slate.map.subscribe / unsubscribe` — **no refresh command, by design** | `shared-js/slate_host.js` |
+| Overpass fetch, grid snapping, rate limit, cache | `app/.../map/OverpassClient.kt` |
+| Response parsing (in sdp-core so it is desktop-testable) | `sdp-core/.../map/OverpassParser.kt` |
+| North-up projection + Cohen–Sutherland clipping | `sdp-core/.../map/MapProjection.kt` |
+| Douglas–Peucker in screen space | `sdp-core/.../map/MapSimplify.kt` |
+| Budget-driven display-list emission | `sdp-core/.../map/MapRenderer.kt` |
+| Refresh policy — reproject vs refetch | `app/.../map/MapAdapter.kt` |
+| Sub-app (`refreshPolicy: manual`) | `companion/examples/map` — **Local Map** |
+| Tests (20) + real 190 KB Overpass fixture | `sdp-tests/.../map/` |
+
+**The refresh is the companion's, structurally.** `slate.map` exposes only
+subscribe and unsubscribe, so there is no command a sub-app could poll with.
+Two tiers, because the prices differ by orders of magnitude:
+
+- **Reproject** — free and local, on every location fix. Cached ways are
+  redrawn around the new position, so the map tracks the user continuously.
+- **Refetch** — network, rate-limited, only when the user leaves the area the
+  cached data covers (40% of the radius) or it ages past 10 minutes.
+
+The location stream is the clock; there is no separate timer. Standing still
+renders byte-identical output, and `MapAdapter` compares against the last push
+and suppresses it — otherwise the watch would take a full-screen repaint every
+5 s to change nothing, straight into N-36.
+
+**The budget is the design.** 2048 B against unbounded source detail means
+something is always dropped; the only question is whether it is chosen. Ways
+are emitted most-important-first (motorway → trunk → … → footpath) and the loop
+stops when the next would breach the cap. Real data around Victoria: **190 KB
+of Overpass JSON in, 217–2030 B out** depending on radius.
+
+**North is up structurally, not by setting.** There is no rotation term
+anywhere in `MapProjection`, and `northIsUp()` asserts it — an inverted map
+would otherwise pass every other test.
+
+#### Two things found on the way
+
+| What | Status |
+|---|---|
+| **The desktop interpreter never rendered `TEXT_SCALED`.** Legal — 0xE0-0xEF is the extension range old implementations are *meant* to skip — but every sub-app now draws its text that way, so every preview PNG and golden image of a modern screen silently showed no text at all | **Fixed.** The Kotlin parser decodes it and skips to the declared payload length regardless, so the forward-compat contract is unchanged for every other extension |
+| **Overpass JSON was parsed on the main thread.** `fetch()` wrapped only the network call in `Dispatchers.IO`; the parse ran on the caller's dispatcher, which is `Dispatchers.Main.immediate` — 50 ms on the desktop for 190 KB, so a phone-scale multiple of that on the thread of the foreground service that owns the BLE link | **Fixed** — parse moved inside the IO context. Found by measuring rather than reading (`:sdp-tests:mapTiming`) |
+| `HostCapabilities.ALL` still had no `slate.phone` token, so `examples/vibrate` could not declare its main dependency in `requires` | **Fixed** — added alongside `slate.map` |
+
+Reproject-and-render itself is **0.17–0.27 ms median** on the desktop, so
+running it on the location callback thread once per fix is fine even at a
+generous phone multiplier. Measured, not assumed — `:sdp-tests:mapTiming`.
+
+#### Seeing it without hardware
+
+```bash
+cd companion && ./gradlew.bat :sdp-tests:mapPreview --offline
+```
+
+Renders the map to PNGs in `sdp-tests/build/map-preview` through the real
+pipeline — real captured OSM data, the real renderer, the real display-list
+interpreter. The watch is sealed, so without this every map tweak costs a
+build, an install and a photograph before anyone can judge it.
+
+#### Building outlines (7 Aug)
+
+Added, and **only fetched at a view radius of 150 m or less**. That is a
+bandwidth and legibility decision, taken from measurements rather than taste:
+
+| | roads + water + rail | buildings alone |
+|---|---|---|
+| ways within 700 m of Victoria | 269 | **1575** |
+| decompressed | 190 KB | **1260 KB** |
+| on the wire (gzip) | 31 KB | **181 KB** |
+| display-list bytes wanted | ~1.2 KB | **~28 KB** |
+
+Buildings want roughly fourteen times the entire 2048 B budget and six times
+the data of everything else combined. The share the budget has to discard, by
+radius: **0% at 100 m, 3.5% at 150 m, 29% at 175 m, 43% at 200 m, 60% at
+250 m.** Past the knee the map reads as arbitrary rather than sparse — a gap
+where a building was dropped looks like open ground, which is worse than
+drawing none.
+
+So they rank last (`MapClass.Building`), which means the existing budget loop
+needed no special case: at a radius where they do not fit they are simply the
+first thing dropped. And `OverpassClient` does not ask for them above the
+threshold at all, so the data is never spent on outlines that would be
+discarded.
+
+#### What the map actually costs in data
+
+Measured, since "someone else's bandwidth" deserved a number rather than a
+worry. One response is **190 KB raw but 31 KB gzipped** — Overpass serves gzip
+and `HttpURLConnection` requests and decompresses it transparently.
+
+| radius | refetch after | walking | queries/h | data/h |
+|---|---|---|---|---|
+| 200 m | 80 m | 57 s | 63 | 0.4 MB |
+| 400 m | 160 m | 114 s | 32 | 0.8 MB |
+| 800 m | 320 m | 229 s | 16 | 1.7 MB |
+| 2000 m | 800 m | 571 s | 6 | 2.4 MB |
+
+Standing still is **zero** — the snapped cell hits the cache and no request is
+made. Worst case the 30 s floor allows is 3.8 MB/h.
+
+**So the user's data plan is not the issue**: sub-1 MB per hour of continuous
+walking at the default radius is less than a couple of web pages. The earlier
+note was about Overpass's *server* load, and it conflated the two. Overpass
+rate-limits by query count and CPU time, not bandwidth, because each query is a
+spatial search over a planet-scale database — 32 queries an hour from one watch
+is nothing, but it is the metric that would matter at scale. Restated
+precisely: **one watch is free to do this; a shipped product should not point
+thousands of them at a donated public endpoint.** The client identifies itself,
+floors queries at 30 s, and snaps the bounding box to a grid so what leaves the
+phone is a cell the user is somewhere inside rather than their exact fix.
+
+#### What still needs the operator
+
+- **Whether it renders at all**, and whether roads are legible at 240x240. The
+  previews say yes; the panel is the authority.
+- **Whether the refresh cadence feels right** while walking. `MapAdapter`'s
+  constants are reasoned, not tuned against a real walk.
+- A 2030 B screen at 800 m radius sits close to the credit window (§3), so that
+  radius is the one most likely to drop intermittently — worth watching before
+  the smaller ones.
+
+### `slate.location` — the phone's position, for any sub-app (7 Aug)
+
+Built and installed; **no fix has been observed on hardware yet**. To try it:
+
+1. Tap **1c. Grant location (for sub-apps)** on the companion's main screen.
+   The runtime permission is still ungranted on the Pixel — checked on device,
+   it is in the never-requested state.
+2. Start the link (or open **Sub-app repository**). Either one runs the bundled
+   seeder, which is what installs **Where Am I**. Verified on device that
+   launching `MainActivity` alone does **not** — seeding hangs off
+   `CompositorHost.start()` and `RepoActivity`, not the main screen, so the
+   demo will not appear in the launcher until one of those has run.
+3. Open **Where Am I** from the watch launcher.
+
+Confirmed on device while checking this: the 1.1.0 reinstalls from the
+conformance pass **did** land — `timer`, `vibrate`, `navigation` and `camera`
+all read 1.1.0 in `files/repo/subapps`. The version-bump reinstall path works.
+
+| Piece | Where |
+|---|---|
+| `slate.location.subscribe / request / unsubscribe` | `shared-js/slate_host.js` |
+| `LocationAdapter` — raw `LocationManager`, no Play Services | `app/.../location/LocationAdapter.kt` |
+| Host routing, one subscriber at a time | `CompositorHost.handleLocationAdapter` |
+| Runtime permission + FGS type | `AndroidManifest.xml`, `LinkForegroundService.foregroundTypes()` |
+| Grant button | `MainActivity` — "1c. Grant location (for sub-apps)" |
+| Demo sub-app (157 B, 8 drawing ops, measured) | `companion/examples/location` — **Where Am I** |
+| Contract tests (6) | `sdp-tests/.../LocationBindingTest.kt` |
+
+The permission half already existed — `ScriptPermission.Location`, the gate in
+`BindingSurface`, the `slate.location` capability token, and the
+`THIRD_PARTY_BLOCKED` entry that makes a downloaded app ask the user. What was
+missing was the binding, the adapter and the Android permission. `location`
+stays third-party-blocked: a bundled demo gets it at Official trust, a
+sideloaded app needs an explicit grant in the repository screen.
+
+**One structural change was needed.** `Compositor`'s `onAdapterCommand` did not
+pass the app id, so the host could not tell which sub-app issued a command.
+`nav` and `camera` work around that by hardcoding a single app id each, which
+is why each serves exactly one sub-app. The callback now carries the id
+(`reg` was already in scope), so location serves any app that asks. Nav and
+camera were left on their hardcoded ids — changing them is a separate job.
+
+**Two things that could have broken the link service, and how they are handled:**
+
+- From Android 14, `startForeground` with a type the app lacks permission for
+  throws `SecurityException`, and the existing catch calls `stopSelf()`.
+  Claiming the `location` FGS type unconditionally would therefore have killed
+  the **entire BLE link service** on any phone where the user never granted
+  location. The type is now computed at start from the actual grant.
+- The FGS type is fixed when `startForeground` runs, so a grant arriving later
+  buys nothing until it is re-asserted. `refreshForegroundServiceType()` does
+  that and the grant button calls it. Without the `location` type, fixes stop
+  as soon as the app is backgrounded — the normal state for a watch companion.
+
+`ACCESS_BACKGROUND_LOCATION` is deliberately **not** requested. A sub-app only
+draws while its screen is on the watch, so there is no case for it, and it
+costs a separate settings trip.
+
+Still unverified, and only the operator can settle it: whether a fix actually
+arrives, whether it keeps arriving with the app backgrounded, and whether the
+approximate-only grant behaves as the code assumes (either grant is treated as
+sufficient, and the adapter does not assume the accuracy it got).
+
+### Sub-app conformance pass (7 Aug) — built, unverified on hardware
+
+Every app in `companion/examples/` now conforms to `docs/subapp-rules.md`:
+§4 header, bounded loops, declared permissions matching actual use, BACK
+handled, and a **measured** display-list size.
+
+Sizes are wire bytes, measured by running each app's real lifecycle against the
+real `shared-js` builder and decoding what it emitted — not estimated:
+
+| App | Bytes (worst case) | Drawing ops | Verdict |
+|---|---|---|---|
+| `timer` | 63 | 4 | Reference. Unchanged but for the budget line (it said "~60 B") |
+| `vibrate` | 143 | 8 | Conforming header; `shortMs` / `longMs` settings |
+| `camera` | 115 | 6-7 | Conforming header; text moved to font 1 scaled |
+| `navigation` | 122 | 6-7 | Conforming header; text moved to font 1 scaled; `units` setting |
+| `image` | **3987** | 2 | **Over the 2048 B practical limit.** Reported, not changed |
+| `image-vector` | 174 | 24 | Cheapest on the wire, most expensive to render |
+
+**`image` is the one that still breaks a limit**, and deliberately so — it is
+the operator's artwork. The largest square that fits the practical limit is
+**45x45 = 2043 B** (46x46 is 2134 B and misses); that is `W`/`H` in
+`gen_logo.py` and a regenerated array. It has not been changed. The over-budget
+note, the number, and the proposal are now in the app's header and README.
+
+**`image-vector` was the app that reset the watch (N-44/N-45), and its display
+list is 174 B.** Worth stating plainly because it inverts the intuition: bytes
+and render cost are independent. It is cheap to send and expensive to draw —
+23 filled discs, 7 of them r >= 78, walked once per tile, 30 times. `image` is
+the mirror image: one PATCH is nothing to draw and 3987 B to deliver. §2 caps
+bytes, §2.1 caps ops, and an app can pass one while failing the other.
+
+#### Found while doing it
+
+| What | Status |
+|---|---|
+| **The Kotlin/JS golden test for the timer face had been failing since 5 Aug.** `JsUiScenes.timerFace` still built with `text` after the app moved to `textScaled`, so `timerApp_focusRenderInputPersist` was red and the byte-identical rule from `CLAUDE.md` was unenforced for that face | **Fixed.** Both the scene and the op-by-op parity test now use `textScaled`. Companion suite went 111/112 → 117/117 |
+| **`gen_logo.py` rewrites the whole of `image/main.js`, header included.** A conformant header there would have been silently reverted by the next `python gen_logo.py` | **Fixed.** The template now carries the §4 header, and the budget figures are computed from `W`/`H` rather than typed, so they stay true if the size changes. `main.js` is now byte-for-byte what the generator emits |
+| `gen_logo.py` wrote `encoding="ascii"`, which the §-citing header would have crashed on | **Fixed** — UTF-8, matching every other sub-app source and both `entryJs()` and `ScriptResources.read()` |
+| **`BundledPackageSeeder.DEMOS` carries a hard-coded permission set per demo** that must track each manifest by hand. Adding `storage` to two apps meant editing it too | **Fixed for now** and commented. Not enforced by a test — the seeder is in the `app` module and `sdp-tests` is JVM-only |
+| **There is no `slate.phone` token in `HostCapabilities.ALL`**, so `vibrate` cannot declare its most important dependency in `requires`. It declares none rather than a misleadingly partial list | **Open, host-side.** One line to add; not done, as it is outside a sub-app pass |
+| Font 0 (3x5) does carry the full printable ASCII set — 95 glyphs, 32..126, confirmed in `shared/fonts/font0_3x5.json` and `include/font_builtin.hpp`. The "no letters, codepoints 45-58" note in `status.md` describes it **before** the 6 Aug regeneration | No action — but `camera` and `navigation` drew everything at 3x5 scale 1, which is legible only in the sense that the glyphs exist. Both now use font 1 scaled, as `timer` and `vibrate` already did |
+
+Five host tests were added (`BundledSubAppConformanceTest`) covering the
+mechanical half of the §6 checklist: every bundled manifest parses, settings
+imply the storage permission, declared defaults survive `sanitise`, entry
+scripts load, and **every bundled app focuses under Rhino and relinquishes on
+BACK** with its list asserted under 2048 B. The store is left empty for that
+last one on purpose, so each app runs its §5.2 missing-value path.
+
+#### What still needs the operator
+
+Nothing here has been on hardware. Specifically unverified:
+
+- **`camera` and `navigation` at font 1.** Both were laid out for a 3x5 cell
+  and are now 5x7 scaled. The arithmetic says everything fits inside 240 px
+  (widest line is `navigation`'s 18-char street at 216 px), but "fits" and
+  "looks right" are different claims and only the operator can make the second.
+- ~~**`vibrate` and `navigation` reinstalling.**~~ **Confirmed 7 Aug** — all
+  four bundled demos read 1.1.0 in `files/repo/subapps` on the Pixel.
+- **The two settings screens**, which have only ever been exercised by `timer`.
+- `image` / `image-vector` need re-sideloading — `slate.image.zip` and
+  `slate.image.vector.zip` were repacked, since their `main.js` changed.
+
+### The launcher shipped and works (6 Aug)
+
+Swipe right-to-left opens an app drawer listing the installed JS sub-apps;
+tapping a row focuses that sub-app; swipe left-to-right closes it. Confirmed on
+hardware: `Launcher: tap row 3 -> slate.vibrate`, then `phone.vibrate: 150ms`.
+
+A fourth sub-app — **Buzz Phone** — exercises a binding whose whole effect is on
+the handset (`slate.phone.vibrate`, gated on a new `ScriptPermission.Vibrate`).
+Per-app launcher visibility is a checkbox in the repository screen, stored as an
+opt-OUT set so newly installed apps appear by default.
+
+Also new: **built-in font 1 (5x7)**, compiled into flash as a second table
+rather than shipped through the asset pack. The 3x5 had no letters at all
+(codepoints 45-58), which is why every version line has read as boxes. The
+asset-pack route was measured and rejected — `GlyphCache` carries a 6 KB blob
+against 448 B of RAM headroom and has never been instantiated, and the asset
+transfer path has never run on hardware. Compiled-in costs 665 B of flash and
+zero RAM. Both fonts generate from ASCII-art sources under `tools/codegen/`.
+
+### Sub-app rules now exist — `docs/subapp-rules.md`
+
+Normative, and `CLAUDE.md` requires reading it before touching a sub-app. It
+carries the render budgets, the required comment header, and the settings
+schema. Written after `examples/image-vector` **reset the watch**.
+
+Sub-apps may now declare `settings` in their manifest; the companion shows a
+gear beside the entry in the repository list and generates the screen. Values
+are seeded into the sub-app's store, so scripts read them with
+`slate.store.get(key)` and need no new binding. `examples/timer` declares
+`durationSec` as the reference case.
+
+### Defects found and fixed on 6 Aug (evening)
+
+| ID | What | Why it mattered |
+|---|---|---|
+| **N-44** | Filled circles were drawn as `rad+1` concentric Bresenham outlines — ~58,000 points for one r=120 disc, replayed once per tile (30x) | `image-vector` took the app task past the ~7 s bootloader watchdog and **reset the watch**. Now scanline spans, O(r) per disc |
+| **N-45** | The renderer never petted the watchdog, so any sufficiently expensive display list could reset the watch | A sub-app must not be able to do that. Pets now run inside the bounded 30-iteration tile loop, through `pet_service()` so a held button still starves the dog. Contract recorded in `CLAUDE.md` |
+| **N-46** | The display credit window only ever decremented: the watch advertises 4096 free at depth 0 and **0** while a screen is up, and the host ignored the zero | Large screens failed intermittently and unpredictably — a 3987 B app worked or not depending on how many pushes had happened since the last return to the watch face. Screens now release their credit when they leave the watch |
+| **N-47** | `maybePush` had three silent `return false` paths | A sub-app that focused and then showed nothing was indistinguishable from one that never ran. Drops now name the reason and the byte counts |
+| — | Bundled demos were never refreshed once installed | A manifest edit (adding settings) never reached a device that already had the app. The seeder now reinstalls when the bundled version differs |
+
+### Defects found and fixed on 6 Aug
+
+Five were mine, introduced the same day. Recorded because the pattern matters
+more than the individual bugs: **four of the five were invisible until they hit
+hardware, and three of those were silent** — no log line, no counter.
+
+| ID | What | Why it mattered |
+|---|---|---|
+| **N-37** | `check_rect()` bounded every op to the 240 px display with no scroll-region awareness | `SCROLL_REGION` and the zero-RTT local scroll had **never been usable for their purpose** — content taller than the viewport is the only case where scrolling means anything. Nothing had exercised it until the launcher |
+| **N-38** | `AndroidJsEngine.create()` built a new `JavaScriptSandbox` per engine; androidx allows **one per process** | A second JS sub-app, or a sticky service restart, threw `IllegalStateException: Binding to already bound service` on the main thread and **killed the companion**. Three crashes in one six-minute session |
+| **N-39** | `onLinkLost()` never cleared the compositor stack | The host kept believing a sub-app owned a screen the watch had already dropped. With N-38's restarts this wedged the launcher gesture until the app was restarted |
+| **N-40** | `RepoManager.refreshLocal()` only built from `InstalledStore` when the catalogue was empty | Any installed package no index listed was invisible on **both** repository tabs — including the Installed tab, which filters that same catalogue. Buzz Phone was the first package to hit it |
+| — | Hit rects recorded in content space, not screen space, and not rebuilt on scroll | A scrolled row's tap target stayed where the row used to be |
+| — | Gesture latch required `touching` for slides (InfiniTime's rule) | At Slate's poll latency the finger has usually lifted: 1018 interrupts produced 24 events. Now a **documented divergence** — the rule is right at InfiniTime's timing and wrong at ours (see N-36) |
+
+### Still failing
+
+`ctest -R ble_link` — `drop/reject: got 0 want 1`. Unchanged, still not
+investigated, still on the `sdp_frame.cpp` reassembler path. The suite is 18/18
+**only with `-E ble_link`**; do not read "all tests pass" as covering it.
 
 ### N-31 CLOSED and P-1 CLOSED (5 Aug, 21:29) — verified on hardware
 
@@ -44,13 +622,6 @@ failures without recording their cause. Diag line 3's touch group now ends
 with the `twi::Status` of the last read; that one field distinguishes all
 three classes of fault without a flash cycle.
 
-### Pre-existing host-test failure
-
-`ctest -R ble_link` fails: `drop/reject: got 0 want 1`. Not caused by the
-5 Aug mirroring work (nothing in `ble_link.cpp` or its test was touched) and
-not yet investigated. It sits on the reassembler path that `status.md` flags
-as never examined.
-
 **P-1's display half is PROVEN (5 Aug, 13:22).** The `timer` **JS sub-app**
 renders on the watch reliably — three presses, three pushes, three CREDITs,
 `dl_ok = 3`, zero frame drops, four inbox drops (all from connection setup).
@@ -77,7 +648,8 @@ replying entirely until reconnect (see below).
 | `ClockApp` | Kotlin | **AMBIENT** | Ambient watch face. Owner wants it gone; see below |
 | `NotificationsApp` | Kotlin | NORMAL, raised at **INTERRUPT** | Raised by an incoming notification (`maybeInterrupt`), so it can pre-empt any screen |
 | `TestApp` | Kotlin | NORMAL | The P-1 reference app |
-| `timer`, `camera`, `navigation` | **JS sub-apps** | NORMAL | In `companion/examples/`. The Timer is *not* the clock app — separate things |
+| `LauncherApp` | Kotlin | NORMAL | The app drawer (6 Aug). Reserved swipe-left opens it; swipe-right closes it. Lists only what `InstalledStore` holds, which is JS-only by construction |
+| `timer`, `camera`, `navigation`, `vibrate` | **JS sub-apps** | NORMAL | In `companion/examples/`. The Timer is *not* the clock app — separate things. `camera` and `navigation` are UI shells with no function yet; `vibrate` (Buzz Phone) is the phone-side binding demo |
 
 **How AMBIENT differs** (`Compositor.kt`):
 - A new AMBIENT focus **replaces** the existing ambient base rather than
@@ -101,7 +673,14 @@ treat that correlation as unexplained, not as a cause.
 | **N-33** | `transfer_active()` flickers between chunks, so the face and OTA banner alternated | **Fixed** (3 s latch) — confirmed on hardware |
 | **N-32** | `SdpWriteQueue` sequences never reset across reconnects | Fixed, but **did not** stop the frame drops — cause still open |
 | **N-31** | Touch dead. **Cause:** TWIM `SHORTS` bit positions were shifted in `nrf52832_regs.hpp`, so writes suspended instead of stopping and write_read never issued the repeated START — every I2C transfer timed out, on every device. Two earlier theories were wrong: `buses_idle()` (ENABLE=0 preserves PSEL/FREQUENCY/PIN_CNF) and the `S0S1` pin drive (fixed, but changed nothing) | **CLOSED** 5 Aug — `244.0` irq/readfail on hardware |
-| **N-36** | App-task stall 887 ms with 16 inbox drops, unchanged by the haptic fix. Worst phase is 3 (session/core tick, 444 ms) and render is 222 ms — the **face repaint**, not vibration | Open — new, and now the largest remaining defect |
+| **N-42** | ~~Watch resets in normal use~~ — **WITHDRAWN 6 Aug: it was not happening.** Reset `6` was seen once in two days; every other reading is `4` (SREQ alone = the flash itself), including a 1526 s uptime. The operator reboots the watch by hand during testing, and that is sufficient on its own: `poll_reboot_button()` resets via SREQ after an 8 s hold while `wdt::pet()` deliberately withholds pets for the whole hold, so the ~7 s bootloader dog fires during it too. DOG plus SREQ is `6`. `RESETREAS` accumulates until the app clears it, so one value can cover two intended resets — an OTA swap does the same thing. **Watch for:** a `2` or `6` at a boot that followed neither an update nor a button hold | Closed — filed off a single reading without checking the others |
+| **N-43** | `status=8` supervision timeouts drop the link mid-session with no watch reset — uptime keeps climbing straight through them | Open — plausibly N-36: a ~1 s app stall can outlast the connection supervision window |
+| **N-41** | OTA needed **ten** resyncs (`OTA timeout ... resync #9`, `#10`), ~5 s each, ending in a `status=8` disconnect. The image still installed and confirmed | Open — same stall family as N-36; worsens as images grow |
+| **N-40** | Repository screen could not show an installed package absent from any index | **Fixed** 6 Aug (`refreshLocal` unions the store) |
+| **N-39** | Compositor stack survived link loss, so the host believed a dead screen was live | **Fixed** 6 Aug (`resetStack()` on link loss) |
+| **N-38** | A second `JavaScriptSandbox` per process crashed the companion | **Fixed** 6 Aug (process-wide singleton; per-sub-app isolation still via isolates) |
+| **N-37** | Scroll regions could not carry content taller than the viewport | **Fixed** 6 Aug (parser tracks the region, bounds against `contentH`; three host tests pin the boundary) |
+| **N-36** | App-task stall 887-1002 ms with 8-16 inbox drops. Worst phase is 3 (session/core tick, 444-477 ms), render 222-238 ms — the **face repaint**, not vibration | Open — **largest remaining defect and the recommended next work** |
 | **N-30** | Session stale path discarded the remote screen | Fixed |
 | **N-29** | Local face repainted over phone-pushed screens | Fixed — single guard inside `Core::show_current()` |
 | **N-28** | CONTROL + DISPLAY written back-to-back; inbox dropped the second | Fixed (30 ms pacing + stall watchdog) |
@@ -123,6 +702,28 @@ the sandbox bindings and the host IPC on real hardware.
 `companion/examples/timer` already exists. Keep TestApp only as a transport
 probe. The bridge path (notifications, media, navigation reaching a sub-app)
 is separately unproven on hardware and needs its own acceptance test.
+
+### N-36 — The app-task stall (recommended next work)
+
+- **Status:** Open. The highest-value item on this list.
+- **Measured repeatedly:** `stall` 887-1002 ms on diag line 1; worst phase **3**
+  (session/core tick) at 444-477 ms; `render` 222-238 ms; `inbox_drop` 8-16 per
+  session.
+- **What it already costs**, all measured rather than assumed:
+  - Touch is read hundreds of ms late, which forced a deliberate divergence
+    from InfiniTime's gesture rule. 1018 interrupts produced 24 events.
+  - Ten OTA resyncs in one transfer (N-41), ~5 s each.
+  - Inbox drops every session, and very likely N-35 in its entirety.
+- **The obvious first lever, untried:** the diagnostic overlay forces a
+  **full-face repaint every 2 s**, and a full repaint is ~238 ms of SPI —
+  roughly a 12 % duty cycle spent redrawing 240x240 to update three lines of
+  text. `build_ota_banner` already demonstrates the fix in this codebase: it is
+  band-only, ~5 tile passes instead of 30, precisely so it can run mid-transfer.
+- **First measurement to take:** split phase 3. It currently times
+  `session.tick` and `core.tick` together, and `core.tick` contains
+  `show_current()`. Which of the two owns the 477 ms decides whether this is a
+  rendering problem or a session-logic problem — the same "one reading splits
+  the problem in two" that closed N-31.
 
 ### N-35 — The watch stops replying entirely until reconnect
 
@@ -572,10 +1173,17 @@ not worth it.
 
 ## 5. Suggested execution order
 
-1. **P-1** — push a display list. Everything else is infrastructure for this,
-   and it is the only item that tests the architecture rather than the
-   plumbing.
-2. **I-15** — the last remaining way to strand a user with no explanation and
+**Revised 6 Aug.** P-1 is closed and the launcher is built on top of it, so the
+old ordering is spent.
+
+1. **N-36 — the app-task stall.** Everything below is cheaper once it is fixed,
+   and several open items are probably symptoms of it. Detail in part I.
+2. **N-41 / N-35 / N-43** — the link cluster (OTA resyncs, watch stops
+   replying, supervision-timeout drops). Expect N-36 to move all three;
+   re-measure before treating them as separate work. N-42 was withdrawn.
+3. **ble_link host-test failure** — small, and it sits on the one path
+   (`sdp_frame.cpp`) nobody has examined.
+4. **I-15** — the last remaining way to strand a user with no explanation and
    no path forward.
 3. **I-9** — the divergence audit. Highest expected yield: it finds defects
    before hardware does, which is the opposite of how the last twenty-six were

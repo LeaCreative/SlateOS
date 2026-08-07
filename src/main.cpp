@@ -394,6 +394,24 @@ static std::uint32_t tick_catchup_count() { return 0u; }
 
 volatile std::uint32_t g_app_beat = 0u;
 volatile std::uint32_t g_max_stall_ms = 0u;
+// How many times the app task went unresponsive for >=100 ms, as opposed to
+// how bad the single worst one was.
+//
+// Every other figure on the overlay is a max-since-boot, which cannot tell a
+// one-off at connect from something that happens every minute — and that
+// ambiguity is what stalled N-36: phase 7 read 468 ms whether that was one bad
+// event at startup or forty of them. A count against uptime settles it.
+volatile std::uint32_t g_stall_events = 0u;
+// True while the app task is parked in its own wait at the bottom of the loop.
+//
+// Without this the stall measurement is meaningless: the beat only advances
+// once per iteration, so the 20 ms wait — 200 ms in ambient — looks exactly
+// like the task being blocked. g_max_stall_ms has read >=200 ms since it was
+// added for that reason alone, and the episode counter made it obvious by
+// reporting 1255 stalls in 321 s, roughly the ambient wake rate.
+//
+// Sleeping is not stalling. Only time the task wanted to run counts.
+volatile bool g_app_sleeping = false;
 
 static void app_loop() {
   rtt::log(rtt::Level::Info, "M15 ready (await BLE for IMAGE_OK confirm)");
@@ -568,13 +586,20 @@ static void app_loop() {
     }
 
     if (t - last_tick >= 200u) {
+      // Phase 3 and phase 8 are timed separately on purpose. Together they
+      // were the worst phase in the loop at 444-477 ms, but "session tick plus
+      // core tick" does not say which — and core.tick() can repaint the face
+      // while session.tick() only moves state. One reading now splits N-36
+      // into a rendering problem or a session-logic problem.
       t_phase = board::micros();
       g_session.tick(t);
+      note_phase(3u, t_phase);
       if (!updating) {
+        t_phase = board::micros();
         g_core.set_remote_stale(g_session.stale());
         g_core.tick(t);
+        note_phase(8u, t_phase);
       }
-      note_phase(3u, t_phase);
       last_tick = t;
     }
 #if !defined(SLATE_DIAG_OVERLAY) || (SLATE_DIAG_OVERLAY == 1)
@@ -589,6 +614,7 @@ static void app_loop() {
       st.diag_paints = ++paints;
       st.diag_button = board::button_raw() ? 1u : 0u;
       st.diag_stall_ms = g_max_stall_ms;
+      st.diag_stall_events = g_stall_events;
       ble::bringup_snapshot(&st.diag_ble_state, &st.diag_ble_rc);
       st.diag_tick_catchup = tick_catchup_count();
       st.diag_phase = worst_phase;
@@ -611,8 +637,10 @@ static void app_loop() {
       st.diag_ota_pct = g_ota.progress_percent();
       st.diag_ota_nak = static_cast<std::uint8_t>(g_ota.last_nak());
       st.diag_ota_naks = g_ota.nak_count();
+      // Band only. This used to be show_current() — a full-face repaint every
+      // 2 s to update three lines of text (N-36).
       t_phase = board::micros();
-      g_core.show_current();
+      g_core.show_diag_band();
       note_phase(4u, t_phase);
     }
 #endif
@@ -637,12 +665,14 @@ static void app_loop() {
     // means the app task was ready but not scheduled (something above it is
     // hogging the CPU) rather than any loop work being slow.
     t_phase = board::micros();
+    g_app_sleeping = true;
 #if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
     // Wake from Link::set_app_wake short-circuits this wait when a message lands.
     (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(ambient ? 200u : 20u));
 #else
     slate::power::sleep_ms(ambient ? 200u : 20u);
 #endif
+    g_app_sleeping = false;
     if (!ambient) {
       note_phase(6u, t_phase);
     }
@@ -669,20 +699,33 @@ extern "C" void vApplicationIdleHook(void) {}
 namespace {
 std::uint32_t g_beat_seen = 0u;
 std::uint32_t g_beat_stall_ticks = 0u;
+bool g_stall_counted = false;
 }  // namespace
 
 extern "C" void vApplicationTickHook(void) {
   // Telemetry only. WDT pets live in app_loop (and POST_SLEEP for future
   // tickless). Button-hold withhold remains inside wdt::pet() for those paths.
+  if (g_app_sleeping) {
+    // Parked on purpose — not a stall, and not evidence of one.
+    g_beat_stall_ticks = 0u;
+    g_stall_counted = false;
+    return;
+  }
   if (g_app_beat != g_beat_seen) {
     g_beat_seen = g_app_beat;
     g_beat_stall_ticks = 0u;
+    g_stall_counted = false;
     return;
   }
   ++g_beat_stall_ticks;
   const std::uint32_t ms = g_beat_stall_ticks * 1000u / configTICK_RATE_HZ;
   if (ms > g_max_stall_ms) {
     g_max_stall_ms = ms;
+  }
+  // Once per episode, on the way past the threshold — not once per tick.
+  if (!g_stall_counted && ms >= 100u) {
+    g_stall_counted = true;
+    ++g_stall_events;
   }
 }
 

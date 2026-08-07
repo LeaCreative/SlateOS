@@ -65,8 +65,18 @@ JS apps telling the watch what to draw, and phone-side bridge/host/client logic.
 
 Concrete example: WDT reload is withheld while the side button is held (same as
 InfiniTime `SystemTask`), and the FreeRTOS **tick/idle hooks do not pet at all** —
-only the app task loop (plus bounded flash helpers and future tickless
-`POST_SLEEP`). A wedged app starves the bootloader dog within ~7 s.
+only the app task loop (plus bounded flash helpers, the renderer tile loop,
+and future tickless `POST_SLEEP`). A wedged app starves the bootloader dog
+within ~7 s.
+
+The renderer was added to that list on 6 Aug: a sub-app display list drawing
+large filled circles took the app task past the dog and reset the watch, and
+no BLE-facing input may be able to do that. The pet is inside the bounded
+30-iteration tile loop, so it extends the deadline by one render and no more,
+and it runs through `pet_service()` — which withholds the reload while the
+side button is held, so long-press recovery is unaffected. Residual risk: a
+hypothetical loop that calls the renderer repeatedly would no longer
+auto-reset. Nothing does this today.
 
 ## Conventions
 - Drivers are C++ classes, no dynamic allocation after init.
@@ -81,6 +91,16 @@ only the app task loop (plus bounded flash helpers and future tickless
 Three things: a BRIDGE (adapts notifications, media, navigation, health from other apps),
 a HOST (runs downloaded JS sub-apps in a sandbox), and a CLIENT (pushes display lists to
 the watch over BLE, receives input events).
+
+## Sub-app rules — READ `docs/subapp-rules.md` FIRST
+
+**Before writing, reviewing, accepting or debugging a JS sub-app, read
+`docs/subapp-rules.md`.** It is normative and it is short. It carries the
+budgets that stop a sub-app resetting the watch (one already did), the required
+comment header, and the settings schema.
+
+Do not infer limits from the code; the numbers are in that document, and they
+came from hardware.
 
 ## Hard rules
 - Sub-apps are DOWNLOADED JAVASCRIPT, never dex/JAR/.so. Play policy permits interpreted

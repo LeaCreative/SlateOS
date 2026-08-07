@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.map.MapFixtureTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:27.672Z" hostname="DAN01" time="0.494">
+  <properties/>
+  <testcase name="coastlineParsesAndOutranksOrdinaryRoads()" classname="slate.map.MapFixtureTest" time="0.065"/>
+  <testcase name="malformedResponsesDegradeToNothing()" classname="slate.map.MapFixtureTest" time="0.005"/>
+  <testcase name="buildingsParseAndRankBelowEveryRoad()" classname="slate.map.MapFixtureTest" time="0.063"/>
+  <testcase name="realOverpassOutputParses()" classname="slate.map.MapFixtureTest" time="0.044"/>
+  <testcase name="realDataRendersInsideBudgetAtEveryRadius()" classname="slate.map.MapFixtureTest" time="0.081"/>
+  <testcase name="everyViewerOffsetStillProducesAnAcceptedList()" classname="slate.map.MapFixtureTest" time="0.158"/>
+  <testcase name="buildingsAreNearlyAllDrawnAtTheRadiusTheyAreFetchedAt()" classname="slate.map.MapFixtureTest" time="0.059"/>
+  <testcase name="coastlineSurvivesRenderingAtEveryRadius()" classname="slate.map.MapFixtureTest" time="0.009"/>
+  <testcase name="renderingIsDeterministic()" classname="slate.map.MapFixtureTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

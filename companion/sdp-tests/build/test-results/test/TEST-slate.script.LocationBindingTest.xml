@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.script.LocationBindingTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:29.265Z" hostname="DAN01" time="0.092">
+  <properties/>
+  <testcase name="locationCommandPassesWithPermission()" classname="slate.script.LocationBindingTest" time="0.016"/>
+  <testcase name="terminalStatusClearsAnyFixOnScreen()" classname="slate.script.LocationBindingTest" time="0.018"/>
+  <testcase name="everyEmittedCommandIsOneTheHostHandles()" classname="slate.script.LocationBindingTest" time="0.017"/>
+  <testcase name="fixWithoutCoordinatesIsRejected()" classname="slate.script.LocationBindingTest" time="0.012"/>
+  <testcase name="worstCaseScreenIsWithinBudget()" classname="slate.script.LocationBindingTest" time="0.016"/>
+  <testcase name="locationCommandIsDroppedWithoutPermission()" classname="slate.script.LocationBindingTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

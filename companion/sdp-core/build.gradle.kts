@@ -37,6 +37,12 @@ tasks.processResources {
     from("$rootDir/examples/vibrate") {
         into("slate/subapps/vibrate")
     }
+    from("$rootDir/examples/location") {
+        into("slate/subapps/location")
+    }
+    from("$rootDir/examples/map") {
+        into("slate/subapps/map")
+    }
 }
 
 tasks.test {

@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,7 @@ import slate.repo.Availability
 import slate.repo.PermissionPolicy
 import slate.repo.RepoTrust
 import slate.script.ScriptPermission
+import slate.script.SubAppSetting
 
 class RepoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,6 +78,11 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
     var tab by remember { mutableStateOf(Tab.Browse) }
     var selected by remember { mutableStateOf<BrowseItem?>(null) }
     val catalog by manager.catalog.collectAsState()
+    // Which app ids are kept off the watch's launcher. Seeded once and updated
+    // in place so a tick redraws immediately rather than after a refresh.
+    val launcherHidden = remember { mutableStateOf(prefs.hiddenFromLauncher()) }
+    // Non-null while a sub-app's generated settings screen is open.
+    var settingsFor by remember { mutableStateOf<BrowseItem?>(null) }
     val status by manager.status.collectAsState()
     val scope = rememberCoroutineScope()
 
@@ -127,10 +134,33 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
+        settingsFor?.let { item ->
+            val inst = item.installed
+            if (inst != null) {
+                AlertDialog(
+                    onDismissRequest = { settingsFor = null },
+                    confirmButton = {},
+                    text = {
+                        SubAppSettingsScreen(
+                            appName = item.entry.app.name,
+                            appId = item.entry.app.id,
+                            settings = declaredSettings(inst),
+                            prefs = prefs,
+                            onClose = { settingsFor = null },
+                        )
+                    },
+                )
+            }
+        }
+
         when (tab) {
             Tab.Browse -> LazyColumn {
                 items(catalog, key = { it.entry.app.id + "/" + it.entry.repoId }) { item ->
-                    CatalogRow(item = item, onClick = { selected = item })
+                    LauncherToggleRow(
+                        item, prefs, launcherHidden,
+                        onClick = { selected = item },
+                        onOpenSettings = { settingsFor = item },
+                    )
                     HorizontalDivider()
                 }
             }
@@ -139,7 +169,11 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
                     catalog.filter { it.installed != null },
                     key = { it.entry.app.id },
                 ) { item ->
-                    CatalogRow(item = item, onClick = { selected = item })
+                    LauncherToggleRow(
+                        item, prefs, launcherHidden,
+                        onClick = { selected = item },
+                        onOpenSettings = { settingsFor = item },
+                    )
                     HorizontalDivider()
                 }
             }
@@ -148,8 +182,57 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
     }
 }
 
+/**
+ * A catalogue row with its launcher checkbox wired to [RepoPrefs].
+ *
+ * [hidden] is passed in rather than read here so ticking one box recomposes
+ * every row from the same source of truth — the set is what the launcher
+ * itself filters on, and the two must not drift apart.
+ */
+/** Settings a sub-app declares, read from its installed manifest. */
+private fun declaredSettings(installed: InstalledStore.InstalledApp): List<SubAppSetting> =
+    try {
+        SubAppSetting.parseAll(
+            java.io.File(installed.dir, "manifest.json").readText(Charsets.UTF_8),
+        )
+    } catch (_: Throwable) {
+        emptyList()
+    }
+
 @Composable
-private fun CatalogRow(item: BrowseItem, onClick: () -> Unit) {
+private fun LauncherToggleRow(
+    item: BrowseItem,
+    prefs: RepoPrefs,
+    hidden: MutableState<Set<String>>,
+    onClick: () -> Unit,
+    onOpenSettings: () -> Unit = {},
+) {
+    val id = item.entry.app.id
+    // The gear only appears when the sub-app actually declares settings, so an
+    // app with none never shows a control that would open an empty screen.
+    val hasSettings = item.installed?.let { declaredSettings(it).isNotEmpty() } ?: false
+    CatalogRow(
+        item = item,
+        onClick = onClick,
+        showsInLauncher = if (item.installed != null) id !in hidden.value else null,
+        onShowsInLauncherChange = { show ->
+            prefs.setShowsInLauncher(id, show)
+            hidden.value = prefs.hiddenFromLauncher()
+        },
+        onOpenSettings = if (hasSettings) onOpenSettings else null,
+    )
+}
+
+@Composable
+private fun CatalogRow(
+    item: BrowseItem,
+    onClick: () -> Unit,
+    /** Null when the app is not installed — it cannot be on the watch anyway. */
+    showsInLauncher: Boolean? = null,
+    onShowsInLauncherChange: (Boolean) -> Unit = {},
+    /** Null when the sub-app declares no settings — no gear is drawn. */
+    onOpenSettings: (() -> Unit)? = null,
+) {
     val app = item.entry.app
     Column(
         modifier = Modifier
@@ -158,6 +241,15 @@ private fun CatalogRow(item: BrowseItem, onClick: () -> Unit) {
             .padding(vertical = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (showsInLauncher != null) {
+                // Whether this sub-app appears in the watch's launcher. Outside
+                // the row's clickable area, so ticking it does not also open
+                // the detail sheet.
+                Checkbox(
+                    checked = showsInLauncher,
+                    onCheckedChange = onShowsInLauncherChange,
+                )
+            }
             Text(
                 text = app.name,
                 fontWeight = FontWeight.SemiBold,
@@ -171,6 +263,11 @@ private fun CatalogRow(item: BrowseItem, onClick: () -> Unit) {
                 },
                 style = MaterialTheme.typography.labelMedium,
             )
+            if (onOpenSettings != null) {
+                // Outside the row's clickable area, like the launcher checkbox,
+                // so opening settings does not also open the detail sheet.
+                TextButton(onClick = onOpenSettings) { Text("\u2699") }
+            }
         }
         Text(
             text = "${app.id} · v${app.version}",

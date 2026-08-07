@@ -48,6 +48,8 @@ struct State {
   std::uint32_t diag_reset_reason = 0u;
   std::uint32_t diag_uptime_s = 0u;
   std::uint32_t diag_stall_ms = 0u;
+  /** Stall episodes >=100 ms since boot. Frequency, where stall_ms is depth. */
+  std::uint32_t diag_stall_events = 0u;
   // BLE bring-up checkpoint + failing rc (ble::bringup_snapshot state map:
   // 7 = advertising, 9x = failure at stage x). Sealed units have no SWD, so
   // the overlay is the only way to see where the radio died.
@@ -57,7 +59,10 @@ struct State {
   // fell behind COUNTER; a climbing value is the time that used to be lost
   // silently while the radio held off the tick ISR.
   std::uint32_t diag_tick_catchup = 0u;
-  // Slowest app_loop phase since boot and how long it took (N-13 bring-up):
+  // Slowest app_loop phase since boot and how long it took (N-13 bring-up).
+  // Ids: 1 inbox drain, 2 input poll, 3 session.tick, 4 diag band repaint,
+  // 5 battery/BAS, 6 notify wait, 7 link transition, 8 core.tick.
+  // 3 and 8 were one phase until N-36 needed them apart.
   // 1 drain, 2 input, 3 session/core tick, 4 paint, 5 battery/BAS,
   // 6 the notify wait itself (= the task was not scheduled, not slow work).
   std::uint8_t diag_phase = 0u;

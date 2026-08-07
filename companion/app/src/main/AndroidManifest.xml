@@ -23,6 +23,21 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- The phone's position, for the "location" sub-app permission. Dangerous
+         level: both need a runtime grant, and the user can give COARSE while
+         refusing FINE, so LocationAdapter treats either as sufficient and does
+         not assume the accuracy it got. Deliberately NOT
+         ACCESS_BACKGROUND_LOCATION: a sub-app only draws while the watch is
+         showing its screen, so there is no case for tracking with the app in
+         the background, and that permission needs a separate settings trip. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Lets the link service claim the "location" FGS type, which is what
+         keeps fixes arriving while the app is backgrounded — the normal state
+         for a watch companion. Normal-level, so declaring it costs nothing;
+         the service still claims the type only when the runtime grant is held
+         (LinkForegroundService.foregroundTypes). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <uses-feature
@@ -110,10 +125,13 @@
             </intent-filter>
         </activity>
 
+        <!-- "location" is permitted here but claimed at runtime only when the
+             user has granted it; see LinkForegroundService.foregroundTypes.
+             Declaring a type does not oblige the service to use it. -->
         <service
             android:name=".link.LinkForegroundService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice" />
+            android:foregroundServiceType="connectedDevice|location" />
 
         <service
             android:name=".ota.SealedDfuService"

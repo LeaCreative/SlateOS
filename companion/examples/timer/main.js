@@ -1,13 +1,37 @@
 /**
- * Sample Slate sub-app: countdown timer.
+ * Timer — countdown with start/stop, on the watch.
+ *
+ * Draws: MM:SS at scale 6, one full-width button beneath it.
+ * Does:  tap toggles running; a 1 s host timer decrements; buzzes the watch
+ *        motor at zero. Remaining time and running state survive a blur.
+ * Perms: storage — persistence, and reading the durationSec setting.
+ * Setting: durationSec (5-3600 s, default 60) sets the starting value. Read at
+ *        focus only, so a change applies the next time the app is opened.
+ * Budget: 63 B display list, 4 drawing ops (measured). Far inside every limit
+ *        in docs/subapp-rules.md. No loops; MM:SS is fixed-width.
+ *
  * Downloaded JavaScript only — never dex/JAR/.so.
- * Exercises render, input, timers, and storage persistence.
  */
 (function (global) {
   'use strict';
 
-  var remaining = 60;
+  var DEFAULT_SECONDS = 60;
+  var remaining = DEFAULT_SECONDS;
   var running = false;
+
+  /**
+   * Configured start value.
+   *
+   * Settings arrive as ordinary store entries, so this must defend against a
+   * missing or malformed value exactly as docs/subapp-rules.md §5.2 requires —
+   * the store is also writable by this script.
+   */
+  function configuredSeconds() {
+    var raw = slate.store.get('durationSec');
+    var n = parseInt(raw, 10);
+    if (isNaN(n) || n < 5 || n > 3600) return DEFAULT_SECONDS;
+    return n;
+  }
 
   function pad2(n) {
     n = n | 0;
@@ -32,10 +56,13 @@
   }
 
   global.onFocus = function () {
+    // Start from the configured duration, then let a saved countdown override
+    // it so re-focusing mid-run does not restart the timer.
+    remaining = configuredSeconds();
     var s = slate.store.get('remaining');
     if (s != null && s !== '') {
       var n = parseInt(s, 10);
-      if (!isNaN(n)) remaining = n;
+      if (!isNaN(n) && n > 0) remaining = n;
     }
     var r = slate.store.get('running');
     running = r === '1';
@@ -84,7 +111,7 @@
       running = false;
       return [
         slate.timer.clear('tick'),
-        slate.store.set('remaining', '0'),
+        slate.store.set('remaining', String(configuredSeconds())),
         slate.store.set('running', '0'),
         slate.haptic(1),
         slate.invalidate(),

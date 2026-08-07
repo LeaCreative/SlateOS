@@ -80,6 +80,17 @@ public:
 
   /** Band-only "UPDATING nn%" repaint, safe to call during a transfer. */
   void show_ota_progress(std::uint8_t pct);
+
+  /**
+   * Repaint just the diagnostic band, not the whole face.
+   *
+   * For the periodic overlay refresh. Everything else still goes through
+   * show_current(), which owns the guard about when the local face may paint.
+   */
+  void show_diag_band();
+
+  /** Repaint HH:MM only. For the minute rollover; ~5 tile passes, not 30. */
+  void show_clock_band();
   void wake_display();
 
 private:

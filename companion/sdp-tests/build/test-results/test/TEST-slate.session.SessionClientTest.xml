@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.session.SessionClientTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:55.494Z" hostname="DAN01" time="0.005">
+<testsuite name="slate.session.SessionClientTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:29.385Z" hostname="DAN01" time="0.004">
   <properties/>
-  <testcase name="creditParseUpdatesFreeBytes()" classname="slate.session.SessionClientTest" time="0.001"/>
+  <testcase name="creditParseUpdatesFreeBytes()" classname="slate.session.SessionClientTest" time="0.0"/>
   <testcase name="malformedHelloStaysConnectedNoAccept()" classname="slate.session.SessionClientTest" time="0.0"/>
   <testcase name="inboundGoodbyeDisconnects()" classname="slate.session.SessionClientTest" time="0.0"/>
   <testcase name="linkLossClearsReady()" classname="slate.session.SessionClientTest" time="0.001"/>
   <testcase name="heartbeatOpcode()" classname="slate.session.SessionClientTest" time="0.0"/>
   <testcase name="encodeGoodbyeWire()" classname="slate.session.SessionClientTest" time="0.0"/>
-  <testcase name="helloOfferRoundTripMatchesFirmwareLayout()" classname="slate.session.SessionClientTest" time="0.001"/>
+  <testcase name="helloOfferRoundTripMatchesFirmwareLayout()" classname="slate.session.SessionClientTest" time="0.0"/>
   <testcase name="encodeHelloRejectWire()" classname="slate.session.SessionClientTest" time="0.0"/>
   <testcase name="preDisplayControlAlternatesPushAndReplace()" classname="slate.session.SessionClientTest" time="0.001"/>
-  <testcase name="reconnectLifecycleReadyAgain()" classname="slate.session.SessionClientTest" time="0.001"/>
+  <testcase name="reconnectLifecycleReadyAgain()" classname="slate.session.SessionClientTest" time="0.0"/>
   <testcase name="profilePickKeepsDefaultWhenProfilesEmpty()" classname="slate.session.SessionClientTest" time="0.0"/>
-  <testcase name="profilePickFallsBackToFirstWhenDefaultMissing()" classname="slate.session.SessionClientTest" time="0.0"/>
+  <testcase name="profilePickFallsBackToFirstWhenDefaultMissing()" classname="slate.session.SessionClientTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

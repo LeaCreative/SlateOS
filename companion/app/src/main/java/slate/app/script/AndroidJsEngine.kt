@@ -2,12 +2,18 @@ package slate.app.script
 
 import android.annotation.SuppressLint
 import android.content.Context
+import slate.app.link.LinkLog
 import androidx.javascriptengine.IsolateStartupParameters
 import androidx.javascriptengine.JavaScriptIsolate
 import androidx.javascriptengine.JavaScriptSandbox
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -93,13 +99,54 @@ class AndroidJsEngine private constructor(
          */
         private val sandboxLock = Mutex()
 
+        /**
+         * Creation runs here, **not** in the caller's scope.
+         *
+         * androidx gates sandbox creation on a private static
+         * `sIsReadyToConnect`, and the library's own documentation is explicit
+         * that only `close()` on the sandbox object resets it — there is no
+         * static recovery. So a sandbox reference that is ever dropped without
+         * being closed bricks JS for the rest of the process's life.
+         *
+         * Creating it in the caller's coroutine made exactly that reachable:
+         * `awaitFuture` suspends on a `suspendCancellableCoroutine`, and if the
+         * caller was cancelled after the bind completed, the future's listener
+         * resumed a dead continuation, the object was garbage and the static
+         * stayed false. Every later launch then failed with "Binding to already
+         * bound service" from the *first* call, with no reference left to close.
+         *
+         * Owning the work here means a cancelled caller cancels only its own
+         * `await()`. The [Deferred] keeps the reference either way.
+         */
+        private val sandboxScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
         @Volatile
-        private var shared: JavaScriptSandbox? = null
+        private var sandboxJob: Deferred<JavaScriptSandbox>? = null
+
+        private suspend fun sharedSandbox(context: Context): JavaScriptSandbox {
+            val deferred = sandboxLock.withLock {
+                sandboxJob ?: newSandboxAsync(context).also { sandboxJob = it }
+            }
+            return try {
+                deferred.await()
+            } catch (t: Throwable) {
+                // Creation failed and nothing is bound (every failing path in
+                // newSandboxAsync closes or never bound). Clear so the next
+                // launch can try again rather than caching the failure forever.
+                sandboxLock.withLock { if (sandboxJob === deferred) sandboxJob = null }
+                if (t.message?.contains("already bound") == true) {
+                    throw ScriptEngineException(
+                        "JS sandbox is bound but unreachable — this process cannot " +
+                            "start another. Force-stop Slate and reopen it.",
+                    )
+                }
+                throw t
+            }
+        }
 
         @SuppressLint("RequiresFeature") // Guarded explicitly; lint cannot infer fail-closed branch.
-        private suspend fun sharedSandbox(context: Context): JavaScriptSandbox =
-            sandboxLock.withLock {
-                shared?.let { return@withLock it }
+        private fun newSandboxAsync(context: Context): Deferred<JavaScriptSandbox> =
+            sandboxScope.async {
                 val sandbox = JavaScriptSandbox
                     .createConnectedInstanceAsync(context.applicationContext)
                     .awaitFuture()
@@ -107,33 +154,84 @@ class AndroidJsEngine private constructor(
                         JavaScriptSandbox.JS_FEATURE_ISOLATE_MAX_HEAP_SIZE,
                     )
                 ) {
+                    // close() is what resets androidx's static gate. Throwing
+                    // without it would brick JS for the process.
                     sandbox.close()
                     throw ScriptEngineException(
                         "WebView JavaScript sandbox cannot enforce the 4 MB isolate heap limit",
                     )
                 }
-                shared = sandbox
                 sandbox
             }
 
         suspend fun create(context: Context): AndroidJsEngine = withContext(Dispatchers.IO) {
             val params = IsolateStartupParameters()
             params.maxHeapSizeBytes = HEAP_BYTES
+            val sandbox = try {
+                sharedSandbox(context)
+            } catch (t: Throwable) {
+                throw ScriptEngineException("JS sandbox unavailable: ${t.message}")
+            }
             val isolate = try {
-                sharedSandbox(context).createIsolate(params)
+                sandbox.createIsolate(params)
             } catch (t: IllegalStateException) {
                 // The host process can be reclaimed under memory pressure,
-                // leaving a dead handle. Drop it and reconnect once rather than
-                // failing every sub-app launch until the app is restarted.
-                sandboxLock.withLock { shared = null }
-                sharedSandbox(context).createIsolate(params)
+                // leaving a dead handle. Reconnect once rather than failing
+                // every sub-app launch until the app is restarted.
+                //
+                // CLOSING the old sandbox is the whole point and used to be
+                // missing. Dropping the reference does not unbind the service,
+                // so the rebind below hit
+                // IllegalStateException("Binding to already bound service") —
+                // thrown from a coroutine with no handler, which killed the
+                // whole companion. The recovery path could not succeed; it only
+                // turned a recoverable fault into process death, and it was
+                // reached most often by the sub-app opened when memory was
+                // tightest. (Crash log 7 Aug, opening Local Map.)
+                LinkLog.w("JS sandbox handle stale (${t.message}); rebinding")
+                releaseSharedSandbox()
+                try {
+                    sharedSandbox(context).createIsolate(params)
+                } catch (t2: Throwable) {
+                    // Fail this sub-app, not the process. The BLE link is worth
+                    // more than any one screen.
+                    throw ScriptEngineException(
+                        "JS sandbox could not be rebound: ${t2.message}",
+                    )
+                }
             }
             AndroidJsEngine(
                 isolate,
-                canTerminateIsolate = sharedSandbox(context).isFeatureSupported(
+                canTerminateIsolate = sandbox.isFeatureSupported(
                     JavaScriptSandbox.JS_FEATURE_ISOLATE_TERMINATION,
                 ),
             )
+        }
+
+        /**
+         * Unbind and forget the shared sandbox.
+         *
+         * `close()` is what actually releases the service binding; clearing the
+         * reference alone leaves androidx believing it is still bound and makes
+         * the next bind throw. Failures here are swallowed deliberately — this
+         * runs while recovering from an already-broken sandbox, and the handle
+         * being dead is the normal case rather than an error.
+         */
+        private suspend fun releaseSharedSandbox() {
+            val old = sandboxLock.withLock {
+                val d = sandboxJob
+                sandboxJob = null
+                d
+            }
+            if (old == null) return
+            // await() returns immediately for a settled Deferred and rethrows a
+            // failed one; either way the point is to reach close(), because that
+            // is the only thing that lets this process bind again.
+            runCatching { old.await() }
+                .onSuccess {
+                    runCatching { it.close() }
+                        .onFailure { e -> LinkLog.i("old JS sandbox close: ${e.message}") }
+                }
         }
 
         /**
@@ -145,17 +243,37 @@ class AndroidJsEngine private constructor(
          * the correct outcome either way.
          */
         private fun dropSharedSandbox() {
-            val doomed = shared
-            shared = null
-            try {
-                doomed?.close()
-            } catch (_: Throwable) {
-                // Already dead; nothing to salvage.
+            val doomed = sandboxJob
+            sandboxJob = null
+            if (doomed == null) return
+            // Reached from the non-suspending evaluate() path, so the sandbox is
+            // long since created and getCompleted() is safe. Closing is the
+            // whole point — skipping it would leave androidx's static gate shut
+            // with no reference left to open it.
+            if (doomed.isCompleted) {
+                runCatching { doomed.getCompleted().close() }
+                return
+            }
+            // Still connecting, which should not happen here. Close from the
+            // owning scope rather than dropping the reference on the floor.
+            sandboxScope.launch {
+                runCatching { doomed.await() }.onSuccess { runCatching { it.close() } }
             }
         }
     }
 }
 
+/**
+ * Await a ListenableFuture — **without** propagating cancellation to it.
+ *
+ * That looks like an omission and is not. androidx's bind future unbinds on
+ * cancellation but does not reset its static `sIsReadyToConnect` gate, so
+ * cancelling a sandbox bind leaves the process permanently unable to create
+ * another one. Letting the bind run to completion means the [Deferred] in
+ * [AndroidJsEngine] holds a reference that can be closed, which is the only
+ * thing that reopens the gate. Do not add `invokeOnCancellation { cancel() }`
+ * here.
+ */
 private suspend fun <T> ListenableFuture<T>.awaitFuture(): T =
     suspendCancellableCoroutine { cont ->
         addListener(

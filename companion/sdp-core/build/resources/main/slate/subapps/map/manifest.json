@@ -1,0 +1,25 @@
+{
+  "id": "slate.map",
+  "name": "Local Map",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "manual",
+  "permissions": ["location", "storage"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.map", "slate.store", "slate.log"],
+  "settings": [
+    {
+      "key": "radiusM",
+      "label": "Map radius",
+      "type": "int",
+      "default": 400,
+      "min": 100,
+      "max": 2000,
+      "unit": "m",
+      "help": "Distance from the centre of the screen to its edge. At 150 m or less, building outlines are drawn too. Applies next time you open it."
+    }
+  ]
+}

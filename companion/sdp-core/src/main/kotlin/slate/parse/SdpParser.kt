@@ -27,6 +27,15 @@ class Reader(private val data: ByteArray) {
         if (status == SdpStatus.Ok) status = SdpStatus.Truncated
     }
 
+    /**
+     * Rewind to a position already read, so a length-prefixed payload can be
+     * decoded and then skipped by its declared length rather than by however
+     * far the decode happened to get.
+     */
+    fun seek(p: Int) {
+        if (p in 0..data.size) pos = p
+    }
+
     private fun need(n: Int): Boolean {
         if (!ok()) return false
         if (remaining() < n) {
@@ -127,6 +136,15 @@ interface RenderSink {
     fun clipRect(x: Int, y: Int, w: Int, h: Int) {}
     fun clipClear() {}
     fun text(font: Int, x: Int, y: Int, color: Int, align: Int, len: Int, utf8: ByteArray) {}
+
+    /**
+     * TEXT_SCALED (0xE0). Default no-op so a sink that predates the extension
+     * keeps compiling and keeps behaving exactly as it did.
+     */
+    fun textScaled(
+        font: Int, x: Int, y: Int, color: Int, align: Int, scale: Int,
+        len: Int, utf8: ByteArray,
+    ) {}
     fun textBox(
         font: Int, x: Int, y: Int, w: Int, h: Int,
         color: Int, align: Int, flags: Int, len: Int, utf8: ByteArray,
@@ -147,6 +165,34 @@ interface RenderSink {
     fun backlight(level: Int) {}
     fun commit(flags: Int) {}
     fun retain(ttl: Int) {}
+}
+
+/**
+ * TEXT_SCALED payload: font, x, y, colour, align, scale, len, bytes — matching
+ * `sdp_parser.cpp` and the JS builder in shared-js/slate_ui.js.
+ *
+ * Best-effort by design. The caller has already captured the payload length and
+ * will skip to it whatever happens here, so a malformed extension degrades to a
+ * missing glyph run rather than a desynchronised stream. It deliberately does
+ * not call `reject()`: a display list the watch renders happily must not be
+ * reported as rejected by the desktop interpreter.
+ */
+private fun decodeTextScaled(r: Reader, pal: Palette, len: Int, sink: RenderSink) {
+    if (len < 6) return
+    val font = r.takeU8()
+    val x = r.takeU8()
+    val y = r.takeU8()
+    val color = decodeColor(r, pal) ?: return
+    val align = r.takeU8()
+    val scale = r.takeU8()
+    val textLen = r.takeU8()
+    if (!r.ok() || textLen <= 0) return
+    val bytes = ByteArray(textLen)
+    for (i in 0 until textLen) {
+        bytes[i] = r.takeU8().toByte()
+        if (!r.ok()) return
+    }
+    sink.textScaled(font, x, y, color, align, scale, textLen, bytes)
 }
 
 fun parse(
@@ -184,6 +230,18 @@ fun parse(
         if (opcode in SdpWire.Op.EXT_MIN..SdpWire.Op.EXT_MAX) {
             val len = r.takeU16Le()
             if (!r.ok()) break
+            val payloadStart = r.pos
+            // Extensions are length-prefixed precisely so an implementation
+            // that does not know one can step over it — that is the contract
+            // for 0xE0..0xEF and why old firmware survives a new primitive.
+            // Ones we DO know are decoded from the payload and then skipped to
+            // the declared length regardless, so a decode that disagrees with
+            // the writer costs one wrong op rather than desynchronising the
+            // whole stream.
+            if (opcode == SdpWire.Op.TEXT_SCALED && execute && sink != null) {
+                decodeTextScaled(r, pal, len, sink)
+            }
+            r.seek(payloadStart)
             r.skip(len)
             continue
         }

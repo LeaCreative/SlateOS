@@ -1,7 +1,9 @@
 # Slate — handoff status
 
-**Updated:** 6 August 2026, 09:50 (Indian/Mahe). Supersedes the 31 July note.
+**Updated:** 6 August 2026, 23:30 (Indian/Mahe). Supersedes the 31 July note.
 **Single point of truth for open work:** `docs/issue-prompts-open.md`.
+**Starting a new session?** `docs/handover-prompt.md` is the brief: what to
+read, current build state, the traps, and how to work here.
 `issues.md` is older and now partial — do not treat it as current.
 
 ---
@@ -10,10 +12,9 @@
 
 | | |
 |---|---|
-| **Firmware to flash** | `F02444793347` — 5x7 font 1, launcher support, "Not connected" screen |
-| **Last flashed** | `16D04B4EF949` — **taps work.** TWIM SHORTS fix + scoped InfiniTime mirroring |
-| **Companion to install** | `0.3.0-p14 (build 15)` — launcher, Buzz Phone sub-app, phone-vibrate adapter |
-| **Companion installed** | `0.2.3-p13 (build 14)` |
+| **Firmware to flash** | `AB044776E1FE` — circle span fill + watchdog pets in the tile loop (a sub-app could reset the watch) |
+| **Last flashed** | `609EF4F6979A` (stamp 10:43) — scroll fix, launcher, 5x7 font |
+| **Companion installed** | `0.6.1-p24 (build 25)` — launcher, sub-app settings, credit-leak fix |
 | **Update path** | Slate→Slate SDP OTA over channel 5, proven repeatedly (I-13) |
 | **Recovery** | Hold-to-blue → MCUBoot rollback. Works on confirmed images |
 

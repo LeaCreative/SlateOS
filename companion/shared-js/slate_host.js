@@ -109,6 +109,85 @@
         payload: JSON.stringify({ key: String(k), value: String(v) }) };
     }
   };
+  /**
+   * Location — the phone's position, gated on the "location" permission.
+   *
+   * Fixes arrive as onEvent('location', json), never as a return value: the
+   * phone may take seconds to get one, and nothing on the compositor path may
+   * block waiting (docs/subapp-rules.md §2.3).
+   *
+   *   { "type": "fix", "lat": …, "lon": …, "accuracyM": …, "altitudeM": …,
+   *     "speedMps": …, "bearingDeg": …, "timeEpochSec": …, "provider": "gps" }
+   *   { "type": "status", "state": "searching" | "denied" | "disabled" |
+   *     "unavailable" }
+   *
+   * A sub-app MUST handle the status states. "denied" means the user has not
+   * given the companion the Android runtime permission and no fix will ever
+   * arrive; "disabled" means location is switched off phone-wide. Neither is
+   * recoverable from inside the script, and both are common.
+   *
+   * minIntervalMs is clamped host-side to >= 1000: a sub-app must not be able
+   * to hold the GPS on at an arbitrary rate.
+   */
+  slate.location = {
+    subscribe: function (opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'location', command: 'subscribe',
+        payload: JSON.stringify({
+          minIntervalMs: (opts.minIntervalMs == null ? 5000 : opts.minIntervalMs) | 0,
+          minDistanceM: (opts.minDistanceM == null ? 0 : opts.minDistanceM) | 0
+        }) };
+    },
+    unsubscribe: function () {
+      return { type: 'adapter', adapter: 'location', command: 'unsubscribe', payload: '{}' };
+    },
+    /**
+     * One fix, then stop. Answers from the last known position when there is
+     * one recent enough, so a screen can show something immediately rather
+     * than sitting on "searching" while the GPS warms up.
+     */
+    request: function () {
+      return { type: 'adapter', adapter: 'location', command: 'request', payload: '{}' };
+    }
+  };
+  /**
+   * Map — a north-up vector map of the surroundings, drawn by the host.
+   *
+   * This is a *thin controller*, like slate.camera: OSM data never enters this
+   * isolate and neither does the map's display list. The host fetches, projects
+   * and renders, then pushes the screen under this app's focus. A script could
+   * not do this work anyway — it has no network binding, and projecting and
+   * simplifying a few hundred ways would blow the 500 ms eval deadline.
+   *
+   * **There is deliberately no refresh command.** The companion decides when to
+   * redraw (on movement) and when to refetch (on leaving the cached area), so a
+   * sub-app cannot poll, cannot hammer a free public API, and cannot get the
+   * refresh rate wrong. Subscribe once, then only receive.
+   *
+   * Status arrives as onEvent('map', json):
+   *
+   *   { "type": "status", "state": "ok", "ways": …, "dropped": …,
+   *     "bytes": …, "scaleM": …, "ageSec": … }
+   *   { "type": "status", "state": "locating" | "loading" | "waiting" }
+   *   { "type": "status", "state": "blocked", "detail": "denied" | … }
+   *   { "type": "status", "state": "error", "detail": "…" }
+   *
+   * "ok" means the host has just put a map on the screen — the sub-app should
+   * draw nothing at that point or it will paint over it. Declare
+   * "refreshPolicy": "manual" so the compositor does not repaint you either.
+   */
+  slate.map = {
+    subscribe: function (opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'map', command: 'subscribe',
+        payload: JSON.stringify({
+          radiusM: (opts.radiusM == null ? 400 : opts.radiusM) | 0
+        }) };
+    },
+    unsubscribe: function () {
+      return { type: 'adapter', adapter: 'map', command: 'unsubscribe', payload: '{}' };
+    }
+  };
   /** Navigation — host adapter; maneuvers arrive as onEvent('nav', …). */
   slate.nav = {
     subscribe: function () {

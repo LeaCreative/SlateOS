@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.script.JsUiGoldenTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-04T18:43:55.445Z" hostname="DAN01" time="0.024">
+<testsuite name="slate.script.JsUiGoldenTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:29.248Z" hostname="DAN01" time="0.016">
   <properties/>
-  <testcase name="testAppFace_jsMatchesKotlin()" classname="slate.script.JsUiGoldenTest" time="0.015"/>
-  <testcase name="timerFace_jsMatchesKotlin()" classname="slate.script.JsUiGoldenTest" time="0.008"/>
+  <testcase name="testAppFace_jsMatchesKotlin()" classname="slate.script.JsUiGoldenTest" time="0.011"/>
+  <testcase name="timerFace_jsMatchesKotlin()" classname="slate.script.JsUiGoldenTest" time="0.004"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

@@ -1,0 +1,12 @@
+{
+  "id": "slate.image.vector",
+  "name": "Image Vector",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": [],
+  "allowedHosts": []
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.script.BundledSubAppConformanceTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:28.845Z" hostname="DAN01" time="0.342">
+  <properties/>
+  <testcase name="changedSettingsReachAnAlreadyRunningApp()" classname="slate.script.BundledSubAppConformanceTest" time="0.229"/>
+  <testcase name="everyBundledAppFocusesAndHandlesBack()" classname="slate.script.BundledSubAppConformanceTest" time="0.086"/>
+  <testcase name="everyBundledManifestParses()" classname="slate.script.BundledSubAppConformanceTest" time="0.003"/>
+  <testcase name="settingsImplyStoragePermission()" classname="slate.script.BundledSubAppConformanceTest" time="0.017"/>
+  <testcase name="declaredDefaultsSurviveSanitise()" classname="slate.script.BundledSubAppConformanceTest" time="0.003"/>
+  <testcase name="everyBundledEntryScriptLoads()" classname="slate.script.BundledSubAppConformanceTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -123,6 +123,29 @@ void Core::show_ota_progress(std::uint8_t pct) {
   }
 }
 
+void Core::show_diag_band() {
+#if SLATE_DIAG_OVERLAY
+  if (hooks_.push_list == nullptr) {
+    return;
+  }
+  const std::size_t n =
+      ui::build_diag_banner(dl_buf_, sizeof(dl_buf_), local_state());
+  if (n > 0u) {
+    hooks_.push_list(dl_buf_, n, hooks_.ctx);
+  }
+#endif
+}
+
+void Core::show_clock_band() {
+  if (hooks_.push_list == nullptr) {
+    return;
+  }
+  const std::size_t n = ui::build_clock_band(dl_buf_, sizeof(dl_buf_));
+  if (n > 0u) {
+    hooks_.push_list(dl_buf_, n, hooks_.ctx);
+  }
+}
+
 void Core::show_current() {
   if (hooks_.push_list == nullptr) {
     return;
@@ -241,7 +264,8 @@ void Core::poll_tilt() {
     wake_display();
     if (local_state().screen == local::Screen::Face ||
         local_state().screen == local::Screen::Disconnected) {
-      show_current();
+      // Coalesced with any other repaint this tick — see Core::tick.
+      mark_paint_pending();
     }
   }
 }
@@ -258,14 +282,26 @@ void Core::tick(std::uint32_t now_ms) {
     // loop and starved the BLE host. Steps or the displayed minute changing
     // are the only reasons the face differs.
     const std::uint8_t minute_now = clock::civil_now().minute;
-    const bool changed = local_state().steps != steps_before ||
-                         minute_now != last_painted_minute_;
     // local_owns_screen_: the minute rolling over must not wipe a screen the
     // phone owns (N-29). Step and battery bookkeeping still run.
-    if (local_state().screen == local::Screen::Face && changed &&
-        local_owns_screen_) {
-      last_painted_minute_ = minute_now;
-      show_current();
+    if (local_state().screen == local::Screen::Face && local_owns_screen_) {
+      const bool steps_changed = local_state().steps != steps_before;
+      if (steps_changed) {
+        // Steps live in a different band and a full paint covers both. Mark,
+        // do not paint: tick() has more than one reason to repaint — this and
+        // poll_tilt() below — and painting inline meant one tick could run TWO
+        // full-face renders back to back (phase 8 at 466 ms against a 234 ms
+        // render, almost exactly double). app_loop drains the flag once per
+        // iteration and coalesces, as on_link_up has always done.
+        last_painted_minute_ = minute_now;
+        mark_paint_pending();
+      } else if (minute_now != last_painted_minute_) {
+        // Only the digits changed. Painted inline rather than coalesced
+        // because a band is ~5 tile passes: the reason to defer a repaint is
+        // that it is expensive, and this one is not.
+        last_painted_minute_ = minute_now;
+        show_clock_band();
+      }
     }
   }
   if (now_ms - last_batt_ms_ >= 1000u) {

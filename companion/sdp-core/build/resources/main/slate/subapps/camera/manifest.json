@@ -1,7 +1,7 @@
 {
   "id": "slate.camera",
   "name": "Camera",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entry": "main.js",
   "minProtocolVersion": 1,
   "minHostVersion": "0.1",
@@ -9,5 +9,5 @@
   "refreshPolicy": "on-change",
   "permissions": ["camera"],
   "allowedHosts": [],
-  "requires": ["slate.ui", "slate.camera", "slate.haptic"]
+  "requires": ["slate.ui", "slate.invalidate", "slate.camera", "slate.haptic"]
 }

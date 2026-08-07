@@ -32,6 +32,13 @@ class JsSlateAppEndpoint(
     sourceCeiling: Set<ScriptPermission> = ScriptPermission.entries.toSet(),
     private val onTimerSet: (id: String, intervalMs: Long) -> Unit = { _, _ -> },
     private val onTimerClear: (id: String) -> Unit = { _ -> },
+    /**
+     * Values seeded into the script's store before it runs — how declared
+     * settings reach a sub-app (docs/subapp-rules.md §5). Riding on the store
+     * means no new binding: the script reads a setting exactly the way it reads
+     * anything else it saved itself.
+     */
+    initialStore: Map<String, String> = emptyMap(),
 ) : SlateAppEndpoint, AutoCloseable {
 
     override val manifest: AppManifest = manifestFrom(scriptManifest)
@@ -44,7 +51,23 @@ class JsSlateAppEndpoint(
             .intersect(hostHeldPermissions)
             .intersect(sourceCeiling)
 
-    private val store = LinkedHashMap<String, String>()
+    private val store = LinkedHashMap<String, String>().apply { putAll(initialStore) }
+
+    /**
+     * Overwrite declared settings in the running app's store.
+     *
+     * `docs/subapp-rules.md` §5.2 promises a script that a setting is read at
+     * focus. That was only true the first time: the store was seeded in the
+     * constructor and never again, so changing a value did nothing at all until
+     * the link service happened to restart. Every sub-app that declares
+     * settings was affected.
+     *
+     * Values the script wrote itself are left alone — only the declared keys
+     * are replaced, so persistence (the timer's countdown, say) survives.
+     */
+    fun seedSettings(values: Map<String, String>) {
+        for ((k, v) in values) store[k] = v
+    }
     private val bindings = BindingSurface(
         script = scriptManifest.copy(permissions = grantedPermissions),
         governor = governor,

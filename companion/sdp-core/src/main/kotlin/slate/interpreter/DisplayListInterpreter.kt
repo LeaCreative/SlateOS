@@ -132,6 +132,15 @@ class DisplayListInterpreter {
             TextLayout.drawTextRun(fb, x, mapY(y), color, align, utf8.decodeToString())
         }
 
+        override fun textScaled(
+            font: Int, x: Int, y: Int, color: Int, align: Int, scale: Int,
+            len: Int, utf8: ByteArray,
+        ) {
+            TextLayout.drawTextRunScaled(
+                fb, x, mapY(y), color, align, utf8.decodeToString(), font, scale,
+            )
+        }
+
         override fun textBox(
             font: Int, x: Int, y: Int, w: Int, h: Int,
             color: Int, align: Int, flags: Int, len: Int, utf8: ByteArray,
