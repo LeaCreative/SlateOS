@@ -73,6 +73,25 @@ target_include_directories(test_sdp_parser PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_sdp_parser PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_sdp_parser sdp_parser)
 
+add_executable(test_raise_wake
+  test_raise_wake.cpp
+  "${SLATE_ROOT}/src/raise_wake.cpp"
+)
+target_include_directories(test_raise_wake PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_raise_wake PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_raise_wake raise_wake)
+
+add_executable(test_band_push_tiles
+  test_band_push_tiles.cpp
+  "${SLATE_ROOT}/src/sdp_interpreter.cpp"
+  "${SLATE_ROOT}/src/sdp_parser.cpp"
+  "${SLATE_ROOT}/src/sdp_validate.cpp"
+  "${SLATE_ROOT}/src/renderer.cpp"
+)
+target_include_directories(test_band_push_tiles PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_band_push_tiles PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_band_push_tiles band_push_tiles)
+
 add_executable(test_renderer_cull
   test_renderer_cull.cpp
   "${SLATE_ROOT}/src/renderer.cpp"
@@ -157,8 +176,13 @@ add_executable(test_local_core
   "${SLATE_ROOT}/src/local_ui.cpp"
   "${SLATE_ROOT}/src/local_core.cpp"
   "${SLATE_ROOT}/src/bma42x.cpp"
+  "${SLATE_ROOT}/src/raise_wake.cpp"
+  "${SLATE_ROOT}/third_party/bosch/bma_config.cpp"
 )
-target_include_directories(test_local_core PRIVATE "${SLATE_ROOT}/include")
+target_include_directories(test_local_core PRIVATE
+  "${SLATE_ROOT}/include"
+  "${SLATE_ROOT}/third_party/bosch"
+)
 target_compile_options(test_local_core PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_local_core local_core)
 

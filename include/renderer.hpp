@@ -186,7 +186,21 @@ public:
     void clear_clip();
 
     // Clear the active tile buffer to `colour` (does not transmit).
+    /**
+     * Scrub the tile scratch buffer before rendering into it.
+     *
+     * Deliberately does NOT mark the tile dirty: the render loop calls this on
+     * every tile, and treating it as content would flush all 30 every time —
+     * which is what blanked the screen around a band-only list. Use
+     * [fill_tile] for a CLEAR that the display list actually asked for.
+     */
     void clear_tile_buffer(std::uint16_t colour);
+
+    /**
+     * A CLEAR the display list asked for: fills the tile AND marks it dirty,
+     * so a full-screen clear still reaches the panel.
+     */
+    void fill_tile(std::uint16_t colour);
 
     /** Active tile buffer, for host tests that verify culling output. */
     const std::uint8_t* tile_buffer() const { return buf_[0]; }

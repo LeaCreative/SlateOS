@@ -5,7 +5,430 @@
 
 ---
 
-## Current state (7 Aug 2026)
+## Current state (8 Aug 2026)
+
+### I-19 — RAM margin is down to 176 bytes (owner asked this be recorded)
+
+Verbatim, as stated to the owner on 8 Aug:
+
+> RAM margin is now 176 bytes, down from 432. This session's firmware work cost
+> ~256 B. The failure mode is a link-time assert, not runtime corruption, but
+> it's thin — and CLAUDE.md's stated ≥6 KB slack hasn't been met for some time
+> (RAM is at 93.5%). Reclaiming it needs a real look at ucHeap, g_interp,
+> g_renderer and g_core; that's its own task and I didn't want to start it
+> mid-flight.
+
+Supporting numbers, measured from `build/dfu/slate_firmware.map`:
+
+| | bytes | section |
+|---|---|---|
+| `ucHeap` (FreeRTOS heap_4) | 16384 | .bss |
+| `g_interp` | 8600 | .bss |
+| `g_renderer` | 7696 | .bss |
+| `g_core` | 6380 | **.data** |
+| `g_link` | 4252 | .data |
+| `persist_nvmc::g_page_cache` | 4096 | .bss |
+| **total RAM** | **61264 / 65536 = 93.5%** | |
+| **`__StackLimit` − `__heap_end__`** | **176** | link margin |
+
+Notes for whoever picks this up:
+
+- `g_core` sits in `.data` rather than `.bss` purely because of its non-zero
+  member initialisers, so it costs flash for the initialiser image as well.
+  Zero-initialising the few fields that do not need a non-zero default would
+  move the whole 6380 B object to `.bss`.
+- The 176 B is unallocated margin between the top of statics and the bottom of
+  the MSP stack. The FreeRTOS heap is a fixed `.bss` array and does not grow
+  into it, so the failure mode is `ASSERT (__StackLimit >= __heap_end__)` at
+  link time — loud, not silent.
+- **Do not chase `GlyphCache`.** Its 6144 B static looks like an easy win in the
+  map and is not: `--gc-sections` already discards it. A parse that "found" it
+  on 8 Aug was reading the map's *discarded* sections. Confirmed by excluding
+  the file from the build and observing zero change.
+- `CLAUDE.md` states "total static + heap under 54KB, >=6KB slack. CI enforces."
+  Neither figure currently holds. Either the gate is measuring something else or
+  it is not running — worth establishing before treating 6 KB as the target.
+
+### N-55 — steps still 0 on `839EEED31683`; two more causes found
+
+**Firmware to flash: `070AC047BE3E` (stamp 15:57).** Supersedes everything
+before it. 20/20 host tests. RAM slack 200 B.
+
+The blob upload fix was necessary and not sufficient. Two further faults, both
+found by reading InfiniTime's `Bma421.cpp` init sequence rather than the symptom:
+
+1. **The pedometer was never switched on.** InfiniTime calls
+   `bma423_feature_enable(BMA423_STEP_CNTR, 1)` *after* loading the config.
+   Slate's `enable_step_counter()` set a C++ bool and told the sensor nothing.
+   Loading the stream boots the feature ASIC; it does not enable any feature.
+   Now a real 70-byte read-modify-write of the feature block, setting
+   `BMA423_STEP_CNTR_EN_MSK` at `BMA423_STEP_CNTR_OFFSET + 1`, with the ASIC
+   address registers restored first (the config upload leaves them pointing
+   past the end of the stream, and Bosch reads them back rather than assuming).
+2. **`bma_write` in main.cpp had a 16-byte buffer** and returned false for
+   anything larger. The feature block is a single 70-byte write, so step 1
+   would have failed silently even once written. Now 80.
+
+**Instrumented, as promised rather than guessed at.** Diag line 3 gains a BMA
+group: `…/<chip>.<internal_status>`.
+
+- chip: 0 undetected, 1 = BMA421, 2 = BMA425
+- status: the sensor's `INTERNAL_STATUS` (0x2A) after the upload. **1 means the
+  feature ASIC booted.** 0xFF means no upload was attempted (chip undetected),
+  0xFE means the status read itself failed.
+
+That one byte separates "the blob never loaded" from "you have not walked",
+which is the ambiguity that has made this bug expensive.
+
+### Display timeout is now 20 s (owner request)
+
+`settings.wake_seconds` default 5 → **20**, clamped 5..120, 0 disables.
+
+Two things had to change for that to take effect, and the second is the
+interesting one:
+
+- `kSettingsMagic` bumped 'SLTS' → 'SLTT'. `load_settings()` only applies
+  defaults when the magic mismatches, so without a bump the new default would
+  never reach a watch that already had a settings block stored — including this
+  one. Cost: customised tilt settings revert once. There is no settings UI yet,
+  so nothing has been customised.
+- **`load_settings()` restated every default itself**, including
+  `wake_seconds = 5u`, so changing the struct's member initialiser did nothing
+  at all. Defaults now live in `local::Settings` and nowhere else. This was
+  caught by the host test pinning 20 s, not by reading the code.
+
+### Step counter + raise-to-wake — built, NOT yet on hardware
+
+**Firmware to flash: `839EEED31683` (stamp 15:33).** Supersedes `94FE87EC9178`
+and contains everything before it. 20/20 host tests.
+
+#### N-54 — the step counter never worked, and the reason was the upload
+
+`Core::init` passed `feature_cfg = nullptr`, so no Bosch config stream was ever
+sent. But fixing only that would not have helped, because
+`write_feature_config` was itself wrong — and it is worth stating exactly how,
+since it returned success the whole time:
+
+| Bosch `bma4_write_config_file` | Slate had |
+|---|---|
+| advanced power save OFF, 450 us settle | missing |
+| INIT_CTRL = 0 | present |
+| **per chunk: ASIC address to 0x5B / 0x5C**, then bytes to 0x5E | **missing — every chunk went to the same address** |
+| INIT_CTRL = 1, 150 ms | present |
+| **verify INTERNAL_STATUS (0x2A) == 1** | read a different register and ignored it |
+| advanced power save ON | missing |
+
+Without the address registers the whole 6 KB lands on top of itself and the
+feature ASIC never boots. The function then returned `true` regardless, so
+`enable_step_counter()` set `step_enabled_ = true` and `read_steps()` happily
+reported the zeros the sensor was giving it. **That is the entire history of
+"steps read 0" on this project.**
+
+Both blobs are now vendored at `third_party/bosch/bma_config.{cpp,hpp}` —
+6144 B each, BSD-3-Clause, Bosch notice retained verbatim, `const` so they cost
+flash (+12.4 KB) and no RAM. The 421 runs the 423 stream, the 425 its own,
+picked from the runtime chip detection.
+
+**No new diag field for "did the blob load".** The step count is already the
+honest indicator: non-zero after a walk means the ASIC came up, a permanent 0
+means it did not.
+
+#### Raise-to-wake ("wrist flick")
+
+`slate::motion::RaiseDetector` — `include/raise_wake.hpp`, `src/raise_wake.cpp`,
+17 host tests in `tests/host/test_raise_wake.cpp`.
+
+Mirrors InfiniTime's `MotionController`: 8-sample history at a 100 ms poll
+(0.8 s), mean of the newest two against the oldest two, variance over the
+newest two, then the four thresholds and `DegreesRolled`. Integer `asin` by
+binary search over a sine table scaled to 32767 — a **second** table, not the
+renderer's, because that one is scaled to 256 for pixel work and its top entries
+do not reach 256, so it cannot be inverted accurately.
+
+**It does not use the BMA's wrist-wear interrupt, and neither does InfiniTime.**
+That feature lives in the same ASIC the config blob boots; raw acceleration is
+live regardless. Statistics over raw samples work on any part in any state and
+can be inspected and tuned — an opaque interrupt cannot. The old `poll_tilt`
+used the sensor's **any-motion** interrupt, which fires on any movement above a
+threshold and is not a gesture at all; it is gone.
+
+Polled **only while asleep**. Awake, the screen is already lit and the samples
+would buy nothing but an I2C transfer every 100 ms, and the history is kept
+empty so every sleep starts cold rather than full of whatever the wrist did
+while the user was reading.
+
+Gated on the existing `settings.tilt_enabled`, so flick can be turned off
+without a reflash — which was the point of asking whether it should be a
+setting.
+
+#### RAM: 176 bytes of link margin, down from 432
+
+This session's firmware work cost ~256 B of static RAM (the sleep state, the
+detector's 48-byte history, and padding in `g_core`, which is `.data` because of
+its non-zero member initialisers).
+
+Failure mode is a **link-time assert**, not runtime corruption — the gap is
+unallocated margin between `__heap_end__` and `__StackLimit`, and the FreeRTOS
+heap is a fixed 16 KB `.bss` array that does not grow into it. But it is thin,
+and `CLAUDE.md`'s stated ">=6 KB slack" has not been met for some time: RAM is
+at 61264 / 65536 = 93.5%, against a stated budget of 54 KB.
+
+**A false lead, recorded so nobody repeats it.** The map appeared to show
+`GlyphCache::alloc_bytes`'s 6144-byte static occupying `.bss`, which would have
+been an easy 6 KB win. It does not: `--gc-sections` was already discarding it,
+and the parse that "found" it was scraping the map's *discarded* sections. The
+register's older claim that GlyphCache "contributes 0 bytes to .bss today" was
+right. Reclaiming RAM needs a real look at `ucHeap` (16 KB), `g_interp`
+(8.6 KB), `g_renderer` (7.7 KB) and `g_core` (6.4 KB) — its own task.
+
+#### What to look for after flashing
+
+- **Steps.** Walk a hundred paces and look at the face. Non-zero means the blob
+  loaded and the ASIC booted — the single most informative check here.
+- **Flick.** With the screen asleep, raise your wrist to read the watch. It
+  should wake. It should NOT wake from typing, walking with arms swinging, or
+  putting the arm down.
+- **Disproof:** steps still 0 means `INTERNAL_STATUS` is not reading 1 and the
+  stream is still not loading — the next step would be logging that status byte
+  rather than guessing again.
+
+### Display sleep — built, NOT yet on hardware
+
+**Firmware to flash: `94FE87EC9178` (stamp 12:54).** Supersedes `6622C8E8454D`;
+it contains the N-53 band-blanking fix as well, so flash this one.
+
+Mirrors InfiniTime's structure — the research is written up in
+`docs/infinitime-parity.md` under "Sleep mode". 20/20 host tests, RAM headroom
+unchanged (`__heap_end__` 0x2000ee50 vs `__StackLimit` 0x2000f000).
+
+| | |
+|---|---|
+| `Core::Power { Running, Sleeping }`, timeout, `enter_sleep`, `wake_display` | `local_core.cpp` |
+| `display_sleep` hook → `st7789::sleep_in/out` | `main.cpp::core_display_sleep` |
+| Double-tap / button wake, activity stamping | `main.cpp` input loop |
+| 9 host tests | `tests/host/test_local_core.cpp` |
+
+**Two states, not InfiniTime's four.** `GoingToSleep` exists there because
+`DisplayApp` and `SystemTask` are separate tasks and the handover is
+asynchronous. Slate does it all on the app task, so the transition cannot be
+interrupted and the extra states would carry no information. `AODSleeping`
+needs an always-on mode Slate does not have.
+
+**Wake sources**, all funnelling through `wake_display()` — the same
+choke-point argument as `show_current()`, so a new source cannot forget to
+leave sleep:
+
+- side button
+- **double tap** (`EventType::MultiTap`)
+- wrist tilt (`poll_tilt`, already wired)
+- charge/discharge edge (`poll_battery`, already wired)
+- alerts (`enter_alert`)
+
+**Single tap deliberately does not wake.** The CST816S is left in normal mode
+while asleep — InfiniTime skips `touchPanel.Sleep()` for exactly this reason —
+so it still reports every brush against a sleeve. The waking event is also
+**consumed** rather than acted on, so the tap that wakes the watch cannot also
+press whatever was underneath it.
+
+**Charging does not hold it awake**, which is what was asked for and is also
+what InfiniTime does: the charge edge wakes it so the change is visible, then
+the ordinary timeout applies.
+
+Timeout is the existing `settings.wake_seconds`, clamped to 5..120 s, 0
+disables. Default is 5 s, which is short — worth raising after a wear test.
+
+#### Deliberately NOT done, with reasons
+
+- **SPI master + external flash sleep.** InfiniTime does both. Slate does
+  neither, because (a) the flash shares this bus and an SDP OTA can arrive
+  while asleep, with `ota_slot` writing from the app task, and (b) InfiniTime
+  itself guards flash sleep behind a bootloader version check commented "avoid
+  bricked device". On a sealed watch with no SWD that is not worth microamps.
+  The backlight and panel are where the current actually goes.
+- **`configUSE_TICKLESS_IDLE`.** Still 0. The app loop is the only thing that
+  pets the watchdog and the bootloader dog is ~7 s; **I-3** already demands a
+  soak first. Not bundled into this flash on purpose.
+- **InfiniTime's `ShouldRaiseWake` statistics.** Slate uses the BMA's hardware
+  tilt interrupt instead, which predates this work. A divergence, but a
+  reasonable one; revisit only if tilt wake proves unreliable in wear.
+
+#### What to look for after flashing
+
+- Screen goes dark ~5 s after the last input; double tap or the button brings
+  it back, and the **first** double tap only wakes — it must not also activate
+  whatever was under your finger.
+- A single tap should NOT wake it. If it does, the CST816S is reporting
+  `MultiTap` for single taps and the gesture decode needs checking.
+- On the charger: it should still sleep. Plugging/unplugging should wake it
+  briefly.
+- **Disproof:** if the screen wakes blank and stays blank, the panel is coming
+  out of SLPIN but nothing is repainting — that would mean the digest is not
+  being cleared on wake, and `test_display_sleep` is asserting the wrong thing.
+
+### I-18 — battery % jumps down when the charger comes out — NOT A DEFECT
+
+**Open only as a question of taste. Nothing is wrong, and nothing has been
+changed.** Recorded here so the next person does not re-derive it, and — more
+importantly — does not "fix" it by accident.
+
+**Observed (8 Aug, 08:44, two readings 8 s apart):** removing the watch from
+the charger dropped the battery bar from **62% to 51%**.
+
+**Why.** `battery.cpp::apply_hysteresis` is a ratchet:
+
+```cpp
+if (power_present) return raw > prev_pct ? raw : prev_pct;   // charging: up only
+return raw < prev_pct ? raw : prev_pct;                       // discharging: down only
+```
+
+A charger pulses current, so terminal voltage fluctuates. Every upward blip
+ratchets the displayed value and it never comes back down while the cable is
+in, so over a long charge the display creeps to the highest instantaneous
+reading. Unplug, the ratchet flips direction, and the true resting value is
+admitted at once.
+
+The arithmetic from the two readings, both internally consistent:
+
+| | on charger | off charger |
+|---|---|---|
+| voltage | 3815 mV | 3796 mV |
+| `percent_from_mv` says | ~54% | **51%** |
+| displayed | **62%** | **51%** |
+
+`48 + (3796-3776) * 31/203 = 51`, exactly. The 62% is a latched peak from
+earlier in the charge, not a reading of 3815 mV.
+
+**It is InfiniTime's behaviour, verified line by line** (`CLAUDE.md` requires
+checking there first, and this is why):
+
+| | InfiniTime `BatteryController.cpp` | Slate `battery.cpp` |
+|---|---|---|
+| ratchet | `(isPowerPresent && newPercent > percentRemaining) \|\| (!isPowerPresent && newPercent < percentRemaining)` | identical |
+| curve | `{3500,0},{3616,3},{3723,22},{3776,48},{3979,79},{4180,100}` | identical, same six points |
+| charge clamp | `min(approx, isCharging ? 99 : 100)` | identical |
+| voltage filter | **none** — one raw SAADC sample straight into the curve | identical |
+
+An InfiniTime PineTime does the same jump on the same cell. Slate is a faithful
+mirror, so changing it is a **deliberate divergence** and needs a written
+reason under the standing rule.
+
+#### If we do decide to change it
+
+Ranked, with the trade-off stated:
+
+1. **Filter the voltage before the curve** (recommended). A 4-8 sample moving
+   average or median in `battery.cpp`, applied to the mV reading. This attacks
+   the actual cause — the ratchet latching a single instantaneous peak — while
+   leaving the ratchet, the curve and the clamp exactly as InfiniTime has them.
+   The ratchet exists to stop the number oscillating and is worth keeping.
+   Cost: a few bytes of state, and the displayed value lags a real change by a
+   few sample periods. Note the sample cadence first: `Core::poll_battery`
+   samples on a charge edge or every 10 s, so a multi-hour charge takes
+   hundreds of samples and has hundreds of chances to latch a peak — the filter
+   is doing real work here.
+2. **Settle delay after unplug.** On the power-present falling edge, hold the
+   displayed value for a few seconds before admitting a new one, so the cell
+   recovers from charge-current elevation and the drop lands smaller. Cheap,
+   but it treats the symptom and the number is knowingly stale meanwhile.
+3. **Ease the displayed number down** over a second or two. Purely cosmetic:
+   the jump becomes a slide. It briefly shows a value that is not the
+   measurement, which is the sort of thing this project has been careful not to
+   do on the diagnostic surfaces.
+
+**What NOT to do:** remove the ratchet. Without it the percentage oscillates
+with every current pulse, which is worse than one honest step, and it is why
+InfiniTime has it.
+
+Whatever is chosen, update the **Battery %** row in `docs/infinitime-parity.md`
+from "aligned" to a documented divergence, with the reason.
+
+### N-53 — a band-only push blanked the other 25 tiles — FIXED (firmware)
+
+**Firmware to flash: `6622C8E8454D` (stamp 07:20).** The first firmware change
+in this run of work; everything before it was companion-only.
+
+Reported as "the watch face flashing, i.e. disappearing for a split second,
+every now and again". An earlier instance guessed a 60 s full redraw. There is
+no such timer, and that guess was wrong.
+
+**Measured, on the desktop, with no flash spent** — `tests/host/test_band_push_tiles.cpp`:
+
+```
+before:  band y=56..96 -> 30 of 30 tiles flushed, 25 of them all-black
+after:   band y=56..96 ->  5 of 30 tiles flushed,  0 of them all-black
+```
+
+`render_retained_to_display()` walks all 30 tiles, scrubs each to black, parses
+the retained list into it and calls `flush_filtered_tile()`. That flush was
+**unconditional** — it ignored the dirty tracker `put_pixel` has maintained
+since M1, and which the legacy `flush()` has always honoured. So a band-only
+list — the clock band, the diagnostic band, the OTA banner — was DMA'd as
+black over the 25 tiles it does not cover. The face came back on the next full
+repaint, which is a fraction of a second later. That is the flash.
+
+It is occasional rather than every 2 s because the gap between the band push
+and the next full repaint is loop-timing dependent: usually a few ms and
+invisible, occasionally long enough to see.
+
+Two changes:
+
+| | |
+|---|---|
+| `flush_filtered_tile()` skips a tile the list drew nothing into | `renderer.cpp` |
+| `clear_tile_buffer()` no longer marks content; a list's own CLEAR uses the new `fill_tile()`, which does | `renderer.cpp`, `sdp_interpreter.cpp` |
+
+That split matters and the test caught it: with only the first change, a
+full-screen CLEAR drew nothing at all, because `DrawSink::clear` scrubs the
+buffer through the same call the render loop uses.
+
+**Also fixed, and worth more than it looks:** `Core::show_current()` now skips
+the push when the display list it just built is byte-identical to the last one
+Core pushed (a 4-byte FNV digest — there are only ~432 B between `__heap_end__`
+and `__StackLimit`, so a second 512 B buffer does not fit). Several callers
+repaint unconditionally because they cannot cheaply tell whether their change
+is visible; `set_remote_stale()` is called from the app loop **every 200 ms**
+with a flag that almost never changes, and `apply_cts_time()` repaints on every
+time sync. The digest answers that for all of them at one choke point. It is
+invalidated on every band/banner push and on every screen-ownership change, so
+a skip can never strand a band or a phone screen on the panel.
+
+Expect this to move **N-36**: diag line 1 read `stall_events` climbing by 180
+in 45 s — four stall episodes per second against a 230 ms render.
+
+**Flashed and measured on hardware (8 Aug, 08:18 → 08:39, 1218 s of uptime):**
+
+| Diag line 1 | before (45 s window) | after (1218 s window) |
+|---|---|---|
+| stall episodes | 336 → 516 = **4.0/s** | 63 → 716 = **0.54/s** |
+| worst single stall | **714 ms** | **310 ms** |
+| worst phase (line 2) | phase 7 @ 472 ms | phase 1 @ 308 ms |
+| max render | 230 ms | 239 ms |
+| inbox drops (line 3) | 3 in 45 s | 1 in 20 min |
+
+**Stall episodes down 7.4x; worst single stall less than half.** The worst phase
+moved off the paint path — phase 7 at 472 ms is gone. Max render is unchanged
+at ~239 ms and should be: it is a max-since-boot for a genuine full repaint,
+and full repaints still cost what they cost. What changed is how many happen.
+
+This is the largest movement **N-36** has seen. It has not been re-characterised
+end to end — the numbers above are the whole of the evidence so far — but the
+"app-task stall" entry should be re-measured against this build before any
+further work is aimed at it.
+
+The reading also confirms the `paints` correction: 55 → 661 over 1218 s is 606
+against 609 two-second intervals.
+
+**Still unconfirmed:** whether the operator still sees the flash. The counters
+say far less repainting is happening; only the operator can say whether the
+visible symptom is gone.
+
+**Correction to the diagnostic docs.** Line 1 is
+`reset / uptime_s / paints / stall_ms / tick_catchup / stall_events`, not the
+five fields recorded below. And `paints` is misleading: it is incremented once
+per **diag tick**, so it counts 2 s intervals, not repaints. It cannot measure
+repaint rate and should be renamed or repurposed.
+
+## Earlier state (7 Aug 2026)
 
 **Firmware on the watch:** `609EF4F6979A` (stamp 10:43).
 **Built, not yet flashed:** `AB044776E1FE` (stamp 23:04) — circle span fill and

@@ -171,6 +171,21 @@ void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
   append(".");
   fmt_u32(part, sizeof(part), st.diag_render_ms);
   append(part);
+  // BMA identity and feature-config result, appended here rather than to line 3
+  // because line 3 is already the longest and has overrun the 240 px panel once
+  // before. Format: /<chip>.<internal status>
+  //   chip   0 = undetected, 1 = BMA421, 2 = BMA425
+  //   status the sensor's INTERNAL_STATUS (0x2A) after the 6 KB config upload.
+  //          1 = feature ASIC booted, so the pedometer is live. 255 = no upload
+  //          attempted. 254 = the status read itself failed.
+  // This exists because "steps read 0" cannot otherwise be told apart from
+  // "you have not walked", and that ambiguity has now cost two flashes.
+  append("/");
+  fmt_u32(part, sizeof(part), st.diag_bma_chip);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_bma_status);
+  append(part);
   o[i] = '\0';
 }
 

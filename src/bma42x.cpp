@@ -15,12 +15,27 @@ constexpr std::uint8_t kRegInitCtrl = 0x59u;
 constexpr std::uint8_t kRegFeaturesIn = 0x5Eu;
 constexpr std::uint8_t kRegIntStat0 = 0x1Cu;
 constexpr std::uint8_t kRegStepOut0 = 0x1Eu;
+constexpr std::uint8_t kRegAccData = 0x12u;  // ACC_X_LSB .. ACC_Z_MSB
 constexpr std::uint8_t kRegPowerCtrl = 0x7Du;
 constexpr std::uint8_t kRegCmd = 0x7Eu;
 constexpr std::uint8_t kCmdSoftReset = 0xB6u;
 
 // Feature enable stream helpers (Bosch BMA423 layout).
 constexpr std::uint8_t kRegInternalError = 0x5Fu;
+
+// Config-stream upload, from Bosch's bma4_write_config_file / stream_transfer_write.
+constexpr std::uint8_t kRegAsicLsb = 0x5Bu;       // BMA4_RESERVED_REG_5B_ADDR
+constexpr std::uint8_t kRegAsicMsb = 0x5Cu;       // BMA4_RESERVED_REG_5C_ADDR
+constexpr std::uint8_t kRegInternalStatus = 0x2Au;  // BMA4_INTERNAL_STAT
+constexpr std::uint8_t kRegPowerConf = 0x7Cu;     // BMA4_POWER_CONF_ADDR
+constexpr std::uint8_t kInternalStatusInitOk = 0x01u;
+// Bosch's read_write_len for I2C. The ASIC address advances by len/2 per chunk.
+constexpr std::size_t kStreamChunk = 8u;
+
+// Feature block, from Bosch's bma423.h.
+constexpr std::size_t kFeatureSize = 70u;         // BMA423_FEATURE_SIZE
+constexpr std::size_t kStepCounterByte = 0x3Au + 1u;  // BMA423_STEP_CNTR_OFFSET + 1
+constexpr std::uint8_t kStepCounterEnMask = 0x10u;    // BMA423_STEP_CNTR_EN_MSK
 
 }  // namespace
 
@@ -59,22 +74,50 @@ bool Driver::rd(std::uint8_t reg, std::uint8_t* v) {
   return bus_.read_reg(reg, v, 1u, bus_.ctx);
 }
 
+/**
+ * Upload the Bosch feature-config stream, following bma4_write_config_file.
+ *
+ * The previous version wrote the whole 6 KB to FEATURES_IN without ever setting
+ * the ASIC address registers, so every chunk landed at the same destination and
+ * the config never loaded. It then returned true regardless, so the caller
+ * believed the pedometer was live. That is why the step count read 0 for the
+ * entire project.
+ *
+ * The order below is Bosch's and each step earns its place:
+ *  1. advanced power save OFF - the ASIC cannot be written while it is on
+ *  2. 450 us for sensor time sync (datasheet)
+ *  3. INIT_CTRL = 0 to open the stream
+ *  4. per chunk: ASIC address low/high, then the bytes
+ *  5. INIT_CTRL = 1 to close it, then 150 ms while the ASIC boots
+ *  6. INTERNAL_STATUS must read 1 - this is the only honest success signal
+ *  7. advanced power save back ON
+ */
 bool Driver::write_feature_config(const std::uint8_t* cfg, std::size_t len) {
   if (cfg == nullptr || len == 0u || bus_.write_reg == nullptr) {
     return false;
   }
-  // Bosch stream: INIT_CTRL=0, burst FEATURES_IN, INIT_CTRL=1.
+  if (!wr(kRegPowerConf, 0x00u)) {
+    return false;
+  }
+  if (bus_.delay_ms) {
+    bus_.delay_ms(1u, bus_.ctx);  // >= 450 us
+  }
   if (!wr(kRegInitCtrl, 0x00u)) {
     return false;
   }
-  // Write in 8-byte chunks (EasyDMA-friendly).
-  std::size_t off = 0u;
-  while (off < len) {
-    const std::size_t n = (len - off) > 8u ? 8u : (len - off);
+  for (std::size_t off = 0u; off < len; off += kStreamChunk) {
+    const std::size_t n = (len - off) > kStreamChunk ? kStreamChunk : (len - off);
+    // Bosch addresses the ASIC in 16-bit words, so the byte index halves.
+    const std::uint16_t word = static_cast<std::uint16_t>(off / 2u);
+    if (!wr(kRegAsicLsb, static_cast<std::uint8_t>(word & 0x0Fu))) {
+      return false;
+    }
+    if (!wr(kRegAsicMsb, static_cast<std::uint8_t>(word >> 4u))) {
+      return false;
+    }
     if (!bus_.write_reg(kRegFeaturesIn, cfg + off, n, bus_.ctx)) {
       return false;
     }
-    off += n;
   }
   if (!wr(kRegInitCtrl, 0x01u)) {
     return false;
@@ -82,15 +125,85 @@ bool Driver::write_feature_config(const std::uint8_t* cfg, std::size_t len) {
   if (bus_.delay_ms) {
     bus_.delay_ms(150u, bus_.ctx);
   }
-  std::uint8_t err = 0u;
-  (void)rd(kRegInternalError, &err);
-  return true;
+  // Ask the sensor whether it worked rather than assuming. Anything but 1 means
+  // the ASIC did not come up and the feature registers will read zero.
+  std::uint8_t status = 0u;
+  if (!rd(kRegInternalStatus, &status)) {
+    last_init_status_ = 0xFEu;  // read failed, distinct from "never tried"
+    return false;
+  }
+  last_init_status_ = status;
+  // Bosch's get_feature_config_start_addr: the sensor reports where the feature
+  // block ended up, rather than the caller assuming an address. Read it back
+  // before power save goes on, and use it for every later feature access.
+  (void)rd(kRegAsicLsb, &feature_addr_lsb_);
+  (void)rd(kRegAsicMsb, &feature_addr_msb_);
+  feature_addr_lsb_ &= 0x0Fu;
+  (void)wr(kRegPowerConf, 0x01u);
+  return (status & 0x0Fu) == kInternalStatusInitOk;
 }
 
+/**
+ * Turn the pedometer on inside the sensor - bma423_feature_enable(STEP_CNTR, 1).
+ *
+ * Loading the config stream boots the feature ASIC; it does NOT switch any
+ * feature on. This used to set a C++ bool and tell the sensor nothing, so even
+ * a perfect upload left the step registers reading zero and read_steps()
+ * reported those zeros as though they were a step count.
+ *
+ * Three things Bosch does around FEATURE_CONFIG that are not optional, taken
+ * from bma4.c's read_regs/write_regs:
+ *
+ *  1. **Advanced power save OFF, then 450 us.** With APS enabled the ASIC
+ *     ignores feature writes entirely. The config upload re-enables APS at the
+ *     end, so by the time this runs it is always on - which is why loading the
+ *     blob was not enough by itself.
+ *  2. **The ASIC address is set once** before the transfer, from the values the
+ *     sensor reported after the upload.
+ *  3. **Transfers are chunked** at the same length as the config stream, and
+ *     the block length must be even. 70 is.
+ */
 bool Driver::enable_step_counter() {
-  // Feature enable is inside the config blob for Bosch parts. After a successful
-  // config load, step output registers are live. Without a blob we leave
-  // step_enabled_ false so callers know HW pedometer is inactive.
+  if (bus_.read_reg == nullptr || bus_.write_reg == nullptr) {
+    return false;
+  }
+  static_assert(kFeatureSize % 2u == 0u, "BMA feature block length must be even");
+
+  // 1. APS off + settle.
+  if (!wr(kRegPowerConf, 0x00u)) {
+    return false;
+  }
+  if (bus_.delay_ms) {
+    bus_.delay_ms(1u, bus_.ctx);  // >= 450 us
+  }
+
+  const auto set_addr = [&]() {
+    return wr(kRegAsicLsb, feature_addr_lsb_) && wr(kRegAsicMsb, feature_addr_msb_);
+  };
+
+  std::uint8_t feat[kFeatureSize] = {};
+  bool ok = set_addr();
+  for (std::size_t off = 0u; ok && off < kFeatureSize; off += kStreamChunk) {
+    const std::size_t n =
+        (kFeatureSize - off) > kStreamChunk ? kStreamChunk : (kFeatureSize - off);
+    ok = bus_.read_reg(kRegFeaturesIn, feat + off, n, bus_.ctx);
+  }
+
+  if (ok) {
+    feat[kStepCounterByte] |= kStepCounterEnMask;
+    ok = set_addr();
+    for (std::size_t off = 0u; ok && off < kFeatureSize; off += kStreamChunk) {
+      const std::size_t n =
+          (kFeatureSize - off) > kStreamChunk ? kStreamChunk : (kFeatureSize - off);
+      ok = bus_.write_reg(kRegFeaturesIn, feat + off, n, bus_.ctx);
+    }
+  }
+
+  // Restore APS whatever happened - leaving it off costs current.
+  (void)wr(kRegPowerConf, 0x01u);
+  if (!ok) {
+    return false;
+  }
   step_enabled_ = true;
   return true;
 }
@@ -132,6 +245,27 @@ bool Driver::configure(const std::uint8_t* feature_cfg, std::size_t cfg_len,
 
 void Driver::set_tilt_sensitivity(std::uint8_t sens_0_7) {
   (void)enable_any_motion(sens_0_7);
+}
+
+bool Driver::read_accel(std::int16_t* x, std::int16_t* y, std::int16_t* z) {
+  if (bus_.read_reg == nullptr) {
+    return false;
+  }
+  std::uint8_t b[6] = {};
+  if (!bus_.read_reg(kRegAccData, b, sizeof(b), bus_.ctx)) {
+    return false;
+  }
+  // 12-bit left-justified in a 16-bit little-endian pair; >> 4 restores sign.
+  const auto axis = [](std::uint8_t lo, std::uint8_t hi) -> std::int16_t {
+    const std::int16_t raw =
+        static_cast<std::int16_t>(static_cast<std::uint16_t>(lo) |
+                                  (static_cast<std::uint16_t>(hi) << 8u));
+    return static_cast<std::int16_t>(raw / 16);
+  };
+  if (x != nullptr) *x = axis(b[0], b[1]);
+  if (y != nullptr) *y = axis(b[2], b[3]);
+  if (z != nullptr) *z = axis(b[4], b[5]);
+  return true;
 }
 
 std::uint32_t Driver::read_steps() {

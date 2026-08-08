@@ -22,12 +22,26 @@ enum class Screen : std::uint8_t {
 struct Settings {
   std::uint8_t tilt_enabled = 1u;
   std::uint8_t tilt_sensitivity = 3u;  // 0=soft … 7=hard (any-motion threshold)
-  std::uint8_t wake_seconds = 5u;
+  /**
+   * Seconds of inactivity before the display sleeps. 0 disables sleeping;
+   * Core clamps the rest to 5..120.
+   *
+   * 20 rather than the old 5: five seconds is long enough to bench-test the
+   * sleep path and far too short to read anything, which was fine while nothing
+   * used the value and is not now.
+   */
+  std::uint8_t wake_seconds = 20u;
   std::uint8_t face_show_steps = 1u;
   std::uint32_t magic = 0u;
 };
 
-constexpr std::uint32_t kSettingsMagic = 0x534C5453u;  // 'SLTS'
+// Bumped 8 Aug 2026 ('SLTS' -> 'SLTT') so the new 20 s display timeout actually
+// reaches watches that already have a settings block persisted with the old
+// 5 s default. load_settings() only applies defaults when the magic mismatches,
+// so without a bump the change would silently do nothing on this very watch.
+// Cost: any customised tilt settings revert to defaults once. There is no
+// settings UI yet, so nothing has been customised.
+constexpr std::uint32_t kSettingsMagic = 0x534C5454u;  // 'SLTT'
 
 struct State {
   Screen screen = Screen::Face;
@@ -89,6 +103,17 @@ struct State {
   std::uint16_t diag_touch_readfail = 0u;
   std::uint16_t diag_touch = 0u;
   std::uint16_t diag_touch_hit = 0u;
+  /**
+   * BMA identity and the result of the feature-config upload.
+   *
+   * `diag_bma_status` is the sensor's INTERNAL_STATUS (0x2A) after the 6 KB
+   * Bosch stream: 1 means the feature ASIC booted and the pedometer is live,
+   * anything else means it did not. Added because "steps read 0" is
+   * indistinguishable between "the blob never loaded" and "you have not walked",
+   * and one flash spent making the sensor say which is cheaper than guessing.
+   */
+  std::uint8_t diag_bma_chip = 0u;
+  std::uint8_t diag_bma_status = 0xFFu;
   // How many times the local face took the screen back from a remote screen,
   // and the last caller to do it. Three fixes have each gated a different
   // path and a fourth still exists; guessing again is not the way to find it.

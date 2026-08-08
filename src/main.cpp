@@ -294,9 +294,36 @@ static void core_push_list(const std::uint8_t* data, std::size_t len, void*) {
 
 static void core_backlight(std::uint8_t pct, void*) { backlight::set(pct); }
 
+/**
+ * Panel in and out of ST7789 sleep, mirroring InfiniTime's St7789::Sleep/Wakeup.
+ *
+ * Deliberately NOT sleeping the SPI master or the external flash, which
+ * InfiniTime also does:
+ *
+ *  - The flash shares this SPI bus and an SDP OTA can arrive while the watch is
+ *    asleep; `ota_slot` writes it from the app task. A powered-down bus would
+ *    fail those writes silently.
+ *  - InfiniTime itself guards flash sleep behind a bootloader version check
+ *    with the comment "avoid bricked device". On a sealed watch with no SWD
+ *    that is not a risk worth taking for microamps.
+ *
+ * The backlight and the panel are where the current actually goes; this keeps
+ * the whole saving and none of that exposure. Revisit with the I-3 soak.
+ */
+static void core_display_sleep(bool sleep, void*) {
+  if (sleep) {
+    st7789::sleep_in();
+  } else {
+    st7789::sleep_out();
+  }
+}
+
 static bool bma_write(std::uint8_t reg, const std::uint8_t* data, std::size_t len,
                       void*) {
-  std::uint8_t buf[16];
+  // 80, not 16: the BMA feature block is a single 70-byte write, and at 16 this
+  // silently returned false for it — enabling the pedometer would have failed
+  // with no indication beyond a step count that stayed at zero.
+  std::uint8_t buf[80];
   if (len + 1u > sizeof(buf)) {
     return false;
   }
@@ -507,6 +534,27 @@ static void app_loop() {
           ++g_core.local_state().diag_touch_hit;
         }
       }
+      // Asleep: only the side button and a DOUBLE tap wake, and the event that
+      // wakes is consumed rather than acted on.
+      //
+      // Double rather than single is the whole point — the CST816S is left in
+      // normal mode while asleep (InfiniTime skips touchPanel.Sleep() for
+      // exactly this), so it still reports every brush against a sleeve. A
+      // single tap would make a pocket into a wake source. Consuming the event
+      // matters too: waking on a tap that then also lands on whatever button
+      // was under it is how a watch dials a number in your pocket.
+      if (g_core.sleeping()) {
+        const bool wakes = ev.type == input::EventType::Button ||
+                           ev.type == input::EventType::MultiTap;
+        if (wakes) {
+          g_core.wake_display();
+        }
+        continue;
+      }
+      // Awake: any input defers the timeout, including gestures the local UI
+      // ignores and ones handled by a phone-pushed screen. Reading the watch is
+      // activity whoever owns the panel.
+      g_core.note_activity();
       // Swipe right-to-left opens the app drawer, which only the phone can
       // compose — it is the phone that knows what is installed. With no
       // session there is nobody to ask, and the gesture would silently do
@@ -607,7 +655,8 @@ static void app_loop() {
     // hundreds of ms, so tying it to iteration count made the overlay the
     // dominant CPU consumer as soon as the loop sped up. 2 s keeps it useful
     // for bring-up while bounding the render load.
-    if (!updating && g_local_owns_screen && t - last_diag >= 2000u) {
+    if (!updating && g_local_owns_screen && !g_core.sleeping() &&
+        t - last_diag >= 2000u) {
       last_diag = t;
       auto& st = g_core.local_state();
       st.diag_uptime_s = t / 1000u;
@@ -817,6 +866,7 @@ extern "C" int main() {
   ckh.push_list = &core_push_list;
   ckh.haptic = &do_haptic;
   ckh.backlight = &core_backlight;
+  ckh.display_sleep = &core_display_sleep;
   ckh.sample_battery = [](void*) { slate::battery_hw::sample_now(); };
   g_core.init(ckh, &g_bma);
   // init() memsets the state block and paints from it, so these have to be set

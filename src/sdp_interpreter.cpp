@@ -222,7 +222,8 @@ struct DrawSink : Sink {
   void clear(std::uint16_t color) override {
     clear_color = color;
     cleared = true;
-    r->clear_tile_buffer(color);
+    // fill_tile, not clear_tile_buffer: this clear was asked for by the list.
+    r->fill_tile(color);
   }
 
   void rect(std::uint8_t x, std::uint8_t y, std::uint8_t w, std::uint8_t h,

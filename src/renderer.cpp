@@ -372,6 +372,28 @@ void Renderer::clear_tile_buffer(std::uint16_t colour) {
         buf_[0][i * 2u] = hi;
         buf_[0][i * 2u + 1u] = lo;
     }
+    // Clearing the scratch buffer is not content. Dropping the dirty bit here
+    // is what lets flush_filtered_tile() tell "the list drew into this tile"
+    // from "the list did not touch this tile at all" — the parse that follows
+    // sets it again through put_pixel if anything lands here.
+    if (tile_filter_ >= 0 &&
+        static_cast<std::uint32_t>(tile_filter_) < kTileCount) {
+        dirty_.clear_tile(static_cast<std::uint32_t>(tile_filter_));
+    }
+}
+
+void Renderer::fill_tile(std::uint16_t colour) {
+    clear_tile_buffer(colour);
+    // A CLEAR in a display list IS content — the list is asking for those
+    // pixels. Without this the tile looks untouched and flush_filtered_tile()
+    // skips it, so a full-screen clear would draw nothing at all.
+    if (tile_filter_ >= 0) {
+        if (static_cast<std::uint32_t>(tile_filter_) < kTileCount) {
+            dirty_.mark_tile(static_cast<std::uint32_t>(tile_filter_));
+        }
+    } else {
+        dirty_.mark_all();
+    }
 }
 
 void Renderer::flush_filtered_tile() {
@@ -380,6 +402,18 @@ void Renderer::flush_filtered_tile() {
     }
     const std::uint32_t t = static_cast<std::uint32_t>(tile_filter_);
     if (t >= kTileCount) {
+        return;
+    }
+    // Nothing was drawn into this tile, so the buffer still holds the clear
+    // colour. Sending it would overwrite whatever the panel is showing there
+    // with black — which is exactly what a band-only list did to the other 25
+    // tiles: the clock band, the diagnostic band and the OTA banner each wiped
+    // the rest of the screen, and it only came back on the next full repaint.
+    // That is the watch face "disappearing for a split second".
+    //
+    // The dirty tracker already knew; only this path ignored it. flush() has
+    // checked it since M1.
+    if (!dirty_.is_dirty(t)) {
         return;
     }
     const std::uint16_t ty0 = static_cast<std::uint16_t>(t * kTileHeight);

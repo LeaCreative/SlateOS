@@ -110,6 +110,8 @@ set(SLATE_APP_SOURCES
   src/notif_store.cpp
   src/alarm_sched.cpp
   src/bma42x.cpp
+  src/raise_wake.cpp
+  third_party/bosch/bma_config.cpp
   src/battery.cpp
   src/battery_hw.cpp
   src/local_ui.cpp
@@ -152,6 +154,7 @@ target_include_directories(slate_firmware.elf PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/config"
   "${CMAKE_CURRENT_SOURCE_DIR}/third_party/littlefs"
+  "${CMAKE_CURRENT_SOURCE_DIR}/third_party/bosch"
   "${CMAKE_CURRENT_SOURCE_DIR}/shared/generated"
 )
 

@@ -4,6 +4,7 @@
 #include "bma42x.hpp"
 #include "local_state.hpp"
 #include "notif_store.hpp"
+#include "raise_wake.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -20,6 +21,13 @@ struct Hooks {
   void (*backlight)(std::uint8_t percent, void* ctx) = nullptr;
   // Optional: SAADC sample into battery_hw (device). Host leaves null.
   void (*sample_battery)(void* ctx) = nullptr;
+  /**
+   * Put the panel into or out of sleep (ST7789 SLPIN/SLPOUT).
+   *
+   * A hook rather than a direct call so Core stays free of driver headers and
+   * the host tests keep building. Null on host; the device wires it in main.
+   */
+  void (*display_sleep)(bool sleep, void* ctx) = nullptr;
   void* ctx = nullptr;
 };
 
@@ -30,6 +38,22 @@ struct BudgetReport {
   std::size_t notif_store_bytes = 0u;
   std::size_t notif_budget = 0u;
 };
+
+/**
+ * Bounds on the inactivity timeout.
+ *
+ * The floor stops a stored 1 s from making the watch unusable; the ceiling
+ * stops a stored value leaving the panel lit for minutes, which is the whole
+ * cost this feature exists to remove.
+ */
+/**
+ * Accelerometer poll period for raise-to-wake, matching InfiniTime's 100 ms
+ * `stateUpdatePeriod`. The 8-sample history is therefore 0.8 s of movement.
+ */
+constexpr std::uint32_t kRaisePollMs = 100u;
+
+constexpr std::uint32_t kMinSleepSeconds = 5u;
+constexpr std::uint32_t kMaxSleepSeconds = 120u;
 
 class Core {
 public:
@@ -61,7 +85,16 @@ public:
   void on_tap_elem(std::uint16_t elem_id);
 
   /** False while a phone-pushed screen owns the panel; blocks local repaints. */
-  void set_local_owns_screen(bool owns) { local_owns_screen_ = owns; }
+  void set_local_owns_screen(bool owns) {
+    // Ownership changing invalidates what Core believes is on the panel: while
+    // the phone held it, the phone was pushing lists Core never saw. Forgetting
+    // the digest here is what stops the repaint suppression in show_current()
+    // from skipping the paint that brings the local face back.
+    if (owns != local_owns_screen_) {
+      forget_pushed_digest();
+    }
+    local_owns_screen_ = owns;
+  }
 
   /** True while firmware is being received; blocks local repaints entirely. */
   void set_updating(bool updating) { updating_ = updating; }
@@ -91,13 +124,34 @@ public:
 
   /** Repaint HH:MM only. For the minute rollover; ~5 tile passes, not 30. */
   void show_clock_band();
+  /**
+   * Wake the panel and restart the inactivity timeout.
+   *
+   * The single wake entry point, deliberately: every source already funnels
+   * here — button, tilt, touch, charge edge, alert — so making this the place
+   * that leaves sleep means a new source cannot forget to. Same argument as
+   * the guard inside show_current().
+   */
   void wake_display();
+
+  /** True while the panel is asleep. Nothing local paints in this state. */
+  bool sleeping() const { return power_ == Power::Sleeping; }
+
+  /**
+   * Record user activity without waking. Used by paths that should defer sleep
+   * but not light the screen on their own.
+   */
+  void note_activity() { last_activity_ms_ = last_tick_ms_; activity_seeded_ = true; }
+
+  /** Seconds of inactivity before the panel sleeps; 0 disables sleeping. */
+  std::uint32_t sleep_timeout_ms() const;
 
 private:
   void poll_steps();
   void poll_battery(std::uint32_t now_ms);
   void poll_alarms();
-  void poll_tilt();
+  void poll_raise(std::uint32_t now_ms);
+  void enter_sleep();
   void enter_alert(std::uint8_t kind, std::uint8_t id);
   void load_settings();
   void save_settings();
@@ -109,6 +163,26 @@ private:
   alarm::Table alarms_{};
   bool local_owns_screen_ = true;
   bool updating_ = false;
+
+  /**
+   * Display power state.
+   *
+   * Two states, not InfiniTime's four. InfiniTime needs `GoingToSleep` because
+   * `DisplayApp` and `SystemTask` are separate tasks and the handover is
+   * asynchronous — the panel has to finish sleeping before peripherals can be
+   * powered down, and a wake can arrive mid-flight. Slate does all of this on
+   * the one app task, so the transition cannot be interrupted and the extra
+   * states would carry no information. `AODSleeping` needs an always-on
+   * display mode Slate does not have.
+   */
+  enum class Power : std::uint8_t { Running, Sleeping };
+  Power power_ = Power::Running;
+
+  /** Last input, alert or charge event — what the sleep timeout counts from. */
+  std::uint32_t last_activity_ms_ = 0u;
+  /** Latest tick, so wake_display() can stamp activity without a parameter. */
+  std::uint32_t last_tick_ms_ = 0u;
+  bool activity_seeded_ = false;
   std::uint8_t dl_buf_[512] = {};
   std::uint32_t wake_until_ms_ = 0u;
   std::uint32_t last_step_ms_ = 0u;
@@ -116,7 +190,42 @@ private:
   // Minute shown by the last face repaint; 0xFF forces the first paint.
   std::uint8_t last_painted_minute_ = 0xFFu;
   bool paint_pending_ = false;
+
+  /**
+   * Digest of the last display list Core pushed, so an unchanged screen is not
+   * repainted.
+   *
+   * A digest rather than a copy of the bytes: `dl_buf_` is 512 B and the link
+   * map leaves ~432 B between `__heap_end__` and `__StackLimit`, so a second
+   * buffer does not fit. Four bytes does.
+   *
+   * Zero means "unknown" and always repaints. It must be reset whenever
+   * anything other than this path writes the panel — a band, the OTA banner,
+   * or the phone taking the screen — or a later "nothing changed" would leave
+   * that other thing on display forever.
+   */
+  std::uint32_t pushed_digest_ = 0u;
+
+  void forget_pushed_digest() { pushed_digest_ = 0u; }
+
+  /** FNV-1a. Cheap, and collisions only ever cost one skipped repaint. */
+  static std::uint32_t digest_of(const std::uint8_t* p, std::size_t n) {
+    std::uint32_t h = 2166136261u;
+    for (std::size_t i = 0u; i < n; ++i) {
+      h ^= p[i];
+      h *= 16777619u;
+    }
+    // Never collide with the "unknown" sentinel.
+    return h == 0u ? 1u : h;
+  }
   std::uint32_t last_adc_ms_ = 0u;
+
+  /**
+   * Raise-to-wake. Polled only while asleep, so it costs nothing when the
+   * screen is already on.
+   */
+  motion::RaiseDetector raise_{};
+  std::uint32_t last_raise_ms_ = 0u;
   bool display_on_ = true;
 };
 

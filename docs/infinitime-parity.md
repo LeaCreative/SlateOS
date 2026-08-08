@@ -9,7 +9,7 @@ WDT/button, and BLE bring-up; differ on purpose only at the SDP / JS layer.
 | **Button enable** | Left high for life of app | `board::button_hw_init` OUTSET enable, leave high | **aligned** |
 | **Confirm / validate** | Settings → Firmware → Validate writes IMAGE_OK | Any BLE central held `kConfirmDwellMs` (10 s); companion surfaces trial countdown via CONTROL `CONFIRM_STATUS` (0xE1) + GATT contention check (`LinkContention`) | **documented exception** — thin client has no local Validate UI; dwell proves radio before point of no return (`docs/flash-sealed.md`). Visibility/conflict UX on phone; mechanism unchanged (I-6). |
 | **Adv after failed connect** | `OnGAPEvent` restarts adv when `connect.status != 0` | Same via `ble_gap_adv_policy` + `resume_advertising()` in `ble_nimble.cpp` | **aligned** (I-16) |
-| **Battery %** | 6-point mV curve, charge clamp 99%, up-only while charging / down-only while discharging; measure on charge GPIOTE + timer | Same curve/clamp/hysteresis in `battery.cpp`; sample on charge edge + 10 s (`Core::poll_battery`); unknown=`0xFF`/`--` | **aligned** (ADC gain path differs — validate mV with meter) |
+| **Battery %** | 6-point mV curve, charge clamp 99%, up-only while charging / down-only while discharging; measure on charge GPIOTE + timer; **no voltage filtering** | Same curve/clamp/hysteresis in `battery.cpp`; sample on charge edge + 10 s (`Core::poll_battery`); unknown=`0xFF`/`--` | **aligned**, re-verified line by line 8 Aug — same six curve points, same ratchet condition, same absence of a filter. Do not "fix" the visible consequence without reading **I-18** in `docs/issue-prompts-open.md` first |
 | **GATT → UI work** | Callbacks `PushMessage` to SystemTask / DisplayApp; no render in BLE host | Host: reassemble + `AppInbox` borrow; app task `drain_app_messages` → session/interp/SPI; CREDIT after deferred apply. **Session up/down hooks also deferred to the app task (N-14)** — they rendered on the host task until 1 Aug | **aligned** — but note this row read "aligned" for a week while N-14 sat in it. Verify by tracing every path into the renderer, not by reading the message path. |
 | **Connect handling** | Peripheral records the connection and reacts; preferred MTU published in config; central drives MTU exchange, DLE, PHY and connection parameters | Was: `run_negotiate()` issued MTU + DLE + 2M PHY + param update synchronously inside `BLE_GAP_EVENT_CONNECT`, which collapsed the link right after MTU reached 247. Now: preferred MTU set at sync; connect only records the handle and signals session-up; `BLE_GAP_EVENT_MTU` / `CONN_UPDATE` record what the central chose. `ble::negotiate_now()` retained for the A/B/D gates, app-task only | **aligned** (N-15) |
 | **Link state → display** | BLE layer posts a message; DisplayApp redraws on its own schedule | Link transitions mark the face pending; `app_loop` coalesces into one repaint outside the GAP callback | **aligned** (N-15) |
@@ -125,6 +125,122 @@ These four are where the defects actually were, so check them first:
 4. **Who writes peripheral ENABLE registers** — and what else that costs.
 
 ---
+
+## Sleep mode — how InfiniTime does it (researched 8 Aug, owner request)
+
+Read out of the reference tree rather than recalled. File and line references
+are to `C:\Users\highj\Documents\Projects\InfiniTime-main`.
+
+### The state machine
+
+`SystemTask` owns it — `SystemTask.h:56`:
+
+```cpp
+enum class SystemTaskState { Sleeping, Running, GoingToSleep, AODSleeping };
+```
+
+`GoingToSleep` exists because the transition is asynchronous: `DisplayApp` has
+to finish dimming and put the panel to sleep before the peripherals can be
+powered down. `IsSleeping()` is `state != Running` (`SystemTask.h:99`), so a
+wake arriving mid-transition is handled rather than lost.
+
+### What triggers sleep
+
+`DisplayApp` watches LVGL's inactivity timer (`DisplayApp.cpp:228-234`):
+
+| | |
+|---|---|
+| `GetScreenTimeOut() - 2000` | dim: brightness → `Low` |
+| `GetScreenTimeOut()` | push `GoToSleep` to SystemTask |
+
+Note the guard at `DisplayApp.cpp:273`: it only sends `GoToSleep` when its own
+message queue is empty, so a wake already in flight is not raced.
+
+### The sleep sequence, in order
+
+1. **DisplayApp** (`DisplayApp.cpp:301-348`): step brightness down to `Low`,
+   then `Off`; return to the Clock screen if a transient app is open; **clear
+   the touch state** (a stuck "pressed" keeps refreshing the activity timer and
+   the screen never sleeps at all); `lcd.Sleep()`; tell SystemTask
+   `OnDisplayTaskSleeping`.
+2. **St7789::Sleep()** (`St7789.cpp:298`): `SleepIn()` — the `SLPIN` command
+   plus a 5 ms settle — then `nrf_gpio_cfg_default(pinDataCommand)` so the D/C
+   pin stops sourcing current.
+3. **SystemTask**, on `OnDisplayTaskSleeping`: `spi.Sleep()`,
+   `spiNorFlash.Sleep()`, and `touchPanel.Sleep()` — the last **skipped** when
+   the DoubleTap wake mode is on, because the panel has to stay awake to detect
+   it (`SystemTask.cpp:412-415`).
+
+`SpiMaster::Sleep()` (`SpiMaster.cpp:256`) spins until `ENABLE` reads 0, then
+returns SCK/MOSI/MISO to `nrf_gpio_cfg_default`. `Spi::Sleep()` does the same
+for the CS pin. The point is that a driven pin into a sleeping peripheral leaks.
+
+`Cst816S::Sleep()` (`Cst816s.cpp:106`) is a reset pulse — RST low 5 ms, high
+50 ms — followed by writing `0x03` to register `0xA5`.
+
+### The wake sources
+
+All funnel into `SystemTask::GoToRunning()` (`SystemTask.cpp:404`):
+
+- side button
+- touch (CST816S IRQ)
+- **wrist raise** — `MotionController::ShouldRaiseWake()`
+- shake, above a configurable threshold
+- **charging event** — `OnChargingEvent` → `GoToRunning` (`SystemTask.cpp:355`)
+- new notification, alarm, chime, pairing, timer expiry
+
+Waking reverses the order: `spi.Wakeup()`, `spiNorFlash.Wakeup()`,
+`touchPanel.Wakeup()`, then DisplayApp does `lcd.Wakeup()` (`SLPOUT`,
+restore scroll address, `DisplayOn`) and re-applies brightness. If the radio is
+enabled and unconnected it also restarts fast advertising.
+
+**Charging does not hold the watch awake.** Plugging in wakes it so the change
+is visible, and the ordinary inactivity timeout then puts it back to sleep —
+which is the behaviour the owner asked for.
+
+### The raise-to-wake algorithm
+
+`MotionController::ShouldRaiseWake()` (`MotionController.cpp:113`) works on
+accumulated statistics, not one sample:
+
+```cpp
+constexpr uint32_t varianceThresh = 56 * 56;
+constexpr int16_t xThresh = 384;
+constexpr int16_t yThresh = -64;
+constexpr int16_t rollDegreesThresh = -45;
+```
+
+Reject if |xMean| is large (arm not level). Reject if yVariance is high — high
+variance means real acceleration, and the test wants gravity only. Then require
+the roll between the previous and current mean to exceed -45°. There is a
+matching `ShouldLowerSleep()` for lower-wrist-to-sleep.
+
+### CPU sleep
+
+`configUSE_TICKLESS_IDLE 1` at `configTICK_RATE_HZ 1024`, `configUSE_IDLE_HOOK 0`
+(`FreeRTOSConfig.h:59-80`). There is no idle hook and no explicit `__WFE`: the
+Nordic FreeRTOS port's `vPortSuppressTicksAndSleep` does it whenever no task is
+runnable. Sleep is inhibited by a wake-lock count, `IsSleepDisabled()` =
+`wakeLocksHeld > 0` (`SystemTask.h:82`).
+
+### What this means for Slate
+
+Slate already has `st7789::sleep_in()` / `sleep_out()`, the BMA tilt IRQ
+(`Core::poll_tilt`), and a `display_on_` flag that currently does nothing.
+Missing: the state machine, the inactivity timeout, the driver sleep helpers
+(SPI, touch, flash) and the wake wiring.
+
+**The one Slate-specific hazard, and it is a big one.** `CLAUDE.md`: the app
+task loop is the *only* thing that pets the watchdog, and the bootloader dog is
+~7 s. InfiniTime can lean on tickless idle because its watchdog handling
+differs; Slate cannot adopt `configUSE_TICKLESS_IDLE 1` without the soak that
+**I-3** already demands. So the split is:
+
+- **Now:** panel sleep, backlight off, touch sleep, SPI/flash sleep, the state
+  machine and the wake sources. This is where the current actually goes — the
+  backlight and panel dominate, and none of it touches the app loop's cadence.
+- **Deferred to I-3:** `configUSE_TICKLESS_IDLE`, with a soak proving the WDT
+  is still fed. Do not bundle it into the same flash.
 
 ## Scoped mirroring task (owner request, 5 Aug): battery, sleep/wake, input, vibration
 

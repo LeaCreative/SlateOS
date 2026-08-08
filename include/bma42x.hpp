@@ -35,6 +35,14 @@ public:
   void init(const Bus& bus);
 
   Chip chip() const { return chip_; }
+
+  /**
+   * INTERNAL_STATUS (0x2A) read after the last feature-config upload.
+   *
+   * 0x01 = ASIC booted. 0xFF means no upload has been attempted. Exposed
+   * because it is the only honest answer to "did the pedometer come up".
+   */
+  std::uint8_t last_init_status() const { return last_init_status_; }
   bool ok() const { return chip_ != Chip::Unknown; }
 
   // Enable accel in low-power + attempt HW step counter.
@@ -51,6 +59,16 @@ public:
   // True if INT status indicates any-motion / wrist activity since last clear.
   bool consume_tilt_irq();
 
+  /**
+   * Raw acceleration, milli-g-ish counts at the configured range.
+   *
+   * Basic data registers (0x12..0x17), live from power-on and independent of
+   * the feature config blob — which is what makes raise-to-wake possible on a
+   * sensor whose ASIC never loaded. Returns false if the read fails; leaves the
+   * outputs untouched in that case so a caller can hold its last sample.
+   */
+  bool read_accel(std::int16_t* x, std::int16_t* y, std::int16_t* z);
+
 private:
   bool wr(std::uint8_t reg, std::uint8_t v);
   bool rd(std::uint8_t reg, std::uint8_t* v);
@@ -60,6 +78,11 @@ private:
 
   Bus bus_{};
   Chip chip_ = Chip::Unknown;
+  std::uint8_t last_init_status_ = 0xFFu;
+  // Where the feature block lives in the sensor's ASIC address space. Bosch
+  // reads these back after the config load rather than assuming an address.
+  std::uint8_t feature_addr_lsb_ = 0u;
+  std::uint8_t feature_addr_msb_ = 0u;
   bool step_enabled_ = false;
 };
 

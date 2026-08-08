@@ -1,6 +1,7 @@
 #include "local_core.hpp"
 
 #include "battery.hpp"
+#include "bma_config.hpp"
 #include "local_budgets.hpp"
 #include "local_ui.hpp"
 #include "persist.hpp"
@@ -18,13 +19,33 @@ void Core::init(const Hooks& hooks, bma::Driver* bma) {
   std::memset(&block_, 0, sizeof(block_));
   block_.state.screen = local::Screen::Face;
   block_.state.battery_pct = battery::kPercentUnknown;
+  // 0xFF = no config upload attempted. The memset above would otherwise leave
+  // this at 0, which is indistinguishable from a real INTERNAL_STATUS of 0.
+  block_.state.diag_bma_status = 0xFFu;
   notif::init(&notifs_);
   alarm::init(&alarms_);
   alarm::load(&alarms_);
   load_settings();
   clock::load_persisted();
   if (bma_ != nullptr && bma_->ok()) {
-    (void)bma_->configure(nullptr, 0u, block_.state.settings.tilt_sensitivity);
+    // The right blob for the detected part. Passing nullptr here is what left
+    // the pedometer dead: the BMA's feature ASIC has no firmware at power-on,
+    // so without this stream every feature register reads zero.
+    const std::uint8_t* cfg = nullptr;
+    std::size_t cfg_len = 0u;
+    if (bma_->chip() == bma::Chip::BMA425) {
+      cfg = bma_cfg::kBma425Config;
+      cfg_len = bma_cfg::kBma425ConfigLen;
+    } else if (bma_->chip() == bma::Chip::BMA421) {
+      cfg = bma_cfg::kBma423Config;  // the 421 runs the 423 stream
+      cfg_len = bma_cfg::kBma423ConfigLen;
+    }
+    // No new diag field for "did the blob load": the step count is already the
+    // honest indicator. Non-zero after a walk means the ASIC came up; a
+    // permanent 0 means it did not.
+    (void)bma_->configure(cfg, cfg_len, block_.state.settings.tilt_sensitivity);
+    local_state().diag_bma_chip = static_cast<std::uint8_t>(bma_->chip());
+    local_state().diag_bma_status = bma_->last_init_status();
   }
   show_current();
 }
@@ -45,12 +66,12 @@ void Core::load_settings() {
   if (n >= sizeof(s) && s.magic == local::kSettingsMagic) {
     local_state().settings = s;
   } else {
+    // Defaults come from the member initialisers in local::Settings and
+    // nowhere else. They used to be restated here as well, so changing the
+    // display timeout in the struct did nothing at all — this branch quietly
+    // put the old value back on every watch that had no settings stored.
     local_state().settings = local::Settings{};
     local_state().settings.magic = local::kSettingsMagic;
-    local_state().settings.tilt_enabled = 1u;
-    local_state().settings.tilt_sensitivity = 3u;
-    local_state().settings.wake_seconds = 5u;
-    local_state().settings.face_show_steps = 1u;
   }
 }
 
@@ -117,6 +138,11 @@ void Core::show_ota_progress(std::uint8_t pct) {
   if (hooks_.push_list == nullptr) {
     return;
   }
+  // Anything but show_current() writes the panel with a list Core did not
+  // record, so the digest no longer describes what is displayed. Forgetting it
+  // here is what stops a later "nothing changed" from skipping the paint that
+  // puts the real screen back.
+  forget_pushed_digest();
   const std::size_t n = ui::build_ota_banner(dl_buf_, sizeof(dl_buf_), pct);
   if (n > 0u) {
     hooks_.push_list(dl_buf_, n, hooks_.ctx);
@@ -128,6 +154,11 @@ void Core::show_diag_band() {
   if (hooks_.push_list == nullptr) {
     return;
   }
+  // Anything but show_current() writes the panel with a list Core did not
+  // record, so the digest no longer describes what is displayed. Forgetting it
+  // here is what stops a later "nothing changed" from skipping the paint that
+  // puts the real screen back.
+  forget_pushed_digest();
   const std::size_t n =
       ui::build_diag_banner(dl_buf_, sizeof(dl_buf_), local_state());
   if (n > 0u) {
@@ -140,6 +171,11 @@ void Core::show_clock_band() {
   if (hooks_.push_list == nullptr) {
     return;
   }
+  // Anything but show_current() writes the panel with a list Core did not
+  // record, so the digest no longer describes what is displayed. Forgetting it
+  // here is what stops a later "nothing changed" from skipping the paint that
+  // puts the real screen back.
+  forget_pushed_digest();
   const std::size_t n = ui::build_clock_band(dl_buf_, sizeof(dl_buf_));
   if (n > 0u) {
     hooks_.push_list(dl_buf_, n, hooks_.ctx);
@@ -166,18 +202,89 @@ void Core::show_current() {
   if (updating_) {
     return;
   }
+  // Asleep: the panel is in SLPIN and its contents are undefined. Drawing into
+  // it would cost a full render for pixels nobody can see, and would leave the
+  // digest describing a screen the panel never showed.
+  if (power_ == Power::Sleeping) {
+    return;
+  }
   ui::ViewModel vm;
   vm.state = &local_state();
   vm.notifs = &notifs_;
   vm.alarms = &alarms_;
   const std::size_t n = ui::build_screen(vm, dl_buf_, sizeof(dl_buf_));
-  if (n > 0u) {
-    hooks_.push_list(dl_buf_, n, hooks_.ctx);
+  if (n == 0u) {
+    return;
   }
+  // Nothing changed since the last push, so there is nothing to draw.
+  //
+  // Building the list is microseconds; pushing it is three parses and a
+  // 30-tile rasterise, ~236 ms, during which the panel visibly clears and
+  // refills — the flashing the operator reported. Several callers repaint
+  // unconditionally because they cannot cheaply tell whether their change is
+  // visible; the loudest is set_remote_stale(), which the app loop calls every
+  // 200 ms with a flag that almost never changes. Comparing the bytes that
+  // would be drawn answers that question for all of them at once, and does it
+  // where every local repaint already passes.
+  const std::uint32_t d = digest_of(dl_buf_, n);
+  if (d == pushed_digest_) {
+    return;
+  }
+  pushed_digest_ = d;
+  hooks_.push_list(dl_buf_, n, hooks_.ctx);
+}
+
+std::uint32_t Core::sleep_timeout_ms() const {
+  // Reuses the existing wake_seconds setting rather than inventing a second
+  // one. 0 disables sleep entirely, which is what a bench session wants.
+  const std::uint32_t s = local_state().settings.wake_seconds;
+  if (s == 0u) {
+    return 0u;
+  }
+  const std::uint32_t clamped = (s < kMinSleepSeconds)   ? kMinSleepSeconds
+                                : (s > kMaxSleepSeconds) ? kMaxSleepSeconds
+                                                         : s;
+  return clamped * 1000u;
+}
+
+void Core::enter_sleep() {
+  if (power_ == Power::Sleeping) {
+    return;
+  }
+  power_ = Power::Sleeping;
+  display_on_ = false;
+  // Backlight first, panel second. The other order shows one frame of a
+  // sleeping panel lit up, which reads as a glitch.
+  if (hooks_.backlight) {
+    hooks_.backlight(0u, hooks_.ctx);
+  }
+  if (hooks_.display_sleep) {
+    hooks_.display_sleep(true, hooks_.ctx);
+  }
+  // Panel contents are undefined across SLPIN, so nothing Core believes about
+  // the display survives. Without this the first wake could match the digest
+  // and skip the repaint, leaving the watch awake with a blank screen.
+  forget_pushed_digest();
 }
 
 void Core::wake_display() {
+  const bool was_sleeping = (power_ == Power::Sleeping);
+  power_ = Power::Running;
   display_on_ = true;
+  last_activity_ms_ = last_tick_ms_;
+  activity_seeded_ = true;
+  if (was_sleeping) {
+    // Panel out of sleep BEFORE anything can draw: a push into a sleeping
+    // ST7789 is accepted and discarded, so the screen would stay black until
+    // whatever came next happened to repaint.
+    if (hooks_.display_sleep) {
+      hooks_.display_sleep(false, hooks_.ctx);
+    }
+    forget_pushed_digest();
+    // Coalesced rather than painted inline — app_loop drains this once per
+    // iteration, and a wake often arrives with other reasons to repaint.
+    paint_pending_ = true;
+  }
   if (hooks_.backlight) {
     hooks_.backlight(55u, hooks_.ctx);
   }
@@ -256,11 +363,45 @@ void Core::poll_alarms() {
   }
 }
 
-void Core::poll_tilt() {
-  if (!local_state().settings.tilt_enabled || bma_ == nullptr) {
+/**
+ * Raise-to-wake, from polled acceleration.
+ *
+ * Runs only while asleep. Awake, the screen is already lit and the samples buy
+ * nothing but an I2C transfer every 100 ms — and the detector is deliberately
+ * fed nothing in that state, so waking always starts from a clean history
+ * rather than one full of whatever the wrist did while the user was reading.
+ *
+ * The any-motion interrupt that used to live here is gone. It fired on any
+ * movement above a threshold, which is not a gesture; InfiniTime does not use
+ * the sensor's interrupt for this either, and for the same reason.
+ */
+void Core::poll_raise(std::uint32_t now_ms) {
+  if (bma_ == nullptr || !bma_->ok()) {
     return;
   }
-  if (bma_->consume_tilt_irq()) {
+  if (!local_state().settings.tilt_enabled) {
+    raise_.reset();
+    return;
+  }
+  if (power_ != Power::Sleeping) {
+    // Awake: keep the history empty so the next sleep starts cold.
+    raise_.reset();
+    return;
+  }
+  if (static_cast<std::uint32_t>(now_ms - last_raise_ms_) < kRaisePollMs) {
+    return;
+  }
+  last_raise_ms_ = now_ms;
+
+  std::int16_t x = 0, y = 0, z = 0;
+  if (!bma_->read_accel(&x, &y, &z)) {
+    return;
+  }
+  raise_.update(x, y, z);
+  if (raise_.should_raise_wake()) {
+    // Clear before waking: the samples that fired are spent, and leaving them
+    // would let the next sleep re-fire on stale history.
+    raise_.reset();
     wake_display();
     if (local_state().screen == local::Screen::Face ||
         local_state().screen == local::Screen::Disconnected) {
@@ -271,6 +412,13 @@ void Core::poll_tilt() {
 }
 
 void Core::tick(std::uint32_t now_ms) {
+  last_tick_ms_ = now_ms;
+  if (!activity_seeded_) {
+    // Seeded on the first tick, not at construction: now_ms is small at boot
+    // and a zero start would sleep the watch seconds after it powers on.
+    last_activity_ms_ = now_ms;
+    activity_seeded_ = true;
+  }
   // Cadences use unsigned (now - last); requires mono_ms wrap at 2^32.
   if (now_ms - last_step_ms_ >= 2000u) {
     const std::uint32_t steps_before = local_state().steps;
@@ -309,7 +457,17 @@ void Core::tick(std::uint32_t now_ms) {
     last_batt_ms_ = now_ms;
   }
   poll_alarms();
-  poll_tilt();
+  poll_raise(now_ms);
+
+  // Sleep last, so anything above that counted as activity has already said so.
+  // Deliberately NOT gated on updating_: an OTA drives the panel through
+  // show_ota_progress() and calls wake_display() with every step, which keeps
+  // the timeout pushed forward for as long as the transfer is alive.
+  const std::uint32_t timeout = sleep_timeout_ms();
+  if (power_ == Power::Running && timeout != 0u &&
+      static_cast<std::uint32_t>(now_ms - last_activity_ms_) >= timeout) {
+    enter_sleep();
+  }
 
   // wake_until comparison is unused today; if revived, use (now - wake) with
   // unsigned elapsed, not raw >= across a u32 wrap.

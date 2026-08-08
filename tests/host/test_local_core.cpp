@@ -65,6 +65,135 @@ void push_list(const std::uint8_t* data, std::size_t len, void*) {
 
 void haptic(std::uint8_t, void*) { ++g_haptic_count; }
 
+int g_backlight = -1;
+int g_panel_sleeps = 0;
+int g_panel_wakes = 0;
+bool g_panel_asleep = false;
+
+void backlight_stub(std::uint8_t pct, void*) { g_backlight = pct; }
+
+void display_sleep_stub(bool sleep, void*) {
+  g_panel_asleep = sleep;
+  if (sleep) {
+    ++g_panel_sleeps;
+  } else {
+    ++g_panel_wakes;
+  }
+}
+
+/**
+ * Display sleep, the behaviour the operator actually sees.
+ *
+ * Every assertion here is about something that would be invisible until the
+ * watch was on a wrist: a panel left lit, a wake that draws nothing, or a
+ * screen that never comes back. None of it needs hardware to check.
+ */
+void test_display_sleep() {
+  std::memset(g_slot_len, 0, sizeof(g_slot_len));
+  g_backlight = -1;
+  g_panel_sleeps = 0;
+  g_panel_wakes = 0;
+  g_panel_asleep = false;
+  g_last_list_len = 0u;
+  slate::persist::Hooks ph{&host_read, &host_write, nullptr};
+  slate::persist::init(ph);
+  slate::clock::Hooks ch{&host_ticks, nullptr};
+  slate::clock::init(ch);
+  slate::clock::apply_cts_sync(1'700'000'000u);
+
+  slate::core::Core core;
+  slate::core::Hooks hk;
+  hk.push_list = &push_list;
+  hk.haptic = &haptic;
+  hk.backlight = &backlight_stub;
+  hk.display_sleep = &display_sleep_stub;
+  core.init(hk, nullptr);
+
+  const std::uint32_t timeout = core.sleep_timeout_ms();
+  expect("timeout is bounded", timeout >= 5000u && timeout <= 120000u);
+  // Pinned: the owner asked for 20 s, and a default is the sort of thing that
+  // drifts silently. If this changes it should be because someone meant it.
+  expect("default display timeout is 20 s", timeout == 20000u);
+
+  // Boot must not sleep the watch immediately. now_ms is small at boot, so a
+  // zero-initialised activity stamp would have.
+  core.tick(1000u);
+  expect("awake shortly after boot", !core.sleeping());
+
+  // Just short of the timeout, still awake.
+  core.tick(1000u + timeout - 1u);
+  expect("awake just before the timeout", !core.sleeping());
+
+  core.tick(1000u + timeout);
+  expect("asleep at the timeout", core.sleeping());
+  expect("panel put to sleep", g_panel_sleeps == 1 && g_panel_asleep);
+  expect("backlight off", g_backlight == 0);
+
+  // Nothing local may paint into a sleeping panel.
+  g_last_list_len = 0u;
+  core.show_current();
+  expect("no repaint while asleep", g_last_list_len == 0u);
+
+  // Waking must bring the panel back BEFORE anything draws, and must ask for a
+  // repaint — the panel's contents are undefined across SLPIN.
+  core.wake_display();
+  expect("awake after wake_display", !core.sleeping());
+  expect("panel woken", g_panel_wakes == 1 && !g_panel_asleep);
+  expect("backlight on", g_backlight > 0);
+  expect("repaint requested on wake", core.take_paint_pending());
+
+  // The digest must not survive sleep. If it did, a wake onto an unchanged
+  // screen would draw nothing and the watch would sit lit and blank.
+  g_last_list_len = 0u;
+  core.show_current();
+  expect("first paint after wake actually draws", g_last_list_len > 0u);
+
+  // Activity defers sleep rather than merely delaying it once.
+  //
+  // tick() then note_activity(), which is the order the app loop runs them in:
+  // input is polled at the top of an iteration and Core::tick() later, so a
+  // stamp is taken from the most recent tick. note_activity() deliberately does
+  // NOT wake, so this has to start from an awake watch — hence the wake_display
+  // after the first tick.
+  std::uint32_t t = 100000u;
+  core.tick(t);
+  core.wake_display();
+  for (int i = 0; i < 10; ++i) {
+    t += timeout - 100u;
+    core.tick(t);
+    core.note_activity();
+    if (core.sleeping()) break;
+  }
+  expect("activity keeps the watch awake", !core.sleeping());
+
+  // And it still sleeps once activity stops.
+  t += timeout + 1u;
+  core.tick(t);
+  expect("sleeps again once activity stops", core.sleeping());
+}
+
+/** wake_seconds == 0 means never sleep — the bench case. */
+void test_sleep_can_be_disabled() {
+  std::memset(g_slot_len, 0, sizeof(g_slot_len));
+  slate::persist::Hooks ph{&host_read, &host_write, nullptr};
+  slate::persist::init(ph);
+  slate::clock::Hooks ch{&host_ticks, nullptr};
+  slate::clock::init(ch);
+
+  slate::core::Core core;
+  slate::core::Hooks hk;
+  hk.push_list = &push_list;
+  hk.backlight = &backlight_stub;
+  hk.display_sleep = &display_sleep_stub;
+  core.init(hk, nullptr);
+  core.local_state().settings.wake_seconds = 0u;
+  expect("timeout 0 disables sleep", core.sleep_timeout_ms() == 0u);
+
+  core.tick(1000u);
+  core.tick(1000u + 600000u);
+  expect("never sleeps with the timeout disabled", !core.sleeping());
+}
+
 }  // namespace
 
 static void test_budgets() {
@@ -211,6 +340,8 @@ int main() {
   test_notif_store();
   test_alarms();
   test_core_alert();
+  test_display_sleep();
+  test_sleep_can_be_disabled();
   if (g_fails != 0) {
     std::printf("%d failure(s)\n", g_fails);
     return 1;
