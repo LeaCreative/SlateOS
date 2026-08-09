@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.golden.GoldenRenderTests" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:27.550Z" hostname="DAN01" time="0.107">
+<testsuite name="slate.golden.GoldenRenderTests" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:03.977Z" hostname="DAN01" time="0.089">
   <properties/>
-  <testcase name="clockFace_pngMatchesGolden()" classname="slate.golden.GoldenRenderTests" time="0.077"/>
-  <testcase name="clearBlack_pngMatchesGolden()" classname="slate.golden.GoldenRenderTests" time="0.012"/>
-  <testcase name="clockFace_bytesMatchGolden()" classname="slate.golden.GoldenRenderTests" time="0.0"/>
-  <testcase name="m4Example_dslBuildsAndRenders()" classname="slate.golden.GoldenRenderTests" time="0.016"/>
+  <testcase name="clockFace_pngMatchesGolden()" classname="slate.golden.GoldenRenderTests" time="0.067"/>
+  <testcase name="clearBlack_pngMatchesGolden()" classname="slate.golden.GoldenRenderTests" time="0.01"/>
+  <testcase name="clockFace_bytesMatchGolden()" classname="slate.golden.GoldenRenderTests" time="0.001"/>
+  <testcase name="m4Example_dslBuildsAndRenders()" classname="slate.golden.GoldenRenderTests" time="0.009"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

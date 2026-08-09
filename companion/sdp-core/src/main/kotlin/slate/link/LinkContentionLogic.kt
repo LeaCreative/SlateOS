@@ -42,9 +42,17 @@ object LinkContentionLogic {
             return Verdict(Kind.Clear, "Slate holds the link")
         }
         if (s.gattConnectedOnPhone) {
+            // Says only what getConnectedDevices(GATT) actually proves. It used
+            // to read "another app on this phone holds the watch BLE link",
+            // which is a guess: the same signal appears when a link is left
+            // OPEN WITH NO OWNER, as happens when the app is reinstalled or
+            // killed mid-connection. The phone's own stack log calls that
+            // "No ACL holders". Naming an app that may not exist sent the
+            // operator hunting through Gadgetbridge and nRF Connect for a
+            // blocker that was not there.
             return Verdict(
                 Kind.HeldOnThisPhone,
-                "Another app on this phone holds the watch BLE link",
+                "This phone already has a BLE link to the watch that Slate does not own",
             )
         }
         if (s.advertisingSeen == false && s.bonded) {

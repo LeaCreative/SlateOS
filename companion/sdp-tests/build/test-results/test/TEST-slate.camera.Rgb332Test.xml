@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.camera.Rgb332Test" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:27.384Z" hostname="DAN01" time="0.005">
+<testsuite name="slate.camera.Rgb332Test" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:03.813Z" hostname="DAN01" time="0.003">
   <properties/>
-  <testcase name="downscale60x60Size()" classname="slate.camera.Rgb332Test" time="0.004"/>
-  <testcase name="blackAndWhite()" classname="slate.camera.Rgb332Test" time="0.001"/>
+  <testcase name="downscale60x60Size()" classname="slate.camera.Rgb332Test" time="0.002"/>
+  <testcase name="blackAndWhite()" classname="slate.camera.Rgb332Test" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

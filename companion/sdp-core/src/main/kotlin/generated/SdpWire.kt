@@ -176,6 +176,7 @@ object SdpWire {
         const val TIME_SYNC = 0x20
         const val CONFIRM_STATUS_REQUEST = 0xE0
         const val CONFIRM_STATUS = 0xE1
+        const val SETTINGS_SYNC = 0x21
     }
 
     const val PROTOCOL_VERSION = 1

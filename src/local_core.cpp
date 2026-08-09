@@ -46,6 +46,7 @@ void Core::init(const Hooks& hooks, bma::Driver* bma) {
     (void)bma_->configure(cfg, cfg_len, block_.state.settings.tilt_sensitivity);
     local_state().diag_bma_chip = static_cast<std::uint8_t>(bma_->chip());
     local_state().diag_bma_status = bma_->last_init_status();
+    local_state().diag_bma_step_en = bma_->step_counter_enabled() ? 1u : 0u;
   }
   show_current();
 }
@@ -73,6 +74,9 @@ void Core::load_settings() {
     local_state().settings = local::Settings{};
     local_state().settings.magic = local::kSettingsMagic;
   }
+  // The persisted revision is the correct floor for the next local edit: every
+  // higher one either side has issued has already been folded into it.
+  highest_seen_rev_ = local_state().settings.revision;
 }
 
 void Core::save_settings() {
@@ -339,13 +343,14 @@ void Core::poll_battery(std::uint32_t now_ms) {
     show_current();
     return;
   }
-  if (chg && !was) {
+  // Both edges wake, matching InfiniTime's OnChargingEvent -> GoToRunning.
+  // Only the plug-in edge used to, so taking the watch off the charger left it
+  // asleep — which is exactly the moment you look at it.
+  if (chg != was) {
     wake_display();
     if (local_state().screen == local::Screen::Face) {
       show_current();
     }
-  } else if (!chg && was && local_state().screen == local::Screen::Face) {
-    show_current();
   }
 }
 
@@ -457,7 +462,6 @@ void Core::tick(std::uint32_t now_ms) {
     last_batt_ms_ = now_ms;
   }
   poll_alarms();
-  poll_raise(now_ms);
 
   // Sleep last, so anything above that counted as activity has already said so.
   // Deliberately NOT gated on updating_: an OTA drives the panel through
@@ -505,23 +509,83 @@ void Core::on_button_press() {
   show_current();
 }
 
-void Core::on_tap_elem(std::uint16_t elem_id) {
+bool Core::on_tap_elem(std::uint16_t elem_id) {
   wake_display();
-  if (local_state().screen == local::Screen::Settings) {
-    if (elem_id == 1u) {
+  if (local_state().screen != local::Screen::Settings) {
+    return false;
+  }
+  bool changed = true;
+  switch (elem_id) {
+    case local::kSettingRaise:
       local_state().settings.tilt_enabled =
           local_state().settings.tilt_enabled ? 0u : 1u;
-    } else if (elem_id == 2u) {
-      local_state().settings.tilt_sensitivity =
-          static_cast<std::uint8_t>((local_state().settings.tilt_sensitivity + 1u) & 7u);
-      if (bma_) {
-        bma_->set_tilt_sensitivity(local_state().settings.tilt_sensitivity);
+      break;
+    case local::kSettingTimeout: {
+      // Cycle the values a person would actually pick, rather than stepping by
+      // one second through a 5..120 range nobody wants to tap through.
+      static constexpr std::uint8_t kChoices[] = {10u, 20u, 30u, 60u, 120u, 0u};
+      const std::uint8_t current = local_state().settings.wake_seconds;
+      std::size_t idx = 0u;
+      for (std::size_t i = 0u; i < sizeof(kChoices); ++i) {
+        if (kChoices[i] == current) {
+          idx = i;
+          break;
+        }
       }
+      local_state().settings.wake_seconds =
+          kChoices[(idx + 1u) % sizeof(kChoices)];
+      break;
     }
-    save_settings();
-    show_current();
+    case local::kSettingSteps:
+      local_state().settings.face_show_steps =
+          local_state().settings.face_show_steps ? 0u : 1u;
+      break;
+    default:
+      changed = false;
+      break;
   }
-  (void)elem_id;
+  if (!changed) {
+    return false;
+  }
+  // A local edit is a new revision, and the phone must be told. Bumping past
+  // anything either side has shown is what makes "last writer wins" hold after
+  // both have been offline - see settings_sync::next_revision.
+  local_state().settings.revision = settings_sync::next_revision(
+      local_state().settings.revision, highest_seen_rev_);
+  highest_seen_rev_ = local_state().settings.revision;
+  save_settings();
+  settings_dirty_ = true;
+  show_current();
+  return true;
+}
+
+bool Core::take_settings_dirty() {
+  const bool d = settings_dirty_;
+  settings_dirty_ = false;
+  return d;
+}
+
+settings_sync::Payload Core::settings_payload() const {
+  return settings_sync::from(local_state().settings,
+                             local_state().settings.revision);
+}
+
+bool Core::apply_settings_sync(const settings_sync::Payload& incoming) {
+  if (incoming.revision > highest_seen_rev_) {
+    highest_seen_rev_ = incoming.revision;
+  }
+  const settings_sync::Payload mine = settings_payload();
+  // self_is_watch = true: on a tie the watch keeps its own, and the phone runs
+  // the same rule from its side and yields. Both reach that verdict alone,
+  // which is what stops the two overwriting each other forever.
+  if (!settings_sync::should_apply(mine, incoming, /*self_is_watch=*/true)) {
+    return false;
+  }
+  settings_sync::apply_to(incoming, &local_state().settings);
+  local_state().settings.revision = incoming.revision;
+  save_settings();
+  show_current();
+  return true;
 }
 
 }  // namespace core

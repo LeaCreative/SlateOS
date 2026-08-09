@@ -73,6 +73,22 @@ target_include_directories(test_sdp_parser PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_sdp_parser PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_sdp_parser sdp_parser)
 
+add_executable(test_settings_sync
+  test_settings_sync.cpp
+  "${SLATE_ROOT}/src/settings_sync.cpp"
+)
+target_include_directories(test_settings_sync PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_settings_sync PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_settings_sync settings_sync)
+
+add_executable(test_bma42x
+  test_bma42x.cpp
+  "${SLATE_ROOT}/src/bma42x.cpp"
+)
+target_include_directories(test_bma42x PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_bma42x PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_bma42x bma42x)
+
 add_executable(test_raise_wake
   test_raise_wake.cpp
   "${SLATE_ROOT}/src/raise_wake.cpp"
@@ -177,6 +193,7 @@ add_executable(test_local_core
   "${SLATE_ROOT}/src/local_core.cpp"
   "${SLATE_ROOT}/src/bma42x.cpp"
   "${SLATE_ROOT}/src/raise_wake.cpp"
+  "${SLATE_ROOT}/src/settings_sync.cpp"
   "${SLATE_ROOT}/third_party/bosch/bma_config.cpp"
 )
 target_include_directories(test_local_core PRIVATE

@@ -32,6 +32,19 @@ struct Settings {
    */
   std::uint8_t wake_seconds = 20u;
   std::uint8_t face_show_steps = 1u;
+  /**
+   * Sync revision, persisted with the values it stamps.
+   *
+   * Held here rather than only in Core because it has to survive a reboot. Kept
+   * in RAM alone it returned to 0 on every restart, and the phone — still
+   * holding a revision of its own — then outranked the watch on the opening
+   * exchange and quietly put its older copy back. That is precisely the failure
+   * the counter exists to prevent, and a watch reboots often.
+   *
+   * Not part of settings_sync::Payload's apply path: it is metadata about the
+   * settings, not a setting.
+   */
+  std::uint32_t revision = 0u;
   std::uint32_t magic = 0u;
 };
 
@@ -41,7 +54,22 @@ struct Settings {
 // so without a bump the change would silently do nothing on this very watch.
 // Cost: any customised tilt settings revert to defaults once. There is no
 // settings UI yet, so nothing has been customised.
-constexpr std::uint32_t kSettingsMagic = 0x534C5454u;  // 'SLTT'
+//
+// Bumped again 9 Aug 2026 ('SLTT' -> 'SLTU'): `revision` was added, so the
+// struct is a different size and shape. An old blob read into the new layout
+// would land a stale magic and be rejected anyway, but the bump makes that
+// explicit rather than incidental.
+/**
+ * Element ids on the settings screen — the contract between build_settings()
+ * and Core::on_tap_elem(). Named here so the drawing and the handling cannot
+ * drift apart silently, which is the sort of bug that presents as "tapping
+ * that row does nothing".
+ */
+constexpr std::uint16_t kSettingRaise = 1u;
+constexpr std::uint16_t kSettingTimeout = 2u;
+constexpr std::uint16_t kSettingSteps = 3u;
+
+constexpr std::uint32_t kSettingsMagic = 0x534C5455u;  // 'SLTU'
 
 struct State {
   Screen screen = Screen::Face;
@@ -114,6 +142,15 @@ struct State {
    */
   std::uint8_t diag_bma_chip = 0u;
   std::uint8_t diag_bma_status = 0xFFu;
+  /**
+   * 1 once the pedometer enable bit has been written AND read back verified.
+   *
+   * Separate from `diag_bma_status` because they fail independently: the config
+   * stream can load perfectly (status 1) while the feature write lands at the
+   * wrong ASIC address and the pedometer stays off. That is exactly the state
+   * the watch was in on 8 Aug.
+   */
+  std::uint8_t diag_bma_step_en = 0u;
   // How many times the local face took the screen back from a remote screen,
   // and the last caller to do it. Three fixes have each gated a different
   // path and a fourth still exists; guessing again is not the way to find it.

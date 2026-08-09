@@ -128,6 +128,92 @@ build test_sdp_parser.exe: CXX_EXECUTABLE_LINKER__test_sdp_parser_ CMakeFiles/te
   TARGET_SUPPORT_DIR = CMakeFiles\test_sdp_parser.dir
 
 # =============================================================================
+# Object build statements for EXECUTABLE target test_settings_sync
+
+
+#############################################
+# Order-only phony target for test_settings_sync
+
+build cmake_object_order_depends_target_test_settings_sync: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_settings_sync.dir/test_settings_sync.cpp.obj: CXX_COMPILER__test_settings_sync_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_settings_sync.cpp || cmake_object_order_depends_target_test_settings_sync
+  DEP_FILE = CMakeFiles\test_settings_sync.dir\test_settings_sync.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_settings_sync.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_settings_sync.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_settings_sync.dir
+
+build CMakeFiles/test_settings_sync.dir/C_/Users/highj/Documents/Projects/EvoTime/src/settings_sync.cpp.obj: CXX_COMPILER__test_settings_sync_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/settings_sync.cpp || cmake_object_order_depends_target_test_settings_sync
+  DEP_FILE = CMakeFiles\test_settings_sync.dir\C_\Users\highj\Documents\Projects\EvoTime\src\settings_sync.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_settings_sync.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_settings_sync.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_settings_sync.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_settings_sync
+
+
+#############################################
+# Link the executable test_settings_sync.exe
+
+build test_settings_sync.exe: CXX_EXECUTABLE_LINKER__test_settings_sync_ CMakeFiles/test_settings_sync.dir/test_settings_sync.cpp.obj CMakeFiles/test_settings_sync.dir/C_/Users/highj/Documents/Projects/EvoTime/src/settings_sync.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_settings_sync.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_settings_sync.exe
+  TARGET_IMPLIB = libtest_settings_sync.dll.a
+  TARGET_PDB = test_settings_sync.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_settings_sync.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_bma42x
+
+
+#############################################
+# Order-only phony target for test_bma42x
+
+build cmake_object_order_depends_target_test_bma42x: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_bma42x.dir/test_bma42x.cpp.obj: CXX_COMPILER__test_bma42x_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_bma42x.cpp || cmake_object_order_depends_target_test_bma42x
+  DEP_FILE = CMakeFiles\test_bma42x.dir\test_bma42x.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_bma42x.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_bma42x.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_bma42x.dir
+
+build CMakeFiles/test_bma42x.dir/C_/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp.obj: CXX_COMPILER__test_bma42x_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp || cmake_object_order_depends_target_test_bma42x
+  DEP_FILE = CMakeFiles\test_bma42x.dir\C_\Users\highj\Documents\Projects\EvoTime\src\bma42x.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_bma42x.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_bma42x.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_bma42x.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_bma42x
+
+
+#############################################
+# Link the executable test_bma42x.exe
+
+build test_bma42x.exe: CXX_EXECUTABLE_LINKER__test_bma42x_ CMakeFiles/test_bma42x.dir/test_bma42x.cpp.obj CMakeFiles/test_bma42x.dir/C_/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_bma42x.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_bma42x.exe
+  TARGET_IMPLIB = libtest_bma42x.dll.a
+  TARGET_PDB = test_bma42x.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_bma42x.dir
+
+# =============================================================================
 # Object build statements for EXECUTABLE target test_raise_wake
 
 
@@ -750,6 +836,14 @@ build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/s
   OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
   TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
 
+build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/settings_sync.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/settings_sync.cpp || cmake_object_order_depends_target_test_local_core
+  DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src\settings_sync.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../third_party/bosch
+  OBJECT_DIR = CMakeFiles\test_local_core.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_local_core.dir
+
 build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/third_party/bosch/bma_config.cpp.obj: CXX_COMPILER__test_local_core_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/third_party/bosch/bma_config.cpp || cmake_object_order_depends_target_test_local_core
   DEP_FILE = CMakeFiles\test_local_core.dir\C_\Users\highj\Documents\Projects\EvoTime\third_party\bosch\bma_config.cpp.obj.d
   FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
@@ -766,7 +860,7 @@ build CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/t
 #############################################
 # Link the executable test_local_core.exe
 
-build test_local_core.exe: CXX_EXECUTABLE_LINKER__test_local_core_ CMakeFiles/test_local_core.dir/test_local_core.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/persist.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/wall_clock.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/notif_store.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/alarm_sched.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/battery.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_ui.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_core.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/raise_wake.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/third_party/bosch/bma_config.cpp.obj || slate_host_runtime_dlls
+build test_local_core.exe: CXX_EXECUTABLE_LINKER__test_local_core_ CMakeFiles/test_local_core.dir/test_local_core.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/persist.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/wall_clock.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/notif_store.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/alarm_sched.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/battery.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_ui.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/local_core.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/bma42x.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/raise_wake.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/src/settings_sync.cpp.obj CMakeFiles/test_local_core.dir/C_/Users/highj/Documents/Projects/EvoTime/third_party/bosch/bma_config.cpp.obj || slate_host_runtime_dlls
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\test_local_core.dir
   POST_BUILD = cd .
@@ -1257,6 +1351,8 @@ build test_ble_gap_adv_policy: phony test_ble_gap_adv_policy.exe
 
 build test_ble_link: phony test_ble_link.exe
 
+build test_bma42x: phony test_bma42x.exe
+
 build test_hit_test: phony test_hit_test.exe
 
 build test_local_core: phony test_local_core.exe
@@ -1279,6 +1375,8 @@ build test_sdp_parser: phony test_sdp_parser.exe
 
 build test_session: phony test_session.exe
 
+build test_settings_sync: phony test_settings_sync.exe
+
 build test_spi_timeout: phony test_spi_timeout.exe
 
 build test_uuids: phony test_uuids.exe
@@ -1295,7 +1393,7 @@ build test_wdt_hold: phony test_wdt_hold.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_raise_wake.exe test_band_push_tiles.exe test_renderer_cull.exe test_uuids.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_motor.exe test_spi_timeout.exe
+build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_settings_sync.exe test_bma42x.exe test_raise_wake.exe test_band_push_tiles.exe test_renderer_cull.exe test_uuids.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_motor.exe test_spi_timeout.exe
 
 # =============================================================================
 # Built-in targets

@@ -170,21 +170,75 @@ static void test_alert_scaled() {
   expect("alert parse", parse_ok(buf, n));
 }
 
-static void test_settings_scaled() {
+/**
+ * The settings screen must be *tappable*, not merely non-empty.
+ *
+ * The old assertion counted four TEXT_SCALED ops, which the previous screen
+ * satisfied while being a title and three unlabelled numbers with no tap
+ * targets at all. Counting text says nothing about whether the screen works.
+ * What matters is that every row carries an element carrying EMIT_TOUCH, with
+ * the id Core::on_tap_elem switches on — if those drift apart the row silently
+ * stops responding and nothing else notices.
+ */
+static void test_settings_rows_are_tappable() {
   slate::local::State st{};
   st.screen = slate::local::Screen::Settings;
   st.settings.tilt_enabled = 1u;
-  st.settings.tilt_sensitivity = 3u;
-  st.settings.wake_seconds = 5u;
+  st.settings.wake_seconds = 20u;
+  st.settings.face_show_steps = 1u;
   slate::ui::ViewModel vm{&st, nullptr, nullptr};
   std::uint8_t buf[512];
   const std::size_t n = slate::ui::build_screen(vm, buf, sizeof(buf));
+  expect("settings non-empty", n > 0u && n <= 512u);
+  expect("settings parse", parse_ok(buf, n));
+
   int text = 0, scaled = 0;
   count_text_ops(buf, n, &text, &scaled);
-  expect("settings non-empty", n > 0u && n <= 512u);
+  // Title plus a label and a value for each of the three rows.
+  expect("settings TEXT_SCALED x7", scaled == 7);
   expect("settings no TEXT", text == 0);
-  expect("settings TEXT_SCALED x4", scaled == 4);
-  expect("settings parse", parse_ok(buf, n));
+
+  // Walk the list for BEGIN_ELEM (0x30): u16 id, x, y, w, h, flags.
+  bool saw_raise = false, saw_timeout = false, saw_steps = false;
+  int touchable = 0;
+  for (std::size_t i = 0u; i + 8u <= n; ++i) {
+    if (buf[i] != sdp::op::BEGIN_ELEM) {
+      continue;
+    }
+    const std::uint16_t id =
+        static_cast<std::uint16_t>(buf[i + 1u] | (buf[i + 2u] << 8));
+    const std::uint8_t flags = buf[i + 7u];
+    if ((flags & sdp::elem_flags::EMIT_TOUCH) == 0u) {
+      continue;
+    }
+    ++touchable;
+    if (id == slate::local::kSettingRaise) saw_raise = true;
+    if (id == slate::local::kSettingTimeout) saw_timeout = true;
+    if (id == slate::local::kSettingSteps) saw_steps = true;
+  }
+  expect("three touchable rows", touchable == 3);
+  expect("raise row carries its id", saw_raise);
+  expect("timeout row carries its id", saw_timeout);
+  expect("steps row carries its id", saw_steps);
+}
+
+/** A timeout of 0 reads as "Off", not as the number zero. */
+static void test_settings_timeout_off_reads_as_off() {
+  slate::local::State st{};
+  st.screen = slate::local::Screen::Settings;
+  st.settings.wake_seconds = 0u;
+  slate::ui::ViewModel vm{&st, nullptr, nullptr};
+  std::uint8_t buf[512];
+  const std::size_t n = slate::ui::build_screen(vm, buf, sizeof(buf));
+  expect("timeout=0 screen parses", n > 0u && parse_ok(buf, n));
+  bool found_off = false;
+  for (std::size_t i = 0u; i + 3u <= n; ++i) {
+    if (buf[i] == 'O' && buf[i + 1u] == 'f' && buf[i + 2u] == 'f') {
+      found_off = true;
+      break;
+    }
+  }
+  expect("timeout 0 renders as Off", found_off);
 }
 
 static void test_notifs_budget() {
@@ -229,7 +283,8 @@ int main() {
 
   test_disconnected_golden();
   test_alert_scaled();
-  test_settings_scaled();
+  test_settings_rows_are_tappable();
+  test_settings_timeout_off_reads_as_off();
   test_notifs_empty();
   test_notifs_budget();
 

@@ -31,6 +31,7 @@
 #include "sdp_interpreter.hpp"
 #include "sdp_opcodes.hpp"
 #include "session.hpp"
+#include "settings_sync.hpp"
 #include "spi_bus.hpp"
 #include "st7789.hpp"
 #include "slate_uuids.hpp"
@@ -344,6 +345,50 @@ static void bma_delay(std::uint32_t ms, void*) { board::busy_wait_ms(ms); }
 
 static std::uint64_t clock_ticks(void*) { return slate::rtc_hw::ticks(); }
 
+/**
+ * Push this watch's settings to the phone.
+ *
+ * Fire and forget on CONTROL: if the link is down the edit stays local and the
+ * next connection resends it, because take_settings_dirty() is only cleared
+ * once a send is actually attempted with a session up.
+ */
+static void send_settings_sync() {
+  std::uint8_t buf[slate::settings_sync::kPayloadBytes];
+  const std::size_t n =
+      slate::settings_sync::encode(g_core.settings_payload(), buf, sizeof(buf));
+  if (n == 0u) {
+    return;
+  }
+  (void)g_link.send_message(sdp::frame::kChanControl, buf, n);
+}
+
+/**
+ * Resolve a tap against the locally-drawn screen; true if the watch consumed it.
+ *
+ * The hit rects come from the interpreter, which collected them while rendering
+ * whatever list was pushed last — for a local screen that is `core_push_list`,
+ * so the settings rows' BEGIN_ELEM bounds are already there and no second table
+ * is needed.
+ *
+ * Returns false for a tap on empty space so the event still reaches the router
+ * and the phone, which is what a tap on a local screen used to do
+ * unconditionally.
+ */
+static bool local_tap_handled(const input::Event& ev) {
+  const input::HitRect* rects = g_interp.hit_rects();
+  const std::size_t count = g_interp.hit_count();
+  const std::size_t i = input::hit_index(ev.x, ev.y, rects, count);
+  if (i >= count) {
+    return false;
+  }
+  const input::HitRect& r = rects[i];
+  if ((r.flags & sdp::elem_flags::DISABLED) != 0u ||
+      (r.flags & sdp::elem_flags::EMIT_TOUCH) == 0u || r.id == input::kNoHit) {
+    return false;
+  }
+  return g_core.on_tap_elem(r.id);
+}
+
 static void send_confirm_status() {
   std::uint8_t buf[6];
   buf[0] = sdp::control_op::CONFIRM_STATUS;
@@ -374,6 +419,21 @@ static void on_app_message(std::uint8_t channel, const std::uint8_t* msg,
     // Trial/confirm status query (0xE0 CONTROL extension; old FW ignores).
     if (len >= 1u && msg[0] == sdp::control_op::CONFIRM_STATUS_REQUEST) {
       send_confirm_status();
+    }
+    // Settings from the phone. The merge rule lives in settings_sync so both
+    // ends run the identical logic; Core only records what it decided.
+    if (len >= slate::settings_sync::kPayloadBytes &&
+        msg[0] == sdp::control_op::SETTINGS_SYNC) {
+      slate::settings_sync::Payload in;
+      if (slate::settings_sync::decode(msg, len, &in)) {
+        if (g_core.apply_settings_sync(in)) {
+          rtt::log(rtt::Level::Info, "settings applied from phone");
+        } else {
+          // Not applied means ours is newer or equal. Answer with ours so the
+          // phone converges rather than sitting on a stale value forever.
+          send_settings_sync();
+        }
+      }
     }
   } else if (channel == sdp::frame::kChanDisplay) {
     g_session.on_display(msg, len, t);
@@ -561,6 +621,14 @@ static void app_loop() {
       // nothing, so answer locally instead. Guarded here rather than in
       // InputRouter because this is a policy about what the *watch* shows,
       // not about how an event is encoded.
+      // Swipe left-to-right is the settings gesture. Answered locally and
+      // unconditionally: these are the WATCH's settings, so unlike the launcher
+      // there is nothing to ask the phone for and no reason to require a link.
+      if (ev.type == input::EventType::Swipe &&
+          ev.swipe == input::SwipeDir::Right) {
+        g_core.show_settings();
+        continue;
+      }
       const bool launcher_swipe =
           ev.type == input::EventType::Swipe &&
           ev.swipe == input::SwipeDir::Left;
@@ -578,6 +646,12 @@ static void app_loop() {
       } else if (g_local_owns_screen || g_session.remote_depth() == 0u) {
         if (ev.type == input::EventType::Button) {
           g_core.on_button_press();
+        } else if (g_local_owns_screen && ev.type == input::EventType::Tap &&
+                   local_tap_handled(ev)) {
+          // Handled on the watch. The settings screen is drawn locally and its
+          // rows must work with no phone at all, so the tap is resolved here
+          // rather than encoded and sent off to a companion that may not be
+          // there — and, if it is, has never heard of these element ids.
         } else {
           g_input.on_event(ev);
         }
@@ -586,6 +660,16 @@ static void app_loop() {
       }
     }
     const std::uint32_t t = now_ms();
+    // Raise-to-wake samples on every loop iteration, gated internally to 100 ms.
+    // Driving it from the 200 ms core tick halved the rate and broke the
+    // gesture window — see Core::poll_raise.
+    g_core.poll_raise(t);
+    // A settings edit made on the watch goes out as soon as there is a session
+    // to carry it. Drained here rather than pushed from Core, which has no link.
+    if (g_session.state() == slate::session::State::Ready &&
+        g_core.take_settings_dirty()) {
+      send_settings_sync();
+    }
     if (trial && slate::boot::tick_confirm(ble::central_connected(), t)) {
       trial = false;
       g_core.local_state().trial_image = 0u;

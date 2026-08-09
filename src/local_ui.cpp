@@ -186,6 +186,13 @@ void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
   append(".");
   fmt_u32(part, sizeof(part), st.diag_bma_status);
   append(part);
+  // Third field: the pedometer enable bit, written AND read back verified.
+  // Separate from the status because they fail independently — the config
+  // stream can load perfectly while the feature write lands at the wrong ASIC
+  // address and the pedometer stays off.
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_bma_step_en);
+  append(part);
   o[i] = '\0';
 }
 
@@ -487,23 +494,83 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
   return w.ok ? w.n : 0u;
 }
 
+/**
+ * The settings screen: three tappable rows, tap to change.
+ *
+ * Font 1 throughout — these are words a person reads, and the 3x5 is a
+ * diagnostic font. The previous version of this screen drew three bare numbers
+ * with no labels and no tap targets at all; it was a bring-up placeholder that
+ * nothing could navigate to.
+ *
+ * Element ids are [kSettingRaise..kSettingSteps] and are the contract with
+ * Core::on_tap_elem — they are named constants in local_state.hpp precisely so
+ * the two cannot drift.
+ *
+ * `tilt_sensitivity` is deliberately absent. It set the any-motion threshold,
+ * which raise-to-wake replaced, so the control would do nothing.
+ */
 std::size_t build_settings(W& w, const ViewModel& vm) {
-  // Body at scale 3, left-aligned (values can be multi-digit).
   const local::State& st = *vm.state;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0xFFFFu);
+  w.u16(0xFFFFu);   // pal 0: white
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x01u);
+  w.u16(0x07E0u);   // pal 1: green, for "on"
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x02u);
+  w.u16(0x8410u);   // pal 2: grey, for "off"
 
-  w.text_big(120, 16, sdp::align::CENTER, 3u, 0u, "01");  // settings id
-  char s[4];
-  fmt_u32(s, sizeof(s), st.settings.tilt_enabled);
-  w.text_big(16, 64, sdp::align::LEFT, 3u, 0u, s);
-  fmt_u32(s, sizeof(s), st.settings.tilt_sensitivity);
-  w.text_big(16, 100, sdp::align::LEFT, 3u, 0u, s);
-  fmt_u32(s, sizeof(s), st.settings.wake_seconds);
-  w.text_big(16, 136, sdp::align::LEFT, 3u, 0u, s);
+  w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "SETTINGS", 1u);
+
+  constexpr std::uint8_t kRowH = 52u;
+  constexpr std::uint8_t kTop = 34u;
+
+  const auto row = [&](std::uint16_t id, std::uint8_t index, const char* label,
+                       const char* value, std::uint8_t value_pal) {
+    const std::uint8_t y = static_cast<std::uint8_t>(kTop + index * kRowH);
+    w.b(sdp::op::BEGIN_ELEM);
+    w.u16(id);
+    w.b(4u);
+    w.b(y);
+    w.b(232u);
+    w.b(static_cast<std::uint8_t>(kRowH - 6u));
+    w.b(sdp::elem_flags::EMIT_TOUCH);
+    w.text_big(10, static_cast<std::uint8_t>(y + 2u), sdp::align::LEFT, 2u, 0u,
+               label, 1u);
+    w.text_big(10, static_cast<std::uint8_t>(y + 24u), sdp::align::LEFT, 3u,
+               value_pal, value, 1u);
+    w.b(sdp::op::END_ELEM);
+  };
+
+  row(local::kSettingRaise, 0u, "Raise to wake",
+      st.settings.tilt_enabled ? "On" : "Off",
+      st.settings.tilt_enabled ? 1u : 2u);
+
+  char secs[8];
+  if (st.settings.wake_seconds == 0u) {
+    secs[0] = 'O';
+    secs[1] = 'f';
+    secs[2] = 'f';
+    secs[3] = '\0';
+  } else {
+    fmt_u32(secs, sizeof(secs) - 1u, st.settings.wake_seconds);
+    std::size_t l = 0u;
+    while (secs[l] != '\0' && l + 1u < sizeof(secs)) {
+      ++l;
+    }
+    if (l + 1u < sizeof(secs)) {
+      secs[l] = 's';
+      secs[l + 1u] = '\0';
+    }
+  }
+  row(local::kSettingTimeout, 1u, "Display timeout", secs, 0u);
+
+  row(local::kSettingSteps, 2u, "Show steps",
+      st.settings.face_show_steps ? "On" : "Off",
+      st.settings.face_show_steps ? 1u : 2u);
 
   w.b(sdp::op::COMMIT);
   w.b(0x00u);

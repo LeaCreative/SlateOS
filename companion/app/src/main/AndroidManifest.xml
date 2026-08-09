@@ -95,6 +95,11 @@
             android:label="Sub-app repository" />
 
         <activity
+            android:name=".settings.WatchSettingsActivity"
+            android:exported="false"
+            android:label="Watch settings" />
+
+        <activity
             android:name=".link.TroubleshootingActivity"
             android:exported="false"
             android:label="Troubleshooting" />

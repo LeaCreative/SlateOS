@@ -5,7 +5,266 @@
 
 ---
 
-## Current state (8 Aug 2026)
+## Current state (9 Aug 2026)
+
+### N-59 / N-60 — steps and raise-to-wake, both dead, both accelerometer
+
+**Firmware to flash: `5543D0BF9804` (stamp 13:47).** Supersedes `1560AB3C3466`.
+22/22 host tests (`-E ble_link`). RAM slack 200 B.
+**Companion build 38 (`0.8.2-p37`) installed.**
+
+Reported after flashing `1560AB3C3466`: step counter 0, wrist raise does not
+wake, both enabled in both settings screens. Charger-edge wake works, the watch
+settings screen works, the phone screen works.
+
+The two failures share one dependency and the one working feature does not use
+it. Both were found by reading Bosch's driver and InfiniTime against Slate's —
+no hardware, no diag round trip.
+
+#### N-59 — the step-counter enable bit never reached the sensor
+
+`enable_step_counter()` read-modify-wrote the 70-byte feature block in **8-byte
+chunks with the ASIC address set once**. The address does not survive the end of
+a transfer. Bosch's `bma4_read_regs` calls `increment_feature_config_addr()`
+after **every** chunk, and takes a single transfer when it can.
+
+So all nine chunks addressed bytes 0–7:
+
+- the enable bit went into a copy of byte 3, never byte 0x3B;
+- the write-back scribbled nine chunks over the head of the config;
+- the verify re-read the same wrong bytes, saw the bit it had just put there,
+  and **reported success**.
+
+`diag_bma_step_en` would have read 1 the whole time. This is the second time
+this driver has reported success for a pedometer that was switched off — the
+first was the config upload (N-54), the same class of bug one layer up.
+
+Fixed: one 70-byte read and one 70-byte write, Bosch's non-chunked path.
+`bma_write`'s buffer was already sized 80 "because the BMA feature block is a
+single 70-byte write" — the transfer that comment describes had never been made.
+
+#### N-60 — the accelerometer axes were in the chip's frame, not the watch's
+
+The BMA is mounted rotated in the PineTime. InfiniTime's `Bma421::Process`
+returns `{steps, data.y, data.x, data.z}` — its X is the sensor's Y — and
+`MotionController`'s thresholds are written in that frame. `RaiseDetector`
+copies those thresholds exactly but was fed `read_accel`'s unswapped output.
+
+The first test in `ShouldRaiseWake` rejects when `|xMean| > 384`. In the chip's
+frame that axis sits near ±1 g (≈±1024) on a wrist, so **every gesture was
+rejected**. Raise-to-wake could not fire at any angle.
+
+Fixed in `read_accel`, mirroring InfiniTime, so the swap is a property of the
+mounting rather than of the detector. It is the only consumer.
+
+#### `tests/host/test_bma42x.cpp` — new, and the reason both were found
+
+There was no test for this driver at all, which is how a function that verified
+its own work still shipped broken twice. The new one runs the driver against a
+sensor model that enforces the rule the code broke: FEATURES_IN reads and writes
+at whatever 0x5B/0x5C name, and **the address does not persist across
+transfers**. It reproduced both defects before the fix.
+
+One trap worth recording: the first fixture filled the block with `feature[i] =
+i`, so byte 0x3B held 0x3B — which already carries the 0x10 enable bit. The
+assertion passed against the broken driver. The fixture now clears the bit and
+asserts it starts clear.
+
+#### What to look for after flashing
+
+- **Steps.** Walk a hundred paces. Non-zero means the pedometer is finally on.
+- **Raise.** With the screen asleep, raise your wrist to read the watch. It
+  should wake, and should NOT wake from typing or walking arms-down.
+- **Disproof for steps:** still 0 means the bit lands but the feature engine is
+  not running — next look would be ACC_CONF (Slate writes 0xA8, InfiniTime's
+  config computes 0x28: `perf_mode` differs) and whether advanced power save
+  should be left on, neither of which is proven to matter yet.
+
+### Companion watch-settings screen — layout fixed
+
+Two faults visible in the operator's screenshot:
+
+- The first row was clipped under the system bar. `targetSdk 35` draws
+  edge-to-edge and the screen had no inset padding — the exact trap already
+  recorded in CLAUDE.md's working practice. Fixed with `safeDrawingPadding()`.
+- Six chips in a plain `Row` did not fit, so "Never" was compressed to one
+  character wide and rendered as a **vertical column of letters**. Fixed with
+  `FlowRow`, which wraps instead of compressing at any width or font scale.
+
+Also: dropped the in-content headline duplicating the title bar, grouped each
+setting into a card, and switched the toggle rows from a fixed `fillMaxWidth(0.75f)`
+to a weighted column so the switch sits at the edge on any screen.
+
+### N-58 — the reconnect button refused to reconnect, and blamed an app that was not there
+
+**Companion build 37 (`0.8.1-p36`) installed.** 168/168 `:sdp-tests`.
+
+Reported as "unable to reconnect the watch in the companion app", with the
+operator stating no other app was interfering. They were right, and the app was
+telling them otherwise.
+
+**Evidence** (`adb shell dumpsys bluetooth_manager`):
+
+```
+stack::gatt  2026-08-09 11:47:53.522 …08:89, BT_TRANSPORT_LE, state: GATT_CH_OPEN, No ACL holders
+```
+
+An LE link to the watch, **open and owned by nobody** — the last GATT event on
+record, never closed. `ps` confirmed nRF Connect was not running.
+`getConnectedDevices(GATT)` therefore returned the watch while Slate was not
+connected, and `LinkContentionLogic.evaluate` reported "Another app on this
+phone holds the watch BLE link".
+
+That claim is not something the signal can support. The same signal appears when
+a link is left orphaned, which is what happens when the app is **reinstalled or
+force-stopped while connected** — the process dies, its GATT clients are
+unregistered (`REASON_UNREGISTER_CLIENT` in the same dump), and the ACL stays
+up. On a development phone that is the *likeliest* cause, and no amount of
+closing Gadgetbridge fixes it.
+
+**The lockout.** [MainActivity.kt](../companion/app/src/main/java/slate/app/MainActivity.kt)
+had three sites that `return`ed on a contention verdict, including
+"3. Start / reconnect link service". The logged sequence matches exactly:
+
+```
+12:49:15.175 I startObservingDevicePresence(E8:01:34:22:08:89)
+12:49:15.179 W LinkContention: Another app on this phone holds the watch BLE link
+```
+
+— `startObservingPresence`, then the verdict, then nothing. The service was
+never started. The one action that could have recovered the link was the one
+being refused, and no path in the app could clear the stale connection.
+
+`LinkForegroundService.connectAddress` has always logged the same verdict and
+connected regardless. The UI was the outlier.
+
+**Fixed:**
+
+- All three MainActivity sites warn and proceed. If a rival really does hold the
+  slot, the connect fails and the reconnect watchdog reports it — strictly more
+  informative than declining to try.
+- The verdict says what the signal proves: "This phone already has a BLE link to
+  the watch that Slate does not own." Pinned by
+  `heldOnThisPhoneDoesNotBlameAnotherApp`, which asserts the summary does *not*
+  contain "another app".
+- `LinkContention.STALE_LINK_TIP` leads the remediation copy: turn Bluetooth off
+  and on to drop an orphaned link. It is the only remedy that addresses this
+  cause and it was absent from a list of three app-specific ones.
+
+**OTA and sealed-DFU still block on contention, deliberately** — flashing over a
+contended link on a sealed watch is the one place where refusing to start is the
+right answer.
+
+**Not caused by the settings work**, but triggered by installing build 36 over a
+live connection. Worth knowing for every future install: reinstalling while
+connected can orphan the link.
+
+### Watch settings, on both devices, synced — built, NOT yet on hardware
+
+**Firmware to flash: `1560AB3C3466` (stamp 12:34).** Supersedes `A987839D42A0`,
+`DC04B7288671`, `88DBB925E697` and `451C3AB52718`, and contains everything
+before them. 21/21 host tests (`-E ble_link`). RAM slack 200 B.
+
+**Companion: build 36, `0.8.0-p35`, installed on the Pixel.** 167/167
+`:sdp-tests`.
+
+Three settings, editable in both places, syncing both ways:
+
+| | watch | phone |
+|---|---|---|
+| Raise to wake | Settings row 1 | switch |
+| Screen timeout | Settings row 2 (cycles) | chips 10/20/30/60/120/Never |
+| Show step count | Settings row 3 | switch |
+
+Reached on the watch by **swiping left-to-right** from the face; on the phone
+from **Watch settings** on the main screen.
+
+`tilt_sensitivity` is deliberately **not** synced and not shown: it configured
+the any-motion threshold that raise-to-wake replaced, so it does nothing. A
+control with no effect is worse than no control.
+
+#### The merge rule, and why it is written twice
+
+`include/settings_sync.hpp` / `src/settings_sync.cpp` and
+`companion/sdp-core/…/session/WatchSettings.kt` are the same 10-byte format and
+the same rule, one per language. Wire:
+`[0x21][ver][revision:u32 LE][tilt][wake_s][steps][reserved]`.
+
+- Higher revision wins.
+- Equal revision, identical content: no-op.
+- Equal revision, **different** content is a real conflict — both ends edited
+  without seeing each other. The **watch wins**; each side reaches that verdict
+  alone from its own `self_is_watch`, which is what stops them overwriting each
+  other forever.
+- A local edit is stamped `max(mine, highest_seen) + 1` — a Lamport clock, not a
+  sequence number. That is the whole reason last-writer-wins still holds after
+  both have been offline and edited. Saturates at `0xFFFFFFFF` rather than
+  wrapping, since a wrap would resurrect ancient settings.
+
+The Kotlin tests pin **the firmware's own encoder output**, not a re-derivation
+of it: the golden vectors in `WatchSettingsTest` came from running
+`slate::settings_sync::encode`.
+
+Opening exchange: the **phone speaks first**, 1200 ms after the session goes
+Ready (N-25 — the watch's AppInbox holds one message, and 1200 ms sits clear of
+the time-sync retries at 300/2300/10300 ms). The watch only volunteers its copy
+when it has an unsent edit, so without the phone opening, two sides that had
+both changed would sit on different values indefinitely.
+
+#### N-57 — the settings rows were drawn but their taps went to the phone
+
+`Core::on_tap_elem` had **no caller**. The rows were laid out correctly, carried
+`EMIT_TOUCH` and the right element ids, and the display-list test passed — but
+in `main.cpp` a tap on a locally-owned screen went to `g_input.on_event`, which
+encodes it as an SDP input event and sends it to the companion. The phone has
+never heard of `kSettingRaise`, so the tap vanished. On the wrist this would
+have read as "tapping the row does nothing", which is indistinguishable from a
+touch-driver fault and would have cost a flash cycle to chase.
+
+Found by grepping for callers before packaging, not on hardware.
+
+Fixed by `local_tap_handled()` in `main.cpp`: hit-test against the rects the
+interpreter already collected while rendering the local list (`core_push_list`
+calls `set_hits`, so no second table is needed), then hand the id to Core.
+`Core::on_tap_elem` now returns **bool** so the screen check stays in the one
+place that knows which local screens have live elements — an unclaimed tap, or
+one on any other screen, still reaches the router exactly as before.
+
+Pinned by `test_settings_taps_reach_their_setting`, which walks the list Core
+actually pushes, taps the centre of each touchable element, and asserts the
+setting that row displays is the one that changed. A test that only counts
+opcodes cannot see this class of bug.
+
+#### N-56 — the revision was RAM-only, so every reboot lost the argument
+
+Found while wiring the phone half, not on hardware. `settings_rev_` lived in
+`Core` and nowhere else, so it returned to **0** on every restart while the
+phone kept counting. On the next connection the phone therefore outranked the
+watch and quietly put its own **older** copy back: a setting changed on the
+watch undid itself. The watch reboots on every flash, so this was not rare.
+
+Fixed by moving the revision into `local::Settings`, which is persisted — magic
+bumped `'SLTT'` → `'SLTU'`, so **settings return to defaults once** on this
+flash. `highest_seen_rev_` stays in RAM and is seeded from the persisted
+revision on load, which is the correct floor.
+
+Pinned by `test_settings_revision_survives_reboot` in `test_local_core.cpp`,
+which rebuilds a `Core` over the same persisted slots and then offers it a stale
+phone copy.
+
+#### What to look for after flashing
+
+- **Swipe left-to-right from the face** → three labelled rows with On/Off and a
+  timeout value. Tapping a row changes it.
+- **Change one on the watch, open Watch settings on the phone** → it should
+  already show the new value.
+- **Change one on the phone** → the watch's settings screen shows it, and the
+  behaviour follows (timeout is the easiest to feel).
+- **Change one on the phone with the watch out of range**, then reconnect → the
+  phone screen says "Waiting for the watch" until it lands.
+- **Disproof:** a value that reverts a few seconds after being changed means the
+  two ends are both applying each other — the tie-break is the thing to look at,
+  and `LinkLog` prints every send and receive with its revision.
 
 ### I-19 — RAM margin is down to 176 bytes (owner asked this be recorded)
 

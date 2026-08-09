@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="slate.session.WatchSettingsTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:05.435Z" hostname="DAN01" time="0.012">
+  <properties/>
+  <testcase name="conflictResolvesOneWayOnly()" classname="slate.session.WatchSettingsTest" time="0.005"/>
+  <testcase name="roundTripsEveryTimeoutChoice()" classname="slate.session.WatchSettingsTest" time="0.001"/>
+  <testcase name="rejectsRubbish()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="timeoutChoicesMatchTheWatchRow()" classname="slate.session.WatchSettingsTest" time="0.003"/>
+  <testcase name="encodeMatchesFirmwareGoldenDefaults()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="decodesWhatTheFirmwareEncodes()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="revisionSaturatesRatherThanWrapping()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="lamportCounterMakesLastWriterWin()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="encodeMatchesFirmwareGoldenMixed()" classname="slate.session.WatchSettingsTest" time="0.001"/>
+  <testcase name="encodeMatchesFirmwareGoldenEverythingOff()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="identicalContentIsANoop()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="higherRevisionWins()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <testcase name="encodeMatchesFirmwareGoldenHighRevision()" classname="slate.session.WatchSettingsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

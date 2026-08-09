@@ -1,14 +1,24 @@
 # Slate — handoff status
 
-**Updated:** 6 August 2026, 23:30 (Indian/Mahe). Supersedes the 31 July note.
-**Single point of truth for open work:** `docs/issue-prompts-open.md`.
-**Starting a new session?** `docs/handover-prompt.md` is the brief: what to
-read, current build state, the traps, and how to work here.
-`issues.md` is older and now partial — do not treat it as current.
+> ## ⚠ STALE — frozen at 6 August 2026, 23:30
+>
+> **Everything below this box describes the state on 6 August and has not been
+> maintained since.** The build ids, the "working / partly working" lists and the
+> open items are all out of date by three days of work — including the settings
+> screen, the sync protocol, and two accelerometer fixes.
+>
+> **Do not act on anything in this file without checking it first against:**
+>
+> - `docs/handover-prompt.md` — the current brief: build state, traps, how to work here.
+> - `docs/issue-prompts-open.md` — the single point of truth for open work. Newest section is at the top.
+>
+> It is kept because the 6 August write-ups below (the launcher, the 5x7 font,
+> the tap path) are still the best account of how those parts came to be.
+> `issues.md` is older still and only partial.
 
 ---
 
-## Where things stand
+## Where things stand *(as of 6 August — superseded)*
 
 | | |
 |---|---|

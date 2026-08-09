@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="slate.app.debug"
-    android:versionCode="35"
-    android:versionName="0.7.6-p34" >
+    android:versionCode="38"
+    android:versionName="0.8.2-p37" >
 
     <uses-sdk
         android:minSdkVersion="30"
@@ -113,6 +113,10 @@
             android:name="slate.app.repo.RepoActivity"
             android:exported="false"
             android:label="Sub-app repository" />
+        <activity
+            android:name="slate.app.settings.WatchSettingsActivity"
+            android:exported="false"
+            android:label="Watch settings" />
         <activity
             android:name="slate.app.link.TroubleshootingActivity"
             android:exported="false"

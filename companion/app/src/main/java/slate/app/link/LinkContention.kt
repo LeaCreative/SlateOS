@@ -34,8 +34,24 @@ object LinkContention {
      * App-specific remediation (single source of copy). Always lists the three
      * common blockers; [prioritizeInstalled] prefixes installed packages.
      */
+    /**
+     * The first thing to try, and the one that is missing from the app list.
+     *
+     * A GATT link left open with no owner — the phone's stack logs it as
+     * "No ACL holders" — looks identical to a rival app from
+     * [BluetoothManager.getConnectedDevices]. It is what happens when Slate is
+     * reinstalled or killed while connected, so it is the *likeliest* cause on
+     * a development phone, and none of the app-specific tips below can fix it.
+     * Toggling the radio drops the orphaned link.
+     */
+    const val STALE_LINK_TIP: String =
+        "If Slate was just reinstalled or force-stopped, the link is probably " +
+            "left over from the old process and belongs to no app: turn " +
+            "Bluetooth off and on again to drop it"
+
     fun remediationBody(context: Context? = null): String {
         val tips = listOf(
+            STALE_LINK_TIP,
             "Gadgetbridge → disable auto-reconnect or remove the PineTime",
             "Amazfish → disconnect the watch",
             "nRF Connect → disconnect that device tab",
@@ -57,7 +73,9 @@ object LinkContention {
             }
         }
         return if (installed.isNotEmpty()) {
-            installed.joinToString(". ", postfix = ". ") +
+            // The stale-link case cannot be ruled out by looking at what is
+            // installed, so it leads regardless of which rivals are present.
+            "$STALE_LINK_TIP. " + installed.joinToString(". ", postfix = ". ") +
                 "Also: " + tips.joinToString("; ") + "."
         } else {
             tips.joinToString(". ", postfix = ".")

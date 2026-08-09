@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.script.GovernorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:29.187Z" hostname="DAN01" time="0.018">
+<testsuite name="slate.script.GovernorTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:05.252Z" hostname="DAN01" time="0.013">
   <properties/>
-  <testcase name="timerMinimumOneSecond()" classname="slate.script.GovernorTest" time="0.008"/>
-  <testcase name="renderOverrunKillsThenDisables()" classname="slate.script.GovernorTest" time="0.01"/>
+  <testcase name="timerMinimumOneSecond()" classname="slate.script.GovernorTest" time="0.006"/>
+  <testcase name="renderOverrunKillsThenDisables()" classname="slate.script.GovernorTest" time="0.007"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

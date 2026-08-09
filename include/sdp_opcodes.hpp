@@ -212,6 +212,23 @@ constexpr std::uint8_t CREDIT         = 0x0Au;  // watch → phone (free DL byte
 constexpr std::uint8_t GOODBYE        = 0x0Bu;  // either
 // Wall-clock sync (not GATT CTS): op + unix epoch u32 LE. Companion TimeSync.kt.
 constexpr std::uint8_t TIME_SYNC      = 0x20u;  // phone → watch
+/**
+ * Watch settings, synced both directions. Same message either way:
+ *
+ *   [op][wire_version:u8][revision:u32 LE][tilt_enabled][wake_seconds]
+ *   [face_show_steps][reserved]                                = 10 bytes
+ *
+ * `revision` is a Lamport counter, not a plain sequence: a side that applies a
+ * remote update adopts its revision, and a local edit sets
+ * revision = max(seen) + 1. That is what makes "whichever side changed last
+ * wins" actually true when both have edited since they last spoke — two
+ * independent counters would both sit at the same number with different
+ * content and there would be nothing to choose between them.
+ *
+ * Ties (equal revision, different content) resolve to the WATCH, because it is
+ * the device that cannot show a merge conflict.
+ */
+constexpr std::uint8_t SETTINGS_SYNC  = 0x21u;  // either direction
 // Trial-image confirm status (0xE0–0xEF CONTROL extension; old FW ignores).
 constexpr std::uint8_t CONFIRM_STATUS_REQUEST = 0xE0u;  // phone → watch
 constexpr std::uint8_t CONFIRM_STATUS         = 0xE1u;  // watch → phone

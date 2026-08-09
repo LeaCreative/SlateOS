@@ -111,6 +111,7 @@ set(SLATE_APP_SOURCES
   src/alarm_sched.cpp
   src/bma42x.cpp
   src/raise_wake.cpp
+  src/settings_sync.cpp
   third_party/bosch/bma_config.cpp
   src/battery.cpp
   src/battery_hw.cpp

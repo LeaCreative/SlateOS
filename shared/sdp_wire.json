@@ -155,7 +155,13 @@
     "GOODBYE": 11,
     "TIME_SYNC": 32,
     "CONFIRM_STATUS_REQUEST": 224,
-    "CONFIRM_STATUS": 225
+    "CONFIRM_STATUS": 225,
+    "SETTINGS_SYNC": 33
   },
-  "protocol_version": 1
+  "protocol_version": 1,
+  "settings_sync": {
+    "wire_version": 1,
+    "payload_bytes": 10,
+    "comment": "Bidirectional watch<->phone settings. Same 10-byte message both ways: op, wire_version, u32 LE Lamport revision, then one byte per setting. Whichever side changed last wins, which is what the Lamport counter makes true even when both sides have edited since they last spoke."
+  }
 }

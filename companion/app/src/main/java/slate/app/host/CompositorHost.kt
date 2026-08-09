@@ -26,6 +26,7 @@ import slate.app.map.MapAdapter
 import slate.app.nav.NavAdapter
 import slate.app.repo.InstalledStore
 import slate.app.repo.RepoPrefs
+import slate.app.settings.WatchSettingsStore
 import slate.app.notif.NotifChange
 import slate.app.notif.NotifPrefs
 import slate.app.notif.NotifStore
@@ -45,6 +46,7 @@ import slate.session.ConfirmStatus
 import slate.session.SessionClient
 import slate.generated.SdpWire
 import slate.session.TimeSync
+import slate.session.WatchSettings
 import java.util.TimeZone
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -192,6 +194,9 @@ class CompositorHost(
     /** Wall-clock of the last TIME_SYNC sent, for the periodic resend. */
     private var lastTimeSyncMs = 0L
 
+    /** Phone's copy of the watch settings; see [slate.session.WatchSettings]. */
+    val watchSettings = WatchSettingsStore.get(context)
+
     private val _confirmUi = MutableStateFlow<ConfirmUi>(ConfirmUi.Idle)
     val confirmUi: StateFlow<ConfirmUi> = _confirmUi.asStateFlow()
 
@@ -219,6 +224,13 @@ class CompositorHost(
                 ScriptConsole.log("slate.runtime", "error", "JS sandbox: ${t.message}")
                 LinkLog.e("JS sandbox failed", t)
             }
+        }
+        // A settings edit made anywhere in the process — the phone's settings
+        // screen is a separate Activity — goes out as soon as there is a session
+        // to carry it. Applying an inbound change also moves this flow, but
+        // takePending() is empty in that case, so the watch is not answered back.
+        scope.launch {
+            watchSettings.settings.collect { sendSettingsSync() }
         }
         scope.launch {
             gatt.metrics.collect { m ->
@@ -306,6 +318,7 @@ class CompositorHost(
 
     private fun onControlMessage(msg: ByteArray) {
         val wasReady = session.state == SessionClient.State.Ready
+        onSettingsSync(msg)
         val result = session.onControlMessage(msg)
         for (out in result.outbound) {
             gatt.sendMessage(SdpFrame.CHAN_CONTROL, out)
@@ -353,6 +366,7 @@ class CompositorHost(
             }
         }
         if (!wasReady && session.state == SessionClient.State.Ready) {
+            openSettingsExchange()
             val addr = SharedLink.associatedAddress
                 ?: gatt.metrics.value.deviceAddress.takeIf { it.isNotBlank() }
             if (addr != null) {
@@ -395,6 +409,71 @@ class CompositorHost(
                 "${TimeZone.getDefault().id})",
         )
         gatt.sendMessage(SdpFrame.CHAN_CONTROL, TimeSync.encodeUnix(localEpoch))
+    }
+
+    /**
+     * CONTROL 0x21 in — the watch reporting its settings.
+     *
+     * Runs before [SessionClient.onControlMessage] rather than inside it: this
+     * is app state, not session state, and the session client is shared with the
+     * host tests where no settings store exists.
+     */
+    private fun onSettingsSync(msg: ByteArray) {
+        if (msg.isEmpty() || (msg[0].toInt() and 0xFF) != WatchSettings.OP) return
+        val incoming = WatchSettings.decode(msg) ?: run {
+            LinkLog.w("settings sync: undecodable ${msg.size} B message from watch")
+            return
+        }
+        if (watchSettings.onRemote(incoming)) {
+            LinkLog.i(
+                "settings ← watch (rev ${incoming.revision}): " +
+                    "raise=${incoming.tiltEnabled} timeout=${incoming.wakeSeconds}s " +
+                    "steps=${incoming.showSteps}",
+            )
+        } else {
+            // Ours is newer or identical. Either way the watch has now told us
+            // where it stands; if we are genuinely ahead, push so it converges.
+            sendSettingsSync()
+        }
+    }
+
+    /**
+     * Hand our copy to the watch.
+     *
+     * Fire and forget: with no session the edit stays on the phone and
+     * [WatchSettingsStore.pendingSend] keeps it queued for the next connection,
+     * mirroring the firmware's `take_settings_dirty()`.
+     */
+    fun sendSettingsSync(force: Boolean = false) {
+        if (session.state != SessionClient.State.Ready) return
+        val pending = watchSettings.takePending()
+        if (pending == null && !force) return
+        val p = pending ?: watchSettings.current()
+        LinkLog.i(
+            "settings → watch (rev ${p.revision}): raise=${p.tiltEnabled} " +
+                "timeout=${p.wakeSeconds}s steps=${p.showSteps}",
+        )
+        gatt.sendMessage(SdpFrame.CHAN_CONTROL, WatchSettings.encode(p))
+    }
+
+    /**
+     * Open the settings exchange on a fresh session.
+     *
+     * The watch only speaks first when it has an unsent edit, so if the phone
+     * stayed quiet two sides that had both changed would sit on different values
+     * indefinitely. The phone opens; the merge rule decides whose copy wins and
+     * the watch answers with its own if ours is not newer.
+     *
+     * Delayed for the same reason as the time sync (N-25): HELLO_ACCEPT has just
+     * gone out and the watch's AppInbox holds exactly one message, so anything
+     * arriving before the app task drains is dropped with no retransmit.
+     */
+    private fun openSettingsExchange() {
+        scope.launch {
+            delay(SETTINGS_OPEN_DELAY_MS)
+            if (session.state != SessionClient.State.Ready) return@launch
+            sendSettingsSync(force = true)
+        }
     }
 
     fun requestConfirmStatus() {
@@ -1065,5 +1144,12 @@ class CompositorHost(
          * still collides with a heartbeat or confirm-status reply.
          */
         val TIME_SYNC_RETRY_DELAYS_MS = longArrayOf(300L, 2_000L, 8_000L)
+
+        /**
+         * Delay before the opening SETTINGS_SYNC. Same single-slot-inbox reason
+         * as the time sync, and offset from it so the two do not collide in the
+         * one message the watch can hold.
+         */
+        const val SETTINGS_OPEN_DELAY_MS = 1_200L
     }
 }

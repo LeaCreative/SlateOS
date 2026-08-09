@@ -181,31 +181,51 @@ bool Driver::enable_step_counter() {
     return wr(kRegAsicLsb, feature_addr_lsb_) && wr(kRegAsicMsb, feature_addr_msb_);
   };
 
+  // ONE transfer each way, not a chunked loop.
+  //
+  // The ASIC address does not survive the end of a transfer: it advances as
+  // bytes move within a single read or write and then reverts to whatever
+  // 0x5B/0x5C name. Bosch chunks this only when it has to, and then calls
+  // increment_feature_config_addr() after every chunk (bma4_read_regs); with
+  // read_write_len >= len it does exactly what is below — a single
+  // read_regs(FEATURE_CONFIG_ADDR, data, len).
+  //
+  // Slate chunked at 8 bytes and set the address once, so all nine chunks hit
+  // bytes 0-7. The enable bit went into a copy of byte 3 instead of byte 0x3B,
+  // the write-back scribbled the head of the config, and the verify re-read the
+  // same wrong bytes and passed. N-59: the second time this driver reported
+  // success for a pedometer that was switched off.
+  //
+  // 70 bytes is within the TWIM MAXCNT (8-bit) and within bma_write's buffer,
+  // which was sized 80 for this exact transfer.
   std::uint8_t feat[kFeatureSize] = {};
-  bool ok = set_addr();
-  for (std::size_t off = 0u; ok && off < kFeatureSize; off += kStreamChunk) {
-    const std::size_t n =
-        (kFeatureSize - off) > kStreamChunk ? kStreamChunk : (kFeatureSize - off);
-    ok = bus_.read_reg(kRegFeaturesIn, feat + off, n, bus_.ctx);
-  }
+  bool ok = set_addr() && bus_.read_reg(kRegFeaturesIn, feat, kFeatureSize, bus_.ctx);
 
   if (ok) {
     feat[kStepCounterByte] |= kStepCounterEnMask;
-    ok = set_addr();
-    for (std::size_t off = 0u; ok && off < kFeatureSize; off += kStreamChunk) {
-      const std::size_t n =
-          (kFeatureSize - off) > kStreamChunk ? kStreamChunk : (kFeatureSize - off);
-      ok = bus_.write_reg(kRegFeaturesIn, feat + off, n, bus_.ctx);
-    }
+    ok = set_addr() &&
+         bus_.write_reg(kRegFeaturesIn, feat, kFeatureSize, bus_.ctx);
+  }
+
+  // Read the block back and check the bit is really set.
+  //
+  // An I2C ACK only says the sensor accepted the bytes, not that they landed
+  // where intended: if the ASIC address is wrong the write succeeds and goes
+  // nowhere useful. Trusting the ACK is what let this report success while the
+  // pedometer stayed off and read_steps() dutifully returned the resulting
+  // zeros. Verify, or claim nothing.
+  bool verified = false;
+  if (ok) {
+    std::uint8_t check[kFeatureSize] = {};
+    const bool rok =
+        set_addr() && bus_.read_reg(kRegFeaturesIn, check, kFeatureSize, bus_.ctx);
+    verified = rok && (check[kStepCounterByte] & kStepCounterEnMask) != 0u;
   }
 
   // Restore APS whatever happened - leaving it off costs current.
   (void)wr(kRegPowerConf, 0x01u);
-  if (!ok) {
-    return false;
-  }
-  step_enabled_ = true;
-  return true;
+  step_enabled_ = verified;
+  return verified;
 }
 
 bool Driver::enable_any_motion(std::uint8_t sens) {
@@ -262,8 +282,17 @@ bool Driver::read_accel(std::int16_t* x, std::int16_t* y, std::int16_t* z) {
                                   (static_cast<std::uint16_t>(hi) << 8u));
     return static_cast<std::int16_t>(raw / 16);
   };
-  if (x != nullptr) *x = axis(b[0], b[1]);
-  if (y != nullptr) *y = axis(b[2], b[3]);
+  // X and Y are SWAPPED, because the BMA is mounted rotated in the PineTime.
+  // This mirrors InfiniTime's Bma421::Process, which returns
+  // {steps, data.y, data.x, data.z} with the same comment.
+  //
+  // It matters because RaiseDetector's thresholds are InfiniTime's and are
+  // expressed in this frame. Handed the chip's frame, the "arm is not level"
+  // check read an axis that sits near +/-1 g on a wrist, far above the 384
+  // threshold, so every gesture was rejected and the watch never woke on a
+  // raise (N-60).
+  if (x != nullptr) *x = axis(b[2], b[3]);
+  if (y != nullptr) *y = axis(b[0], b[1]);
   if (z != nullptr) *z = axis(b[4], b[5]);
   return true;
 }
@@ -272,11 +301,11 @@ std::uint32_t Driver::read_steps() {
   if (!step_enabled_) {
     return 0u;
   }
-  std::uint8_t b[3] = {};
+  std::uint8_t b[4] = {};  // BMA423_STEP_CNTR_DATA_SIZE
   if (bus_.read_reg == nullptr) {
     return 0u;
   }
-  if (!bus_.read_reg(kRegStepOut0, b, 3u, bus_.ctx)) {
+  if (!bus_.read_reg(kRegStepOut0, b, sizeof(b), bus_.ctx)) {
     return 0u;
   }
   return static_cast<std::uint32_t>(b[0]) |

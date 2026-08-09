@@ -43,6 +43,9 @@ public:
    * because it is the only honest answer to "did the pedometer come up".
    */
   std::uint8_t last_init_status() const { return last_init_status_; }
+
+  /** True once the pedometer enable bit was written and read back verified. */
+  bool step_counter_enabled() const { return step_enabled_; }
   bool ok() const { return chip_ != Chip::Unknown; }
 
   // Enable accel in low-power + attempt HW step counter.

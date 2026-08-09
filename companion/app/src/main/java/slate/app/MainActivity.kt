@@ -62,21 +62,25 @@ class MainActivity : ComponentActivity() {
         }
         LinkLog.i("Associated ${device.address}")
         association.startObservingPresence(device.address)
+        // Same reasoning as the reconnect button: warn, then start the service.
+        // Returning here left the operator with an association and no link, and
+        // nothing in the app able to make one.
         val held = LinkContention.remediationIfHeldByOther(
             this,
             device.address,
             weAreConnected = gatt.metrics.value.connected,
         )
         if (held != null) {
-            statusView.text = held
             SharedLink.lastContentionMessage = held
-            return@registerForActivityResult
+            LinkLog.w("starting link despite contention: $held")
         }
-        statusView.text = if (LinkForegroundService.start(this, device.address)) {
-            "Associated ${device.address} — link service started"
-        } else {
-            "Associated ${device.address}, but Android blocked the link service; " +
-                "check notification/background settings"
+        val started = LinkForegroundService.start(this, device.address)
+        statusView.text = when {
+            !started ->
+                "Associated ${device.address}, but Android blocked the link service; " +
+                    "check notification/background settings"
+            held != null -> "Associated ${device.address} — connecting anyway. $held"
+            else -> "Associated ${device.address} — link service started"
         }
     }
 
@@ -207,15 +211,15 @@ class MainActivity : ComponentActivity() {
                 ?: association.lastAssociatedAddress()
                 ?: association.associatedAddresses().firstOrNull()
             if (known != null) {
-                val held = LinkContention.remediationIfHeldByOther(
+                // Warned, not blocked. Pairing does not need the BLE slot, and
+                // refusing to even open the chooser meant an operator whose
+                // association had been lost could not get it back while a stale
+                // link was up — with no way to clear that link from the app.
+                LinkContention.remediationIfHeldByOther(
                     this,
                     known,
                     weAreConnected = gatt.metrics.value.connected,
-                )
-                if (held != null) {
-                    statusView.text = held
-                    return@button
-                }
+                )?.let { LinkLog.w("associating despite contention: $it") }
             }
             association.associate(
                 activity = this,
@@ -233,20 +237,32 @@ class MainActivity : ComponentActivity() {
                 statusView.text = "No associated device"
             } else {
                 association.startObservingPresence(addr)
+                // Warn, then connect anyway. This used to return here, which
+                // made the button a dead end: an orphaned GATT link left by a
+                // reinstall reads exactly like a rival app (see
+                // LinkContention.STALE_LINK_TIP), so the one action that could
+                // recover the connection refused to run, and the message sent
+                // the operator looking for an app that was not installed.
+                //
+                // LinkForegroundService.connectAddress has always logged this
+                // verdict and connected regardless; the button now matches it.
+                // If a rival really does hold the slot the connect fails and
+                // the reconnect watchdog says so — which is more than refusing
+                // to try ever told anyone.
                 val held = LinkContention.remediationIfHeldByOther(
                     this,
                     addr,
                     weAreConnected = gatt.metrics.value.connected,
                 )
                 if (held != null) {
-                    statusView.text = held
                     SharedLink.lastContentionMessage = held
-                    return@button
+                    LinkLog.w("reconnect requested despite contention: $held")
                 }
-                statusView.text = if (LinkForegroundService.start(this, addr)) {
-                    "Reconnecting $addr"
-                } else {
-                    "Android blocked the link service; check background settings"
+                val started = LinkForegroundService.start(this, addr)
+                statusView.text = when {
+                    !started -> "Android blocked the link service; check background settings"
+                    held != null -> "Reconnecting $addr anyway — $held"
+                    else -> "Reconnecting $addr"
                 }
             }
         })
@@ -275,6 +291,9 @@ class MainActivity : ComponentActivity() {
                 false,
             ),
         )
+        root.addView(button("Watch settings") {
+            startActivity(Intent(this, slate.app.settings.WatchSettingsActivity::class.java))
+        })
         root.addView(button("Script console") {
             startActivity(Intent(this, DevConsoleActivity::class.java))
         })

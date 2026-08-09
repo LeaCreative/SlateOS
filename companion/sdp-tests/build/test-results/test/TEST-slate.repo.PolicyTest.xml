@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.repo.PolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-08-07T13:12:28.821Z" hostname="DAN01" time="0.022">
+<testsuite name="slate.repo.PolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:04.958Z" hostname="DAN01" time="0.009">
   <properties/>
-  <testcase name="updateConsentOnPermissionIncrease()" classname="slate.repo.PolicyTest" time="0.002"/>
-  <testcase name="reducedPermissions()" classname="slate.repo.PolicyTest" time="0.006"/>
-  <testcase name="availabilityReasonsVisible()" classname="slate.repo.PolicyTest" time="0.009"/>
-  <testcase name="thirdPartyNeverShadowsOfficial()" classname="slate.repo.PolicyTest" time="0.004"/>
+  <testcase name="updateConsentOnPermissionIncrease()" classname="slate.repo.PolicyTest" time="0.001"/>
+  <testcase name="reducedPermissions()" classname="slate.repo.PolicyTest" time="0.002"/>
+  <testcase name="availabilityReasonsVisible()" classname="slate.repo.PolicyTest" time="0.003"/>
+  <testcase name="thirdPartyNeverShadowsOfficial()" classname="slate.repo.PolicyTest" time="0.002"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

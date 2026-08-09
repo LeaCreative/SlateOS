@@ -5,6 +5,7 @@
 #include "local_state.hpp"
 #include "notif_store.hpp"
 #include "raise_wake.hpp"
+#include "settings_sync.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -82,7 +83,16 @@ public:
 
   // Local navigation when remote_depth==0.
   void on_button_press();
-  void on_tap_elem(std::uint16_t elem_id);
+
+  /**
+   * A tap on an element of a locally-drawn screen.
+   *
+   * Returns true when the watch acted on it, so the caller knows not to also
+   * forward the event to the phone. The screen check lives here rather than at
+   * the call site: only Core knows which of its screens have live elements, and
+   * a phone that has never heard of these element ids should not be sent them.
+   */
+  bool on_tap_elem(std::uint16_t elem_id);
 
   /** False while a phone-pushed screen owns the panel; blocks local repaints. */
   void set_local_owns_screen(bool owns) {
@@ -146,11 +156,48 @@ public:
   /** Seconds of inactivity before the panel sleeps; 0 disables sleeping. */
   std::uint32_t sleep_timeout_ms() const;
 
+  /**
+   * Raise-to-wake sampling. Call from the app loop on EVERY iteration.
+   *
+   * Deliberately not driven from tick(): tick runs every 200 ms, so the
+   * internal 100 ms gate could never reach 100 Hz and the 8-sample window
+   * stretched to 1.6 s. A wrist raise takes about half a second, so it fell
+   * entirely inside one window and the "now versus 0.8 s ago" comparison the
+   * algorithm depends on washed out completely. That is why the flick did
+   * nothing on hardware.
+   */
+  void poll_raise(std::uint32_t now_ms);
+
+  /**
+   * True once since the last call if a local settings edit needs sending.
+   *
+   * Pull rather than push: Core has no link and should not grow one, and the
+   * app loop already drains state on its own schedule.
+   */
+  bool take_settings_dirty();
+
+  /** Current settings plus this watch's revision, ready to encode. */
+  settings_sync::Payload settings_payload() const;
+
+  /**
+   * Merge a settings message from the phone. Returns true if it was applied.
+   *
+   * Also records the highest revision seen, which is what a later local edit
+   * counts up from.
+   */
+  bool apply_settings_sync(const settings_sync::Payload& incoming);
+
+  /** Open the settings screen (swipe left-to-right). */
+  void show_settings() {
+    wake_display();
+    local_state().screen = local::Screen::Settings;
+    show_current();
+  }
+
 private:
   void poll_steps();
   void poll_battery(std::uint32_t now_ms);
   void poll_alarms();
-  void poll_raise(std::uint32_t now_ms);
   void enter_sleep();
   void enter_alert(std::uint8_t kind, std::uint8_t id);
   void load_settings();
@@ -226,6 +273,17 @@ private:
    */
   motion::RaiseDetector raise_{};
   std::uint32_t last_raise_ms_ = 0u;
+
+  /**
+   * Highest revision either side has shown, this boot.
+   *
+   * Only the floor for the next local edit, so losing it on reboot is harmless:
+   * load_settings() seeds it from the persisted revision, which is the correct
+   * floor. The revision itself lives in local::Settings because that one *must*
+   * survive a restart.
+   */
+  std::uint32_t highest_seen_rev_ = 0u;
+  bool settings_dirty_ = false;
   bool display_on_ = true;
 };
 

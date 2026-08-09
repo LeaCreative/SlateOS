@@ -1,9 +1,11 @@
 #include "alarm_sched.hpp"
+#include "hit_test.hpp"
 #include "local_budgets.hpp"
 #include "local_core.hpp"
 #include "local_state.hpp"
 #include "notif_store.hpp"
 #include "persist.hpp"
+#include "sdp_opcodes.hpp"
 #include "wall_clock.hpp"
 
 #include <cstdio>
@@ -334,12 +336,173 @@ static void test_core_alert() {
   expect("haptic on alert", g_haptic_count > 0);
 }
 
+/**
+ * A tap must reach the setting the row was drawn for.
+ *
+ * The settings screen's display list is built by one function and its taps are
+ * handled by another, joined only by the element ids. Nothing else notices if
+ * those drift, and the symptom on the wrist is simply "tapping that row does
+ * nothing" — indistinguishable from a touch-driver problem.
+ *
+ * This walks the list the watch actually draws, takes the centre of each
+ * touchable element, and asserts that tapping there changes the setting that
+ * row shows. It is the same route the firmware takes: hit_test over the rects
+ * the interpreter collected, then Core::on_tap_elem.
+ */
+static void test_settings_taps_reach_their_setting() {
+  std::memset(g_slots, 0, sizeof(g_slots));
+  std::memset(g_slot_len, 0, sizeof(g_slot_len));
+  slate::persist::Hooks ph{&host_read, &host_write, nullptr};
+  slate::persist::init(ph);
+  slate::clock::Hooks ch{&host_ticks, nullptr};
+  slate::clock::init(ch);
+
+  slate::core::Core core;
+  slate::core::Hooks hk;
+  hk.push_list = &push_list;
+  core.init(hk, nullptr);
+  core.show_settings();
+  expect("settings screen drawn", g_last_list_len > 0u);
+
+  // Collect the touchable rects straight out of the list Core just pushed.
+  input::HitRect rects[8];
+  std::size_t n_rects = 0u;
+  for (std::size_t i = 0u; i + 8u <= g_last_list_len && n_rects < 8u; ++i) {
+    if (g_last_list[i] != sdp::op::BEGIN_ELEM) {
+      continue;
+    }
+    input::HitRect r;
+    r.id = static_cast<std::uint16_t>(g_last_list[i + 1u] |
+                                      (g_last_list[i + 2u] << 8));
+    r.x = g_last_list[i + 3u];
+    r.y = g_last_list[i + 4u];
+    r.w = g_last_list[i + 5u];
+    r.h = g_last_list[i + 6u];
+    r.flags = g_last_list[i + 7u];
+    if ((r.flags & sdp::elem_flags::EMIT_TOUCH) != 0u) {
+      rects[n_rects++] = r;
+    }
+  }
+  expect("three touchable rows on screen", n_rects == 3u);
+
+  for (std::size_t i = 0u; i < n_rects; ++i) {
+    const input::HitRect& r = rects[i];
+    const std::uint16_t cx = static_cast<std::uint16_t>(r.x + r.w / 2u);
+    const std::uint16_t cy = static_cast<std::uint16_t>(r.y + r.h / 2u);
+    const std::uint16_t id =
+        input::hit_test(cx, cy, rects, n_rects);
+    expect("row centre hits its own element", id == r.id);
+
+    const auto before = core.local_state().settings;
+    expect("the tap is consumed by the watch", core.on_tap_elem(id));
+    const auto after = core.local_state().settings;
+    switch (id) {
+      case slate::local::kSettingRaise:
+        expect("raise row toggles raise-to-wake",
+               after.tilt_enabled != before.tilt_enabled);
+        break;
+      case slate::local::kSettingTimeout:
+        expect("timeout row changes the timeout",
+               after.wake_seconds != before.wake_seconds);
+        break;
+      case slate::local::kSettingSteps:
+        expect("steps row toggles the step display",
+               after.face_show_steps != before.face_show_steps);
+        break;
+      default:
+        expect("no unexpected touchable element", false);
+        break;
+    }
+  }
+
+  // A tap on empty space must NOT be swallowed: on a local screen an
+  // unclaimed tap still belongs to the router, and before this the watch
+  // forwarded every one of them.
+  expect("a miss is not consumed", !core.on_tap_elem(input::kNoHit));
+
+  // And the rows only answer while their own screen is up, so a stray element
+  // id arriving from anywhere else cannot silently change a setting.
+  core.local_state().screen = slate::local::Screen::Face;
+  expect("no setting changes off the settings screen",
+         !core.on_tap_elem(slate::local::kSettingSteps));
+}
+
+/**
+ * A settings edit made on the watch must survive a reboot — including its
+ * revision.
+ *
+ * Kept in RAM alone, the revision returned to 0 on every restart while the
+ * phone kept counting. The phone then outranked the watch on the opening
+ * exchange and put its own older copy back: the user's change on the watch
+ * simply undid itself the next time the two connected. The watch reboots on
+ * every flash, so this was not a rare case.
+ */
+static void test_settings_revision_survives_reboot() {
+  std::memset(g_slots, 0, sizeof(g_slots));
+  std::memset(g_slot_len, 0, sizeof(g_slot_len));
+  g_ticks = 0u;
+  slate::persist::Hooks ph{&host_read, &host_write, nullptr};
+  slate::persist::init(ph);
+  slate::clock::Hooks ch{&host_ticks, nullptr};
+  slate::clock::init(ch);
+
+  slate::core::Hooks hk;
+  hk.push_list = &push_list;
+  hk.haptic = &haptic;
+
+  std::uint32_t rev_before = 0u;
+  {
+    slate::core::Core core;
+    core.init(hk, nullptr);
+    core.show_settings();
+    // Two edits on the watch, so the revision is unambiguously past zero.
+    core.on_tap_elem(slate::local::kSettingSteps);
+    core.on_tap_elem(slate::local::kSettingTimeout);
+    rev_before = core.settings_payload().revision;
+    expect("watch edits advance the revision", rev_before >= 2u);
+    expect("edits are marked for sending", core.take_settings_dirty());
+  }
+
+  // Reboot: a fresh Core reading the same persisted slots.
+  slate::core::Core rebooted;
+  rebooted.init(hk, nullptr);
+  const auto after = rebooted.settings_payload();
+  expect("revision survives the reboot", after.revision == rev_before);
+
+  // The phone reconnects still holding the revision it had before the watch's
+  // edits, with a different value. It must lose.
+  slate::settings_sync::Payload stale;
+  stale.revision = rev_before - 1u;
+  stale.tilt_enabled = after.tilt_enabled ? 0u : 1u;
+  stale.wake_seconds = 120u;
+  stale.face_show_steps = after.face_show_steps ? 0u : 1u;
+  expect("a stale phone copy is rejected", !rebooted.apply_settings_sync(stale));
+  expect("watch settings unchanged",
+         rebooted.settings_payload().face_show_steps == after.face_show_steps &&
+             rebooted.settings_payload().wake_seconds == after.wake_seconds);
+
+  // A genuinely newer phone copy still applies, and the next watch edit
+  // outranks it rather than reusing a revision the phone has already spent.
+  slate::settings_sync::Payload newer;
+  newer.revision = rev_before + 5u;
+  newer.tilt_enabled = 1u;
+  newer.wake_seconds = 60u;
+  newer.face_show_steps = 1u;
+  expect("a newer phone copy applies", rebooted.apply_settings_sync(newer));
+  rebooted.show_settings();
+  rebooted.on_tap_elem(slate::local::kSettingSteps);
+  expect("the next watch edit outranks the phone's",
+         rebooted.settings_payload().revision > newer.revision);
+}
+
 int main() {
   test_budgets();
   test_clock_drift_and_persist();
   test_notif_store();
   test_alarms();
   test_core_alert();
+  test_settings_taps_reach_their_setting();
+  test_settings_revision_survives_reboot();
   test_display_sleep();
   test_sleep_can_be_disabled();
   if (g_fails != 0) {
