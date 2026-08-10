@@ -5,7 +5,7 @@
 ![Watch face on PineTime](docs/images/face.jpg) ![Settings on PineTime](docs/images/settings.jpg)
 ![App launcher on PineTime](docs/images/apps.jpg) ![Local MAp app on PineTime](docs/images/local mapapp.jpg) 
 
-I love my PineTime. I wanted it to be able to do more! So off I went, vibe coding. The result SlateOS, based on Pine's own InfiniTime at the low level, is a departure from the traditional smartwatch OS, in that it literally turns your PineTime into a slate for your phone. In this way it also brings apps to your PineTime! 
+I love my PineTime. I wanted it to be able to do more! So off I went, iteratively vibe coding along the way. The result is SlateOS, based on Pine's own InfiniTime at the low level, is a departure from the traditional smartwatch OS, in that it literally turns your PineTime into a slate for your phone. In this way it also brings apps to your PineTime! 
 
 How? well, we ususally install and run apps on our smartwatches, treating them as a full blown computing devices. But smartwatches conserve power by not having the beefiest CPUs and memories. And we usually have our phones nearby when we wear our smartwatches. So why not let the phones do all of the heavy lifting?
 
@@ -19,7 +19,7 @@ The phone pushes display lists over Bluetooth; the watch renders them and return
 
 Notifications: On my to-do list for today or tomorrow.
 
-**SlateOS would not have been possible without the hard work done by the people at Pine, Nordic and the FreeRTOS project!**
+**SlateOS would not have been possible without the hard work done by the people at Pine, Nordic and the FreeRTOS project! You have my gratitude!**
 
 **IMPORTANT**:
 
@@ -28,7 +28,7 @@ If needed, holding the button reboots the PineTime. The InfiniTime bootloader is
 1. This is a work in progress! A lot is already supported and stable, but more is to come, including a prettier companion app.
 2. You need to know what side-loading on Android means, and what risks it carries.
 3. You need to know what PineTime's green, blue and red pine cones mean.
-4. If you want to develop your own sub-apps, then you will at least need to know how to vibe code effectively. If you know how to write and debug JS by hand, then all the better!
+4. If you want to develop your own sub-apps, then you will at least need to know how to vibe code effectively. If you know how to write and debug JS by hand, then all the better! Make sure to follow [`docs/subapp-rules.md`]
 5. I am not responsible if you brick your device, or download someone's wonky JS sub-app!
 
 | | |
@@ -38,25 +38,12 @@ If needed, holding the button reboots the PineTime. The InfiniTime bootloader is
 | **Companion** | Kotlin, Jetpack Compose, raw `android.bluetooth`, JS sub-apps in V8 |
 | **Protocol** | SDP (Slate Display Protocol) — see `slate-implementation-roadmap.md` §4 |
 
-<!--
-  Screenshots: drop files under docs/images/ then uncomment / adjust paths below.
-  Example after adding docs/images/face.jpg and docs/images/companion.png:
-
-  ![Watch face](docs/images/face.jpg)
-  ![Companion](docs/images/companion.png)
-
-  Side-by-side on GitHub:
-
-  | Watch | Phone |
-  | :---: | :---: |
-  | ![Watch face](docs/images/face.jpg) | ![Companion](docs/images/companion.png) |
--->
-
 ## What’s in the box
 
 ```
 src/ include/     Watch firmware
 companion/        Android app + SDP Kotlin core, emulator, tests
+releases/         Prebuilt slate-dfu.zip + companion APK
 docs/             Operator manuals, OTA, I2C rules, capabilities
 shared/           Wire/font assets shared by codegen
 scripts/          DFU packaging, tooling
@@ -74,11 +61,11 @@ Capability map (keep this honest): [`docs/capabilities.md`](docs/capabilities.md
 
 ## Quick start
 
-1. Install the SlateOS companion app on your Android device by sideloading the APK or building it in Android Studio.
-2. Connect your PineTime smartwatch to your Android device.
-3. Download the slate-dfu.zip to your Android device.
-4. In the Slate companion app, open "Install Slate firmware on sealed PineTime", select the slate-dfu.zip and flash it.
-5. Use "Associate watch (CDM)" and "Start / reconnect link service" if necessary. The lateOS watch face always shows an amber bar after flashing, which will disappear once the app confirms the image.
+1. Sideload [`releases/slate-companion-debug.apk`](releases/slate-companion-debug.apk) (or build the companion in Android Studio).
+2. Put [`releases/slate-dfu.zip`](releases/slate-dfu.zip) on the phone.
+3. On the PineTime, run InfiniTime (or recovery) and enable firmware updates.
+4. In the Slate companion, open **Install Slate on sealed PineTime**, pick `slate-dfu.zip`, and flash.
+5. Use **Associate watch (CDM)** and start the link service if needed. A new image shows an amber trial bar until IMAGE_OK is confirmed.
 
 ### Companion (Android)
 
@@ -97,9 +84,10 @@ cmake -S . -B build/dfu -G Ninja `
   -DCMAKE_BUILD_TYPE=RelWithDebInfo `
   -DBOOTLOADER_PRESENT=ON
 cmake --build build/dfu --target slate_dfu
+Copy-Item -Force build/dfu/slate-dfu.zip releases/slate-dfu.zip
 ```
 
-Output: `build/dfu/slate-dfu.zip`. Flash while InfiniTime (or recovery) is running — see [`docs/flash-sealed.md`](docs/flash-sealed.md). Once Slate is running, prefer in-app **Update Slate firmware (SDP OTA)**.
+Output: `build/dfu/slate-dfu.zip` (and the tracked copy under `releases/`). Flash while InfiniTime (or recovery) is running — see [`docs/flash-sealed.md`](docs/flash-sealed.md). Once Slate is running, prefer in-app **Update Slate firmware (SDP OTA)**.
 
 ### Host tests (no hardware)
 

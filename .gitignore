@@ -5,6 +5,10 @@
 cmake-build-*/
 out/
 
+# Published installers (tracked on purpose — see releases/README.md)
+!/releases/
+!/releases/**
+
 # Firmware / DFU artifacts (not golden test vectors under tests/ or companion/)
 *.elf
 *.hex
@@ -12,6 +16,9 @@ out/
 *.apk
 *.aab
 *-dfu.zip
+!/releases/*.apk
+!/releases/*-dfu.zip
+!/releases/slate-dfu.zip
 slate-signed.bin
 slate-mcuboot-image.bin
 slate_firmware.bin

@@ -9,3 +9,4 @@
 *.iml
 *.apk
 *.aab
+# Module build trees stay ignored; ship APKs via ../releases/ only.
