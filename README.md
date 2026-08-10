@@ -35,7 +35,7 @@ Notifications: On my to-do list for today or tomorrow.
 
 If needed, holding the button reboots the PineTime. The InfiniTime bootloader is untouched and accessible by holding the button during boot untile the pine cone turns red. Also heed:
 
-1. This is a work in progress! A lot is already supported and stable, but more is to come, including a prettier companion app.
+1. This is a work in progress! A lot is already supported and stable, but more is to come, including a prettier companion app. Gadgetbridge, linking to health apps etc. are currently not supported.
 2. You need to know what side-loading on Android means, and what risks it carries.
 3. You need to know what PineTime's green, blue and red pine cones mean.
 4. If you want to develop your own sub-apps, then you will at least need to know how to vibe code effectively. If you know how to write and debug JS by hand, then all the better! Make sure to follow [`docs/subapp-rules.md`]
