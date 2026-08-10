@@ -2,13 +2,18 @@
 
 **Thin-client smartwatch firmware for the [PineTime](https://pine64.org/devices/pinetime/), plus an Android companion app and a JS sub-app ecosystem.**
 
-![Watch face on PineTime](docs/images/face.jpg =200x200) ![Settings on PineTime](docs/images/settings.jpg =200x200)
-![App launcher on PineTime](docs/images/apps.jpg =200x200) ![Local Map app on PineTime](docs/images/local map app.jpg =200x200)
-
 <img src="/docs/images/face.jpg"
      alt="Watch face on PineTime"
      width="200">
-
+<img src="/docs/images/settings.jpg"
+     alt="Settings on PineTime"
+     width="200">
+<img src="/docs/images/apps.jpg"
+     alt="App launcher on PineTime"
+     width="200">
+<img src="/docs/images/flocal map app.jpg"
+     alt="Local Map app on PineTime"
+     width="200">
 I love my PineTime. I wanted it to be able to do more! So off I went, iteratively vibe coding along the way. The result is SlateOS, based on Pine's own InfiniTime at the low level, is a departure from the traditional smartwatch OS, in that it literally turns your PineTime into a slate for your phone. In this way it also brings apps to your PineTime! 
 
 How? well, we ususally install and run apps on our smartwatches, treating them as a full blown computing devices. But smartwatches conserve power by not having the beefiest CPUs and memories. And we usually have our phones nearby when we wear our smartwatches. So why not let the phones do all of the heavy lifting?
