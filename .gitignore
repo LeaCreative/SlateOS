@@ -25,6 +25,7 @@ slate_firmware.bin
 
 # --- Android / Gradle ---
 companion/.gradle/
+companion/.kotlin/
 companion/**/local.properties
 companion/**/captures/
 companion/**/.cxx/
