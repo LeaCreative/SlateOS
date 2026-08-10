@@ -1,0 +1,11 @@
+# Android / Gradle (module-level)
+/.gradle/
+/**/build/
+/local.properties
+/**/local.properties
+/.idea/
+/**/captures/
+/**/.cxx/
+*.iml
+*.apk
+*.aab

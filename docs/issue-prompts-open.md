@@ -1544,7 +1544,7 @@ air.
 
 | | |
 |---|---|
-| **Repository** | `C:\Users\highj\Documents\Projects\EvoTime` |
+| **Repository** | this git tree (EvoTime / Slate) |
 | **Revision** | Rev 3, 3 August 2026. Replaces the `.docx` revisions, which are superseded and should not be used. |
 | **Running image** | `CFEDE90DE7F4` (`0.1.0-m16`), installed by Slate's own SDP OTA, IMAGE_OK confirmed |
 | **Scope** | 8 prompts. I-13 and I-6 are closed; the display-list push is new and is the recommended next work. |

@@ -63,7 +63,7 @@ diverging.
 
 # I-9 divergence audit — started 5 Aug 2026
 
-**Reference tree:** `C:\Users\highj\Documents\Projects\InfiniTime-main`
+**Reference tree:** a local [InfiniTime](https://github.com/InfiniTimeOrg/InfiniTime) checkout used for driver diffs.
 
 ## Why this exists
 
@@ -129,7 +129,7 @@ These four are where the defects actually were, so check them first:
 ## Sleep mode — how InfiniTime does it (researched 8 Aug, owner request)
 
 Read out of the reference tree rather than recalled. File and line references
-are to `C:\Users\highj\Documents\Projects\InfiniTime-main`.
+are to the InfiniTime reference checkout (same tree used for other parity diffs).
 
 ### The state machine
 

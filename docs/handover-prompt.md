@@ -1,10 +1,10 @@
 # Handover prompt — paste this to the next instance
 
-You are picking up work on **Slate** (repo: `C:\Users\highj\Documents\Projects\EvoTime`),
-a thin-client smartwatch OS for the PineTime: nRF52832 firmware in C++17 plus an
-Android companion in Kotlin. The watch is **sealed — no SWD**. The only way to
-see what it is doing is the on-screen diagnostic overlay and the companion's
-in-app log, both of which the operator photographs and pastes to you.
+You are picking up work on **Slate** (this repository), a thin-client smartwatch
+OS for the PineTime: nRF52832 firmware in C++17 plus an Android companion in
+Kotlin. The watch is **sealed — no SWD**. The only way to see what it is doing
+is the on-screen diagnostic overlay and the companion's in-app log, both of
+which the operator photographs and pastes to you.
 
 Written **10 August 2026**. Replaces the 9 August 14:00 version.
 
@@ -19,7 +19,9 @@ Written **10 August 2026**. Replaces the 9 August 14:00 version.
 4. `docs/subapp-rules.md` — normative for JS sub-apps. Read before touching one.
 5. `docs/infinitime-parity.md` — what mirrors InfiniTime, what deliberately does not.
 
-Reference tree for low-level parity: `C:\Users\highj\Documents\Projects\InfiniTime-main`.
+Reference tree for low-level parity: a local checkout of
+[InfiniTime](https://github.com/InfiniTimeOrg/InfiniTime) (same revision you
+last used for driver diffs).
 **Read it before debugging any driver.** Every driver defect this project has
 had was a divergence from it.
 
@@ -78,13 +80,14 @@ Companion, from `companion/`:
 ./gradlew.bat :sdp-tests:test :app:installDebug
 ```
 
-Always pin the Pixel:
+Always pin the operator's Pixel with adb (`adb devices`, then `-s <serial>`).
+Do not hard-code a device serial in docs or scripts.
 
 ```bash
-C:\Users\highj\AppData\Local\Android\Sdk\platform-tools\adb.exe -s 59171FDCH001LR …
+adb -s <pixel-serial> …
 ```
 
-Two devices may be attached; `HRBDFUN` is not the target. Package
+Two devices may be attached; confirm which is the development phone. Package
 `slate.app.debug`.
 
 **Bump `versionCode` in `companion/app/build.gradle.kts` on every installed

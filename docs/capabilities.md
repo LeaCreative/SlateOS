@@ -16,7 +16,7 @@
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
 | Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`9421B271FDC3`** (stamp ~14:38); ACC_CONF `0x28`, ScreenBlock 256 B, swipe routing |
-| Companion APK | **`slate.app.debug` `0.8.2-p38` / versionCode 39** (installed on Pixel 10 Pro) |
+| Companion APK | **`slate.app.debug`** — see `companion/app/build.gradle.kts` for versionName / versionCode |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
 

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.app.ota.NordicDfuPackageReaderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-10T01:28:15.993Z" hostname="DAN01" time="0.046">
-  <properties/>
-  <testcase name="rejectsCorruptFirmwareBeforeBleTransfer" classname="slate.app.ota.NordicDfuPackageReaderTest" time="0.041"/>
-  <testcase name="readsApplicationOnlyPackage" classname="slate.app.ota.NordicDfuPackageReaderTest" time="0.005"/>
-  <testcase name="rejectsPackageContainingBootloader" classname="slate.app.ota.NordicDfuPackageReaderTest" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

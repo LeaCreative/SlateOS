@@ -1,3 +1,0 @@
-C:/Users/highj/Documents/Projects/EvoTime/build/m15/CMakeFiles/slate_firmware.elf.dir
-C:/Users/highj/Documents/Projects/EvoTime/build/m15/CMakeFiles/edit_cache.dir
-C:/Users/highj/Documents/Projects/EvoTime/build/m15/CMakeFiles/rebuild_cache.dir

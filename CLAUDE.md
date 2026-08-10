@@ -138,8 +138,8 @@ SDP, defined in slate-implementation-roadmap.md (§4). Encoder must match the fi
 ## Mirroring InfiniTime is the DEFAULT for low-level code
 
 The owner has stated this repeatedly: for hardware-level behaviour, mirror
-InfiniTime unless there is a written reason not to. Reference tree:
-`C:\Users\highj\Documents\Projects\InfiniTime-main`.
+InfiniTime unless there is a written reason not to. Reference tree: a local
+[InfiniTime](https://github.com/InfiniTimeOrg/InfiniTime) checkout used for diffs.
 
 **Five defects in one session were divergences** — battery ADC (N-12), touch
 read shape, touch controller config, touch IRQ trigger, and blocking

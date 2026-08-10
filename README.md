@@ -5,15 +5,31 @@
 ![Watch face on PineTime](docs/images/face.jpg) ![Settings on PineTime](docs/images/settings.jpg)
 ![App launcher on PineTime](docs/images/apps.jpg) ![Local MAp app on PineTime](docs/images/local mapapp.jpg) 
 
-SlateOS, based on Pine's own InfiniTime at the low level, is a departure from the traditional smartwatch OS, in that it literally turns your PineTime into a slate for your phone. It also brings apps to your PineTime! How? well, we ususally install and run apps on our smartwatches, treating them as a full blown computing devices. But smartwatches conserve power by not having the beefiest CPUs and memories. And we usually have our phones nearby when we wear our smartwatches. So why not let the phones do all of the heavy lifting?
+I love my PineTime. I wanted it to be able to do more! So off I went, vibe coding. The result SlateOS, based on Pine's own InfiniTime at the low level, is a departure from the traditional smartwatch OS, in that it literally turns your PineTime into a slate for your phone. In this way it also brings apps to your PineTime! 
+
+How? well, we ususally install and run apps on our smartwatches, treating them as a full blown computing devices. But smartwatches conserve power by not having the beefiest CPUs and memories. And we usually have our phones nearby when we wear our smartwatches. So why not let the phones do all of the heavy lifting?
 
 The Slate companion app acts as a bridge on your phone, running Javascript sub-apps, which render on your PineTime and which you can interact with on the watch. Many of will be able to (vibe)code a JS sub-app. I can't wait to see what you come up with!
 
 Forgot your phone? No worry? SlateOS supports watch face, step counter and heart rate monitor in its offline mode.
 
-Navigation: Swipe left for the app launcher, right for settings.
+Navigation: Swipe left for the app launcher, right for settings. I always found using settings on a smartwatch cumbersome, so the watch settings are available both on the watch and in the companion app.
 
 The phone pushes display lists over Bluetooth; the watch renders them and returns element-level input. A local resilient core (face, steps, settings, sleep/wake, OTA) keeps working with no phone attached. The watch never executes code received over BLE — display lists are data only.
+
+Notifications: On my to-do list for today or tomorrow.
+
+**SlateOS would not have been possible without the hard work done by the people at Pine, Nordic and the FreeRTOS project!**
+
+**IMPORTANT**:
+
+If needed, holding the button reboots the PineTime. The InfiniTime bootloader is untouched and accessible by holding the button during boot untile the pine cone turns red. Also heed:
+
+1. This is a work in progress! A lot is already supported and stable, but more is to come, including a prettier companion app.
+2. You need to know what side-loading on Android means, and what risks it carries.
+3. You need to know what PineTime's green, blue and red pine cones mean.
+4. If you want to develop your own sub-apps, then you will at least need to know how to vibe code effectively. If you know how to write and debug JS by hand, then all the better!
+5. I am not responsible if you brick your device, or download someone's wonky JS sub-app!
 
 | | |
 |---|---|
@@ -57,6 +73,12 @@ bootloader/       MCUBoot / key notes for sealed installs
 Capability map (keep this honest): [`docs/capabilities.md`](docs/capabilities.md).
 
 ## Quick start
+
+1. Install the SlateOS companion app on your Android device by sideloading the APK or building it in Android Studio.
+2. Connect your PineTime smartwatch to your Android device.
+3. Download the slate-dfu.zip to your Android device.
+4. In the Slate companion app, open "Install Slate firmware on sealed PineTime", select the slate-dfu.zip and flash it.
+5. Use "Associate watch (CDM)" and "Start / reconnect link service" if necessary. The lateOS watch face always shows an amber bar after flashing, which will disappear once the app confirms the image.
 
 ### Companion (Android)
 
@@ -118,34 +140,6 @@ Roadmap / protocol: [`slate-implementation-roadmap.md`](slate-implementation-roa
 ```
 
 Low-level bring-up and recovery lean on [InfiniTime](https://github.com/InfiniTimeOrg/InfiniTime) patterns (MCUBoot map, WDT, radio). High-level UI and apps are Slate’s own thin-client model.
-
-## Adding screenshots for GitHub
-
-1. Create image files under **`docs/images/`** (PNG or JPEG; keep each under ~1 MB if you can).
-2. Commit them with the repo (GitHub serves them from the branch).
-3. In this README (or any markdown file), use a **relative** path:
-
-```markdown
-![Watch face on PineTime](docs/images/face.jpg)
-```
-
-Optional width (GitHub accepts HTML in README):
-
-```html
-<img src="docs/images/face.jpg" alt="Watch face" width="320" />
-```
-
-Side-by-side:
-
-```markdown
-| Watch | Phone |
-| :---: | :---: |
-| ![Face](docs/images/face.jpg) | ![App](docs/images/companion.png) |
-```
-
-Do **not** paste `file:///…` or absolute Windows paths — they will not render for anyone else. Prefer paths relative to the repo root when linking from `README.md`.
-
-After push, open the repo on GitHub and confirm the images load on the default branch.
 
 ## Status / contributing
 

@@ -1,0 +1,59 @@
+# --- Build outputs ---
+/build/
+**/build/
+!**/src/build/
+cmake-build-*/
+out/
+
+# Firmware / DFU artifacts (not golden test vectors under tests/ or companion/)
+*.elf
+*.hex
+*.map
+*.apk
+*.aab
+*-dfu.zip
+slate-signed.bin
+slate-mcuboot-image.bin
+slate_firmware.bin
+
+# --- Android / Gradle ---
+companion/.gradle/
+companion/**/local.properties
+companion/**/captures/
+companion/**/.cxx/
+companion/**/*.iml
+companion/.idea/
+**/.idea/
+
+# --- Tooling / IDE ---
+.vs/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# --- Secrets (never commit) ---
+**/*_priv.pem
+**/slate_priv.pem
+**/*.pem.bak
+**/*.jks
+**/*.keystore
+.env
+.env.*
+!.env.example
+credentials.json
+google-services.json
+
+# --- Cursor internal plans (rules may stay) ---
+.cursor/plans/
+
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Host / misc ---
+*.log
+.cache/
