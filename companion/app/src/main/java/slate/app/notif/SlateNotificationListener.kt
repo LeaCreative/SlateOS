@@ -20,6 +20,9 @@ import slate.notif.NotifIconMapper
 class SlateNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
+        // Keep this path cheap. Force-stop respawns this process via NLS; any
+        // heavy work here would make "Force stop" look broken and freeze the
+        // UI again before the operator can open MainActivity / start OTA.
         LinkLog.i("NLS connected")
         try {
             activeNotifications?.forEach { ingest(it, isRemoval = false) }

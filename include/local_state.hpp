@@ -35,6 +35,11 @@ struct Settings {
   /** Bring-up diagnostic lines on the watch face (and the 2 s band refresh). */
   std::uint8_t face_show_diag = 1u;
   /**
+   * Master gate for HRS3300. Off = sensor stays asleep; On measures continuously
+   * and shows BPM on the watch face (graph/history belongs in a JS sub-app).
+   */
+  std::uint8_t hr_enabled = 0u;
+  /**
    * Sync revision, persisted with the values it stamps.
    *
    * Held here rather than only in Core because it has to survive a reboot. Kept
@@ -71,10 +76,10 @@ constexpr std::uint16_t kSettingRaise = 1u;
 constexpr std::uint16_t kSettingTimeout = 2u;
 constexpr std::uint16_t kSettingSteps = 3u;
 constexpr std::uint16_t kSettingDiag = 4u;
+constexpr std::uint16_t kSettingHr = 5u;
 
-// Bumped 10 Aug 2026 ('SLTU' -> 'SLTV'): face_show_diag added. Old blobs reset
-// to defaults once so the new field is not garbage from the former reserved pad.
-constexpr std::uint32_t kSettingsMagic = 0x534C5456u;  // 'SLTV'
+// Bumped 10 Aug 2026 ('SLTV' -> 'SLTW'): hr_enabled added.
+constexpr std::uint32_t kSettingsMagic = 0x534C5457u;  // 'SLTW'
 
 struct State {
   Screen screen = Screen::Face;
@@ -202,6 +207,15 @@ struct State {
   std::uint32_t day_epoch = 0u;  // unix midnight of current local day
 
   Settings settings{};
+
+  /** Last BPM from the HR task (0 when unknown / stopped / disabled). */
+  std::uint8_t hr_bpm = 0u;
+  /**
+   * 0 stopped, 1 waiting for data, 2 running, 3 off-wrist / ambient.
+   * Mirrors slate::hr::State for the face BPM without pulling that header
+   * into every local_ui consumer.
+   */
+  std::uint8_t hr_status = 0u;
 
   // Alert screen payload (alarm/timer).
   std::uint8_t alert_kind = 0u;  // 1=alarm 2=timer

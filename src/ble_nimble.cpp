@@ -66,11 +66,16 @@ std::uint16_t g_conn_handle = BLE_HS_CONN_HANDLE_NONE;
 std::uint16_t g_attr_tx = 0;
 std::uint16_t g_attr_status = 0;
 std::uint16_t g_attr_dfu_ctrl = 0;
+std::uint16_t g_attr_hrm = 0;
+bool g_bas_inited = false;
+bool g_hrs_notify = false;
+std::uint8_t g_hrs_bpm = 0u;
+HrsCccdFn g_hrs_cccd = nullptr;
+void* g_hrs_cccd_ctx = nullptr;
 slate::dfu::Engine g_dfu{};
 std::uint8_t g_phy_tx = 1u;
 std::uint8_t g_phy_rx = 1u;
 NegotiatedParams g_last_nego{};
-bool g_bas_inited = false;
 
 bool dfu_erase(void*) { return slate::ota_slot::erase_all(); }
 bool dfu_write(std::uint32_t off, const std::uint8_t* d, std::size_t n, void*) {
@@ -375,6 +380,30 @@ static const ble_uuid128_t uuid_dfu_rev = BLE_UUID128_INIT(
     0x23, 0xd1, 0xbc, 0xea, 0x5f, 0x78, 0x23, 0x15, 0xde, 0xef, 0x12, 0x12,
     0x34, 0x15, 0x00, 0x00);
 
+static const ble_uuid16_t uuid_hrs_svc = BLE_UUID16_INIT(0x180Du);
+static const ble_uuid16_t uuid_hrs_meas = BLE_UUID16_INIT(0x2A37u);
+
+static int hrs_access(std::uint16_t, std::uint16_t,
+                      struct ble_gatt_access_ctxt* ctxt, void*) {
+  if (ctxt->op != BLE_GATT_ACCESS_OP_READ_CHR) {
+    return BLE_ATT_ERR_UNLIKELY;
+  }
+  std::uint8_t buf[2] = {0u, g_hrs_bpm};
+  return os_mbuf_append(ctxt->om, buf, sizeof(buf)) == 0
+             ? 0
+             : BLE_ATT_ERR_INSUFFICIENT_RES;
+}
+
+static const struct ble_gatt_chr_def g_hrs_chrs[] = {
+    {
+        .uuid = &uuid_hrs_meas.u,
+        .access_cb = hrs_access,
+        .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+        .val_handle = &g_attr_hrm,
+    },
+    {0},
+};
+
 static const struct ble_gatt_chr_def g_slate_chrs[] = {
     {
         .uuid = &uuid_rx.u,
@@ -439,6 +468,11 @@ static const struct ble_gatt_svc_def g_svcs[] = {
         .uuid = &uuid_dfu_svc.u,
         .characteristics = g_dfu_chrs,
     },
+    {
+        .type = BLE_GATT_SVC_TYPE_PRIMARY,
+        .uuid = &uuid_hrs_svc.u,
+        .characteristics = g_hrs_chrs,
+    },
     {0},
 };
 
@@ -467,6 +501,10 @@ int gap_event(struct ble_gap_event* event, void* arg) {
       break;
     case BLE_GAP_EVENT_DISCONNECT:
       g_conn_handle = BLE_HS_CONN_HANDLE_NONE;
+      g_hrs_notify = false;
+      if (g_hrs_cccd != nullptr) {
+        g_hrs_cccd(false, g_hrs_cccd_ctx);
+      }
       rtt::log(rtt::Level::Info, "BLE: disconnected");
       g_dfu.on_disconnect();
       notify_session_down();
@@ -489,6 +527,12 @@ int gap_event(struct ble_gap_event* event, void* arg) {
         } else {
           rtt::log(rtt::Level::Info, "BLE: TX unsubscribed — session down");
           notify_session_down();
+        }
+      }
+      if (event->subscribe.attr_handle == g_attr_hrm) {
+        g_hrs_notify = event->subscribe.cur_notify != 0;
+        if (g_hrs_cccd != nullptr) {
+          g_hrs_cccd(g_hrs_notify, g_hrs_cccd_ctx);
         }
       }
       break;
@@ -624,19 +668,35 @@ void on_sync() {
   }
 
   // Advertise Slate 128-bit service UUID so companions can filter without connect.
+  // When HRS is on, also advertise uuid16 0x180D — move the name to the scan
+  // response so the primary ADV PDU still fits in 31 bytes (InfiniTime pattern).
   struct ble_hs_adv_fields fields = {};
   fields.flags = BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP;
-  fields.name = (uint8_t*)"Slate";
-  fields.name_len = 5;
-  fields.name_is_complete = 1;
   fields.uuids128 = &uuid_svc;
   fields.num_uuids128 = 1;
   fields.uuids128_is_complete = 1;
+  const bool hrs_adv = g_gatt != nullptr && g_gatt->caps().heart_rate;
+  if (hrs_adv) {
+    fields.uuids16 = &uuid_hrs_svc;
+    fields.num_uuids16 = 1;
+    fields.uuids16_is_complete = 1;
+  } else {
+    fields.name = (uint8_t*)"Slate";
+    fields.name_len = 5;
+    fields.name_is_complete = 1;
+  }
   int rc = ble_gap_adv_set_fields(&fields);
   if (rc != 0) {
     rtt::log(rtt::Level::Error, "BLE: adv_set_fields failed");
     bringup_mark(92u, rc);
     return;
+  }
+  if (hrs_adv) {
+    struct ble_hs_adv_fields rsp = {};
+    rsp.name = (uint8_t*)"Slate";
+    rsp.name_len = 5;
+    rsp.name_is_complete = 1;
+    (void)ble_gap_adv_rsp_set_fields(&rsp);
   }
 
   struct ble_gap_adv_params adv = {};
@@ -764,6 +824,27 @@ void update_battery_level(std::uint8_t percent) {
     return;  // never publish kPercentUnknown on BAS
   }
   (void)ble_svc_bas_battery_level_set(percent);
+}
+
+void set_hrs_cccd_hook(HrsCccdFn fn, void* ctx) {
+  g_hrs_cccd = fn;
+  g_hrs_cccd_ctx = ctx;
+}
+
+void update_heart_rate(std::uint8_t bpm) {
+  g_hrs_bpm = bpm;
+  if (!g_hrs_notify || g_attr_hrm == 0 ||
+      g_conn_handle == BLE_HS_CONN_HANDLE_NONE) {
+    return;
+  }
+  if (g_gatt == nullptr || !g_gatt->caps().heart_rate) {
+    return;
+  }
+  std::uint8_t buf[2] = {0u, bpm};
+  struct os_mbuf* om = ble_hs_mbuf_from_flat(buf, sizeof(buf));
+  if (om) {
+    (void)ble_gatts_notify_custom(g_conn_handle, g_attr_hrm, om);
+  }
 }
 
 bool central_connected() { return g_conn_handle != BLE_HS_CONN_HANDLE_NONE; }

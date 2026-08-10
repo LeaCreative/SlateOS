@@ -8,6 +8,10 @@
 // SPIM0 already owns peripheral instance 0 (0x40003000).  Touch/accel/HR all
 // share the I2C bus on P0.06/P0.07, so they use TWIM1 (0x40004000).
 //
+// FreeRTOS builds take a mutex around every transfer (and around sleep/wake),
+// matching InfiniTime TwiMaster — the HR task and the app task otherwise race
+// the same peripheral and corrupt both PPG samples and raise-to-wake accel.
+//
 // Every transfer has a hard timeout.  On timeout or ERROR the driver runs bus
 // recovery: bit-bang SCL until SDA releases, then generate a STOP.
 

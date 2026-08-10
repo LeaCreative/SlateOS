@@ -171,6 +171,49 @@ build test_settings_sync.exe: CXX_EXECUTABLE_LINKER__test_settings_sync_ CMakeFi
   TARGET_SUPPORT_DIR = CMakeFiles\test_settings_sync.dir
 
 # =============================================================================
+# Object build statements for EXECUTABLE target test_hrs3300
+
+
+#############################################
+# Order-only phony target for test_hrs3300
+
+build cmake_object_order_depends_target_test_hrs3300: phony || slate_host_runtime_dlls
+
+build CMakeFiles/test_hrs3300.dir/test_hrs3300.cpp.obj: CXX_COMPILER__test_hrs3300_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/tests/host/test_hrs3300.cpp || cmake_object_order_depends_target_test_hrs3300
+  DEP_FILE = CMakeFiles\test_hrs3300.dir\test_hrs3300.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_hrs3300.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_hrs3300.dir
+  TARGET_SUPPORT_DIR = CMakeFiles\test_hrs3300.dir
+
+build CMakeFiles/test_hrs3300.dir/C_/Users/highj/Documents/Projects/EvoTime/src/hrs3300.cpp.obj: CXX_COMPILER__test_hrs3300_unscanned_ C$:/Users/highj/Documents/Projects/EvoTime/src/hrs3300.cpp || cmake_object_order_depends_target_test_hrs3300
+  DEP_FILE = CMakeFiles\test_hrs3300.dir\C_\Users\highj\Documents\Projects\EvoTime\src\hrs3300.cpp.obj.d
+  FLAGS = -std=c++17 -Wall -Wextra -Wpedantic
+  INCLUDES = -IC:/Users/highj/Documents/Projects/EvoTime/tests/host/../../include
+  OBJECT_DIR = CMakeFiles\test_hrs3300.dir
+  OBJECT_FILE_DIR = CMakeFiles\test_hrs3300.dir\C_\Users\highj\Documents\Projects\EvoTime\src
+  TARGET_SUPPORT_DIR = CMakeFiles\test_hrs3300.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_hrs3300
+
+
+#############################################
+# Link the executable test_hrs3300.exe
+
+build test_hrs3300.exe: CXX_EXECUTABLE_LINKER__test_hrs3300_ CMakeFiles/test_hrs3300.dir/test_hrs3300.cpp.obj CMakeFiles/test_hrs3300.dir/C_/Users/highj/Documents/Projects/EvoTime/src/hrs3300.cpp.obj || slate_host_runtime_dlls
+  LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  OBJECT_DIR = CMakeFiles\test_hrs3300.dir
+  POST_BUILD = cd .
+  PRE_LINK = cd .
+  TARGET_FILE = test_hrs3300.exe
+  TARGET_IMPLIB = libtest_hrs3300.dll.a
+  TARGET_PDB = test_hrs3300.exe.dbg
+  TARGET_SUPPORT_DIR = CMakeFiles\test_hrs3300.dir
+
+# =============================================================================
 # Object build statements for EXECUTABLE target test_bma42x
 
 
@@ -1355,6 +1398,8 @@ build test_bma42x: phony test_bma42x.exe
 
 build test_hit_test: phony test_hit_test.exe
 
+build test_hrs3300: phony test_hrs3300.exe
+
 build test_local_core: phony test_local_core.exe
 
 build test_local_ui: phony test_local_ui.exe
@@ -1393,7 +1438,7 @@ build test_wdt_hold: phony test_wdt_hold.exe
 #############################################
 # Folder: C:/Users/highj/Documents/Projects/EvoTime/build/host-tests
 
-build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_settings_sync.exe test_bma42x.exe test_raise_wake.exe test_band_push_tiles.exe test_renderer_cull.exe test_uuids.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_motor.exe test_spi_timeout.exe
+build all: phony slate_host_runtime_dlls test_hit_test.exe test_sdp_parser.exe test_settings_sync.exe test_hrs3300.exe test_bma42x.exe test_raise_wake.exe test_band_push_tiles.exe test_renderer_cull.exe test_uuids.exe test_sdp_frame.exe test_ble_link.exe test_ble_app_inbox.exe test_ble_gap_adv_policy.exe test_sdp_diag.exe test_session.exe test_local_core.exe test_battery.exe test_local_ui.exe test_assets.exe test_ota_xfer.exe test_wdt_hold.exe test_wdt_app_pet.exe test_motor.exe test_spi_timeout.exe
 
 # =============================================================================
 # Built-in targets

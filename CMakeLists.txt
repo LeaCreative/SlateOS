@@ -111,6 +111,10 @@ set(SLATE_APP_SOURCES
   src/alarm_sched.cpp
   src/bma42x.cpp
   src/raise_wake.cpp
+  src/hrs3300.cpp
+  src/ppg.cpp
+  src/hr_controller.cpp
+  src/hr_task.cpp
   src/settings_sync.cpp
   third_party/bosch/bma_config.cpp
   src/battery.cpp
@@ -156,6 +160,7 @@ target_include_directories(slate_firmware.elf PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/config"
   "${CMAKE_CURRENT_SOURCE_DIR}/third_party/littlefs"
   "${CMAKE_CURRENT_SOURCE_DIR}/third_party/bosch"
+  "${CMAKE_CURRENT_SOURCE_DIR}/third_party/arduinoFFT/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/shared/generated"
 )
 

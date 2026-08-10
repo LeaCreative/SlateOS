@@ -80,10 +80,9 @@ class OverpassClient(
         val queryRadius = radiusM * BBOX_MARGIN
 
         // Parse INSIDE the IO context, not just the fetch. Measured on the
-        // desktop at ~50 ms for 190 KB of Overpass JSON, and this is called
-        // from CompositorHost's scope, which is Dispatchers.Main.immediate —
-        // so parsing outside would put a phone-scale multiple of that on the
-        // main thread of the foreground service that owns the BLE link.
+        // desktop at ~50 ms for 190 KB of Overpass JSON. CompositorHost's
+        // scope is a background worker (not Main), but parsing here still
+        // keeps map work off the link thread that owns BLE pacing.
         val ways = withContext(Dispatchers.IO) {
             val json = get(
                 OverpassQuery.build(

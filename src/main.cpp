@@ -40,7 +40,12 @@
 #include "wall_clock.hpp"
 #include "wdt.hpp"
 #include "xt25.hpp"
+#include "hrs3300.hpp"
+#include "hr_controller.hpp"
+#include "hr_session.hpp"
+#include "hr_task.hpp"
 #include "freertos_smoke.hpp"
+#include "nrf52832_regs.hpp"
 
 #include <cstdint>
 
@@ -57,6 +62,10 @@ static sdp::diag::Bench g_diag;
 static slate::session::Manager g_session;
 static slate::InputRouter g_input;
 static slate::bma::Driver g_bma;
+static slate::hrs::Driver g_hrs;
+static slate::hr::Controller g_hr_ctrl;
+static slate::hr::Task g_hr_task{g_hrs, g_hr_ctrl};
+static slate::hr::Session g_hr_session{};
 static slate::core::Core g_core;
 static slate::asset::Receiver g_asset;
 static slate::ota::Receiver g_ota;
@@ -342,6 +351,57 @@ static bool bma_read(std::uint8_t reg, std::uint8_t* data, std::size_t len,
 }
 
 static void bma_delay(std::uint32_t ms, void*) { board::busy_wait_ms(ms); }
+
+static bool hrs_write(std::uint8_t reg, const std::uint8_t* data, std::size_t len,
+                      void*) {
+  std::uint8_t buf[8];
+  if (len + 1u > sizeof(buf)) {
+    return false;
+  }
+  buf[0] = reg;
+  for (std::size_t i = 0u; i < len; ++i) {
+    buf[i + 1u] = data[i];
+  }
+  return twi::write(slate::hrs::kI2cAddr, buf, len + 1u) == twi::Status::Ok;
+}
+
+static bool hrs_read(std::uint8_t reg, std::uint8_t* data, std::size_t len,
+                     void*) {
+  return twi::write_read(slate::hrs::kI2cAddr, &reg, 1u, data, len) ==
+         twi::Status::Ok;
+}
+
+static void hrs_cfg_int_pin(void*) {
+  nrf::reg<std::uint32_t>(nrf::gpio::pin_cnf(slate::hrs::kIntPin)) =
+      nrf::gpio::PIN_CNF_DIR_INPUT | nrf::gpio::PIN_CNF_INPUT_CONNECT |
+      nrf::gpio::PIN_CNF_PULL_DISABLED | nrf::gpio::PIN_CNF_DRIVE_S0S1 |
+      nrf::gpio::PIN_CNF_SENSE_DISABLED;
+}
+
+static void hr_notify_bpm(std::uint8_t bpm, void*) {
+  ble::update_heart_rate(bpm);
+  g_core.local_state().hr_bpm = bpm;
+  g_core.local_state().hr_status =
+      static_cast<std::uint8_t>(g_hr_ctrl.state());
+  if (g_core.local_state().screen == slate::local::Screen::Face &&
+      g_core.local_state().settings.hr_enabled) {
+    g_core.mark_paint_pending();
+  }
+}
+
+static void hr_refresh_hook(void*) {
+  g_hr_session.hr_enabled = g_core.local_state().settings.hr_enabled != 0u;
+  slate::hr::refresh(g_hr_session);
+  g_core.local_state().hr_bpm = g_hr_ctrl.heart_rate();
+  g_core.local_state().hr_status =
+      static_cast<std::uint8_t>(g_hr_ctrl.state());
+}
+
+static void hrs_cccd_hook(bool subscribed, void*) {
+  (void)subscribed;
+  // Measuring follows the settings gate only; CCCD just enables notifies.
+  hr_refresh_hook(nullptr);
+}
 
 static std::uint64_t clock_ticks(void*) { return slate::rtc_hw::ticks(); }
 
@@ -980,6 +1040,19 @@ extern "C" int main() {
     rtt::log(rtt::Level::Warn, "BMA unknown / missing");
   }
 
+  slate::hrs::Bus hbus;
+  hbus.write_reg = &hrs_write;
+  hbus.read_reg = &hrs_read;
+  hbus.delay_ms = &bma_delay;
+  hbus.cfg_int_pin = &hrs_cfg_int_pin;
+  g_hrs.init(hbus);
+  g_hrs.disable();
+  g_hr_session.sensor = &g_hrs;
+  g_hr_session.controller = &g_hr_ctrl;
+  g_hr_session.task = &g_hr_task;
+  g_hr_ctrl.set_notify(&hr_notify_bpm, nullptr);
+  ble::set_hrs_cccd_hook(&hrs_cccd_hook, nullptr);
+
   g_interp.init(&g_renderer);
 
   slate::core::Hooks ckh;
@@ -988,6 +1061,7 @@ extern "C" int main() {
   ckh.backlight = &core_backlight;
   ckh.display_sleep = &core_display_sleep;
   ckh.sample_battery = [](void*) { slate::battery_hw::sample_now(); };
+  ckh.hr_refresh = &hr_refresh_hook;
   g_core.init(ckh, &g_bma);
   // init() memsets the state block and paints from it, so these have to be set
   // afterwards — and then repainted explicitly. Without the repaint the amber
@@ -1064,6 +1138,7 @@ extern "C" int main() {
   }
 
   ble::GattCaps caps;
+  caps.heart_rate = true;
   g_gatt.init(&g_link, caps);
 
 #if defined(SLATE_HAS_NIMBLE) && (SLATE_HAS_NIMBLE == 1)
@@ -1072,6 +1147,7 @@ extern "C" int main() {
 #if defined(SLATE_BLE_DIAG) && (SLATE_BLE_DIAG == 1)
   freertos_smoke::create_tasks();
 #endif
+  g_hr_task.start();
   // 768 words (3 KiB): leaves FreeRTOS heap for NimBLE event queues. 1024-word
   // app + 14 KiB heap exhausted xQueueCreate → NULL → queue.c configASSERT.
   //

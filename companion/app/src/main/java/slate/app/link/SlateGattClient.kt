@@ -11,7 +11,7 @@ import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.os.Build
 import android.os.Handler
-import android.os.Looper
+import android.os.HandlerThread
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,7 +31,17 @@ import java.util.concurrent.atomic.AtomicLong
 class SlateGattClient(
     private val appContext: Context,
 ) {
-    private val mainHandler = Handler(Looper.getMainLooper())
+    /**
+     * Dedicated looper for the write pump and GATT follow-ups.
+     *
+     * The pump used to schedule on the main looper. With a 500 ms inter-message
+     * gap and a notif flood, that kept Main busy enough that MainActivity could
+     * not finish leaving the resumed state (operator saw a frozen UI and could
+     * not usefully force-stop — NLS immediately respawns the process).
+     * Writes and gaps stay on this thread; UI never waits on them.
+     */
+    private val bleThread = HandlerThread("slate-gatt").apply { start() }
+    private val bleHandler = Handler(bleThread.looper)
 
     // Owns per-channel TX seq and enqueues each message's fragments atomically
     // (§4.2 single-in-flight — fragments must never interleave across channels).
@@ -170,7 +180,7 @@ class SlateGattClient(
                         // callback that never arrives leaves the link connected
                         // but unusable (N-24). Discover anyway after a grace
                         // period; a second discoverServices() is harmless.
-                        mainHandler.postDelayed({
+                        bleHandler.postDelayed({
                             // Test whether discovery was *started*, not whether
                             // it finished: rxChar is still null while discovery
                             // is in flight, so the first version of this fired
@@ -258,7 +268,7 @@ class SlateGattClient(
             // DLE is negotiated by the stack when MTU>23; Android does not expose a
             // direct "request DLE" API on the GATT client. Log MTU as the practical proxy
             // and read PHY after a short delay.
-            mainHandler.postDelayed({ readPhy(g) }, 500)
+            bleHandler.postDelayed({ readPhy(g) }, 500)
 
             enableNotify(g, txChar!!, "TX")
         }
@@ -302,12 +312,14 @@ class SlateGattClient(
             characteristic: BluetoothGattCharacteristic,
             status: Int,
         ) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                LinkLog.w("onCharacteristicWrite status=$status")
-                update { copy(lastError = "write status=$status") }
+            bleHandler.post {
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    LinkLog.w("onCharacteristicWrite status=$status")
+                    update { copy(lastError = "write status=$status") }
+                }
+                writing.set(false)
+                continuePump()
             }
-            writing.set(false)
-            continuePump()
         }
 
         override fun onPhyUpdate(g: BluetoothGatt, txPhy: Int, rxPhy: Int, status: Int) {
@@ -374,6 +386,7 @@ class SlateGattClient(
     }
 
     private fun closeInternal() {
+        bleHandler.removeCallbacksAndMessages(null)
         connecting = false
         discoveryStarted = false
         writeQueue.reset()
@@ -411,7 +424,9 @@ class SlateGattClient(
         }
         val fragments = writeQueue.enqueueMessage(channel, message)
         LinkLog.i("sendMessage ch=$channel bytes=${message.size} fragments=$fragments")
-        pumpWrites()
+        // Never pump on the caller thread — compositor / NLS / binder must
+        // not share a looper with the UI.
+        bleHandler.post { pumpWrites() }
         return true
     }
 
@@ -441,7 +456,7 @@ class SlateGattClient(
      * corresponding writeCharacteristic.
      */
     private fun scheduleStallCheck() {
-        mainHandler.postDelayed({
+        bleHandler.postDelayed({
             if (!writeQueue.isEmpty() && writing.get() &&
                 System.currentTimeMillis() - lastWriteStartedMs >= WRITE_STALL_MS
             ) {
@@ -454,10 +469,11 @@ class SlateGattClient(
         }, WRITE_STALL_MS)
     }
 
+    /** Must run on [bleHandler]. */
     private fun pumpWrites() {
         val now = System.currentTimeMillis()
         if (now < gapUntilMs) {
-            mainHandler.postDelayed({ pumpWrites() }, gapUntilMs - now)
+            bleHandler.postDelayed({ pumpWrites() }, gapUntilMs - now)
             return
         }
         if (!writing.compareAndSet(false, true)) {
@@ -492,7 +508,7 @@ class SlateGattClient(
                     "backoff ${WRITE_FAIL_BACKOFF_MS}ms",
             )
             gapUntilMs = System.currentTimeMillis() + WRITE_FAIL_BACKOFF_MS
-            mainHandler.postDelayed({ pumpWrites() }, WRITE_FAIL_BACKOFF_MS)
+            bleHandler.postDelayed({ pumpWrites() }, WRITE_FAIL_BACKOFF_MS)
         }
     }
 
@@ -520,7 +536,7 @@ class SlateGattClient(
             !writeQueue.isEmpty()
         if (gap) {
             gapUntilMs = System.currentTimeMillis() + INTER_MESSAGE_GAP_MS
-            mainHandler.postDelayed({ pumpWrites() }, INTER_MESSAGE_GAP_MS)
+            bleHandler.postDelayed({ pumpWrites() }, INTER_MESSAGE_GAP_MS)
         } else {
             pumpWrites()
         }

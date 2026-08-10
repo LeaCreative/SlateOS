@@ -24,8 +24,9 @@ Face  →  Notifications  →  Settings  →  Face
 ```
 
 So from the **notifications screen, press the button twice** to get back to the
-watch face — once to Settings, once to Face. There is no back gesture; the loop
-only runs one way.
+watch face — Settings, then Face. There is no back gesture; the loop
+only runs one way. With **Heart rate** On in Settings, BPM appears on the face
+next to steps (continuous measure while enabled).
 
 **When the phone owns the screen** (a sub-app is showing), a short press means
 *back*: the watch pops one remote screen, and when none are left it returns to
@@ -271,22 +272,25 @@ touch events, so tapping one is reported to the phone.
 Readable notification text is a companion-rendered display list, not a local
 screen — it belongs to the remote UI path, which is the next thing to be built.
 
-**To get back to the face: press the button twice** (Notifications → Settings →
-Face).
+**To get back to the face: press the button twice** (Notifications →
+Settings → Face).
 
 ---
 
 ## 6. The settings screen
 
-Second press from the face. Header `01`, then three values, top to bottom:
+Second press from the face. Header `SETTINGS`, then a vertically scrollable
+list (swipe up/down). Rows, top to bottom:
 
 | Row | Setting |
-|---|---|
-| 1 | Tilt-to-wake enabled (`0`/`1`) |
-| 2 | Tilt sensitivity |
-| 3 | Wake duration, seconds |
+|-----|---------|
+| Raise wake | On/Off |
+| Timeout | 10s … Never |
+| Show steps | On/Off |
+| Face diag | On/Off |
+| Heart rate | On/Off — continuous measure; BPM on the face |
 
-Read-only from the watch at present; these are set by the companion.
+The same settings sync to the companion **Watch settings** screen.
 
 One more press returns to the face.
 

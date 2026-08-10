@@ -198,13 +198,13 @@ static void test_settings_rows_are_tappable() {
 
   int text = 0, scaled = 0;
   count_text_ops(buf, n, &text, &scaled);
-  // Title plus a label and a value for each of the four rows.
-  expect("settings TEXT_SCALED x9", scaled == 9);
+  // Title plus a label and a value for each of the five rows.
+  expect("settings TEXT_SCALED x11", scaled == 11);
   expect("settings no TEXT", text == 0);
 
   // Walk the list for BEGIN_ELEM (0x30): u16 id, x, y, w, h, flags.
   bool saw_raise = false, saw_timeout = false, saw_steps = false,
-       saw_diag = false;
+       saw_diag = false, saw_hr = false;
   int touchable = 0;
   int rounds = 0;
   for (std::size_t i = 0u; i + 8u <= n; ++i) {
@@ -225,14 +225,16 @@ static void test_settings_rows_are_tappable() {
     if (id == slate::local::kSettingTimeout) saw_timeout = true;
     if (id == slate::local::kSettingSteps) saw_steps = true;
     if (id == slate::local::kSettingDiag) saw_diag = true;
+    if (id == slate::local::kSettingHr) saw_hr = true;
   }
-  expect("four touchable rows", touchable == 4);
+  expect("five touchable rows", touchable == 5);
   expect("raise row carries its id", saw_raise);
   expect("timeout row carries its id", saw_timeout);
   expect("steps row carries its id", saw_steps);
   expect("diag row carries its id", saw_diag);
-  // Edge + fill per row.
-  expect("eight rounded rects for button chrome", rounds == 8);
+  expect("hr row carries its id", saw_hr);
+  // Edge + fill per row (byte-scan can also catch RECT_ROUND in payloads).
+  expect("at least ten rounded rects for button chrome", rounds >= 10);
 }
 
 /** A timeout of 0 reads as "Never", not as the number zero or "Off". */

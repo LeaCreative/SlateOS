@@ -316,7 +316,26 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   char sbuf[12];
   if (st.settings.face_show_steps) {
     fmt_u32(sbuf, sizeof(sbuf), st.steps);
-    w.text_big(120, 136, sdp::align::CENTER, 3u, 1u, sbuf);
+    if (st.settings.hr_enabled) {
+      w.text_big(20, 136, sdp::align::LEFT, 3u, 1u, sbuf);
+    } else {
+      w.text_big(120, 136, sdp::align::CENTER, 3u, 1u, sbuf);
+    }
+  }
+  if (st.settings.hr_enabled) {
+    char hbuf[8];
+    if (st.hr_bpm == 0u) {
+      hbuf[0] = '-';
+      hbuf[1] = '-';
+      hbuf[2] = '\0';
+    } else {
+      fmt_u32(hbuf, sizeof(hbuf), st.hr_bpm);
+    }
+    if (st.settings.face_show_steps) {
+      w.text_big(220, 136, sdp::align::RIGHT, 3u, 1u, hbuf);
+    } else {
+      w.text_big(120, 136, sdp::align::CENTER, 3u, 1u, hbuf);
+    }
   }
 
   w.gauge(20, 196, 200, 8,
@@ -468,16 +487,27 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   constexpr std::uint16_t kFill = 0x1082u;
   constexpr std::uint8_t kRowX = 8u;
   constexpr std::uint8_t kRowW = 224u;
-  constexpr std::uint8_t kRowH = 48u;
-  constexpr std::uint8_t kPitch = 52u;
-  constexpr std::uint8_t kTop = 28u;
+  constexpr std::uint8_t kRowH = 44u;
+  // Multiple of InputRouter's 24 px scroll step so swipes land on row edges.
+  constexpr std::uint8_t kPitch = 48u;
+  constexpr std::uint8_t kListTop = 28u;
+  constexpr std::uint8_t kListH = 212u;
   constexpr std::uint8_t kRad = 8u;
+  constexpr std::uint8_t kRows = 5u;
 
   w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "SETTINGS", 1u);
 
+  const std::uint16_t content_h =
+      static_cast<std::uint16_t>(kRows * kPitch);
+  w.b(sdp::op::SCROLL_REGION);
+  w.b(kListTop);
+  w.b(kListH);
+  w.u16(content_h > kListH ? content_h : kListH);
+
   const auto row = [&](std::uint16_t id, std::uint8_t index, const char* label,
                        const char* value, std::uint8_t value_pal) {
-    const std::uint8_t y = static_cast<std::uint8_t>(kTop + index * kPitch);
+    // Content-relative Y inside the scroll region (launcher pattern).
+    const std::uint8_t y = static_cast<std::uint8_t>(index * kPitch);
     w.b(sdp::op::BEGIN_ELEM);
     w.u16(id);
     w.b(kRowX);
@@ -491,9 +521,9 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
                  static_cast<std::uint8_t>(kRowW - 2u),
                  static_cast<std::uint8_t>(kRowH - 2u),
                  static_cast<std::uint8_t>(kRad - 1u), kFill);
-    w.text_big(16, static_cast<std::uint8_t>(y + 14u), sdp::align::LEFT, 2u, 0u,
+    w.text_big(16, static_cast<std::uint8_t>(y + 12u), sdp::align::LEFT, 2u, 0u,
                label, 1u);
-    w.text_big(224, static_cast<std::uint8_t>(y + 14u), sdp::align::RIGHT, 2u,
+    w.text_big(224, static_cast<std::uint8_t>(y + 12u), sdp::align::RIGHT, 2u,
                value_pal, value, 1u);
     w.b(sdp::op::END_ELEM);
   };
@@ -530,6 +560,11 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   row(local::kSettingDiag, 3u, "Face diag",
       st.settings.face_show_diag ? "On" : "Off",
       st.settings.face_show_diag ? 1u : 2u);
+
+  // Master gate: On starts continuous measuring; BPM shows on the face.
+  row(local::kSettingHr, 4u, "Heart rate",
+      st.settings.hr_enabled ? "On" : "Off",
+      st.settings.hr_enabled ? 1u : 2u);
 
   w.b(sdp::op::COMMIT);
   w.b(0x00u);

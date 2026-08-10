@@ -15,9 +15,9 @@
 namespace slate {
 namespace settings_sync {
 
-constexpr std::uint8_t kWireVersion = 1u;
-/** op + version + u32 revision + 3 settings + 1 reserved. */
-constexpr std::size_t kPayloadBytes = 10u;
+constexpr std::uint8_t kWireVersion = 2u;
+/** op + version + u32 revision + tilt + wake + steps + diag + hr. */
+constexpr std::size_t kPayloadBytes = 11u;
 
 /**
  * The synced subset of local::Settings.
@@ -33,6 +33,11 @@ struct Payload {
   std::uint8_t face_show_steps = 1u;
   /** Watch-face diagnostic overlay lines (bring-up counters). */
   std::uint8_t face_show_diag = 1u;
+  /**
+   * Master gate for the HRS3300. Off keeps the sensor asleep; On measures
+   * continuously and shows BPM on the watch face.
+   */
+  std::uint8_t hr_enabled = 0u;
 };
 
 /** Writes exactly [kPayloadBytes]. Returns 0 if `cap` is too small. */

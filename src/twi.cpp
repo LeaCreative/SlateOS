@@ -5,10 +5,35 @@
 #include <cstddef>
 #include <cstdint>
 
+#if defined(SLATE_HAS_FREERTOS) && (SLATE_HAS_FREERTOS == 1)
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "task.h"
+#endif
+
 static constexpr std::uint32_t kPinScl = 7u;
 static constexpr std::uint32_t kPinSda = 6u;
 
 namespace {
+
+#if defined(SLATE_HAS_FREERTOS) && (SLATE_HAS_FREERTOS == 1)
+SemaphoreHandle_t g_mtx = nullptr;
+
+void lock() {
+  if (g_mtx != nullptr && xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+    (void)xSemaphoreTake(g_mtx, portMAX_DELAY);
+  }
+}
+
+void unlock() {
+  if (g_mtx != nullptr && xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+    (void)xSemaphoreGive(g_mtx);
+  }
+}
+#else
+void lock() {}
+void unlock() {}
+#endif
 
 // I2C pin configuration, mirroring InfiniTime TwiMaster::ConfigurePins() —
 // which is also what nrfx_twim does.
@@ -127,7 +152,8 @@ bool wait_event(std::uintptr_t event_addr, std::uint32_t timeout_us,
 
 namespace twi {
 
-void recover_bus() {
+// Caller must already hold the bus mutex (transfer paths do).
+void recover_bus_unlocked() {
   twim_disable();
 
   // Bit-bang open-drain SCL/SDA to free a stuck slave.
@@ -166,13 +192,32 @@ void recover_bus() {
   twim_enable();
 }
 
+void recover_bus() {
+  lock();
+  recover_bus_unlocked();
+  unlock();
+}
+
 Status last_status() { return g_last_status; }
 
-void sleep() { twim_disable(); }
+void sleep() {
+  lock();
+  twim_disable();
+  unlock();
+}
 
-void wake() { twim_enable(); }
+void wake() {
+  lock();
+  twim_enable();
+  unlock();
+}
 
 void init() {
+#if defined(SLATE_HAS_FREERTOS) && (SLATE_HAS_FREERTOS == 1)
+  if (g_mtx == nullptr) {
+    g_mtx = xSemaphoreCreateMutex();
+  }
+#endif
   twim_disable();
 
   gpio_twi_pin(kPinScl);
@@ -193,6 +238,7 @@ Status write(std::uint8_t addr, const std::uint8_t* data, std::size_t len,
     return Status::Ok;
   }
 
+  lock();
   // Wakeup / Sleep around the transfer, exactly as InfiniTime's TwiMaster does.
   // PSEL, FREQUENCY and PIN_CNF all survive ENABLE=0, so re-enabling is the
   // whole of what a caller needs after power::buses_idle().
@@ -208,12 +254,14 @@ Status write(std::uint8_t addr, const std::uint8_t* data, std::size_t len,
 
   Status st = Status::Ok;
   if (!wait_event(nrf::twim1::EVENTS_STOPPED, timeout_us, &st)) {
-    recover_bus();
+    recover_bus_unlocked();
     twim_disable();
+    unlock();
     return note(st);
   }
   nrf::reg<std::uint32_t>(nrf::twim1::SHORTS) = 0u;
   twim_disable();
+  unlock();
   return note(Status::Ok);
 }
 
@@ -223,6 +271,7 @@ Status read(std::uint8_t addr, std::uint8_t* data, std::size_t len,
     return Status::Ok;
   }
 
+  lock();
   twim_enable();
   clear_events();
   nrf::reg<std::uint32_t>(nrf::twim1::ADDRESS) = addr;
@@ -235,12 +284,14 @@ Status read(std::uint8_t addr, std::uint8_t* data, std::size_t len,
 
   Status st = Status::Ok;
   if (!wait_event(nrf::twim1::EVENTS_STOPPED, timeout_us, &st)) {
-    recover_bus();
+    recover_bus_unlocked();
     twim_disable();
+    unlock();
     return note(st);
   }
   nrf::reg<std::uint32_t>(nrf::twim1::SHORTS) = 0u;
   twim_disable();
+  unlock();
   return note(Status::Ok);
 }
 
@@ -255,6 +306,7 @@ Status write_read(std::uint8_t addr,
     return write(addr, tx, tx_len, timeout_us);
   }
 
+  lock();
   twim_enable();
   clear_events();
   nrf::reg<std::uint32_t>(nrf::twim1::ADDRESS) = addr;
@@ -273,13 +325,15 @@ Status write_read(std::uint8_t addr,
 
   Status st = Status::Ok;
   if (!wait_event(nrf::twim1::EVENTS_STOPPED, timeout_us, &st)) {
-    recover_bus();
+    recover_bus_unlocked();
     twim_disable();
+    unlock();
     return note(st);
   }
 
   nrf::reg<std::uint32_t>(nrf::twim1::SHORTS) = 0u;
   twim_disable();
+  unlock();
   return note(Status::Ok);
 }
 

@@ -29,6 +29,11 @@ struct Hooks {
    * the host tests keep building. Null on host; the device wires it in main.
    */
   void (*display_sleep)(bool sleep, void* ctx) = nullptr;
+  /**
+   * Reconcile HR enable sources after settings / local HR UI / sleep changes.
+   * Device wires this to slate::hr::refresh; host tests leave null.
+   */
+  void (*hr_refresh)(void* ctx) = nullptr;
   void* ctx = nullptr;
 };
 

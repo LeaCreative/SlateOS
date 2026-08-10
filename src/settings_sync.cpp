@@ -19,6 +19,7 @@ std::size_t encode(const Payload& p, std::uint8_t* out, std::size_t cap) {
   out[7] = p.wake_seconds;
   out[8] = p.face_show_steps ? 1u : 0u;
   out[9] = p.face_show_diag ? 1u : 0u;
+  out[10] = p.hr_enabled ? 1u : 0u;
   return kPayloadBytes;
 }
 
@@ -43,13 +44,15 @@ bool decode(const std::uint8_t* msg, std::size_t len, Payload* out) {
   out->wake_seconds = msg[7];
   out->face_show_steps = msg[8] ? 1u : 0u;
   out->face_show_diag = msg[9] ? 1u : 0u;
+  out->hr_enabled = msg[10] ? 1u : 0u;
   return true;
 }
 
 bool differs(const Payload& a, const Payload& b) {
   return a.tilt_enabled != b.tilt_enabled || a.wake_seconds != b.wake_seconds ||
          a.face_show_steps != b.face_show_steps ||
-         a.face_show_diag != b.face_show_diag;
+         a.face_show_diag != b.face_show_diag ||
+         a.hr_enabled != b.hr_enabled;
 }
 
 bool should_apply(const Payload& current, const Payload& incoming,
@@ -90,6 +93,7 @@ void apply_to(const Payload& p, local::Settings* s) {
   s->wake_seconds = p.wake_seconds;
   s->face_show_steps = p.face_show_steps ? 1u : 0u;
   s->face_show_diag = p.face_show_diag ? 1u : 0u;
+  s->hr_enabled = p.hr_enabled ? 1u : 0u;
 }
 
 Payload from(const local::Settings& s, std::uint32_t revision) {
@@ -99,6 +103,7 @@ Payload from(const local::Settings& s, std::uint32_t revision) {
   p.wake_seconds = s.wake_seconds;
   p.face_show_steps = s.face_show_steps ? 1u : 0u;
   p.face_show_diag = s.face_show_diag ? 1u : 0u;
+  p.hr_enabled = s.hr_enabled ? 1u : 0u;
   return p;
 }
 

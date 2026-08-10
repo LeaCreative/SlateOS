@@ -45,7 +45,8 @@
 - BMA421/425: Bosch feature upload, pedometer enable (full-block R/W), ACC_CONF **`0x28`** (InfiniTime CIC_AVG), axis swap for mount frame.
 - **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60). False-wake on typing / arms-down walk: none observed.
 - Battery SAADC InfiniTime-matched curve + charge pin; BAS.
-- HRS3300 **slept at boot** — no HR measurement / no HRS GATT.
+- HRS3300 **gated by settings** — `hr_enabled` (default Off). On-demand measure
+  from local Heart Rate screen or GATT HRS CCCD; asleep otherwise.
 - WDT pet from app loop (+ renderer tile loop); tickless idle **off**.
 
 ### OTA / flash

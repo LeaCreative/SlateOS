@@ -135,6 +135,17 @@ fun WatchSettingsScreen(store: WatchSettingsStore) {
             )
         }
 
+        SettingCard {
+            ToggleRow(
+                title = "Heart rate",
+                subtitle = "Turn on the optical sensor. BPM shows on the watch " +
+                    "face next to steps. Uses several mA while on — leave Off " +
+                    "when you do not need it.",
+                checked = settings.hrEnabled,
+                onCheckedChange = { on -> store.edit { it.copy(hrEnabled = on) } },
+            )
+        }
+
         Text(
             text = syncStatusLine(pending, settings.revision),
             style = MaterialTheme.typography.bodySmall,

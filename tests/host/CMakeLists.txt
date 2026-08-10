@@ -81,6 +81,14 @@ target_include_directories(test_settings_sync PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_settings_sync PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_settings_sync settings_sync)
 
+add_executable(test_hrs3300
+  test_hrs3300.cpp
+  "${SLATE_ROOT}/src/hrs3300.cpp"
+)
+target_include_directories(test_hrs3300 PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_hrs3300 PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_hrs3300 hrs3300)
+
 add_executable(test_bma42x
   test_bma42x.cpp
   "${SLATE_ROOT}/src/bma42x.cpp"

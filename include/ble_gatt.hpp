@@ -12,7 +12,7 @@ namespace ble {
 
 struct GattCaps {
   bool battery = true;                 // BAS 0x180F
-  bool heart_rate = false;             // HRS deferred (needs HRS3300 driver)
+  bool heart_rate = true;              // HRS 0x180D when driver present
   bool device_info = true;             // DIS 0x180A
   bool current_time_client = true;     // CONTROL 0x20 time sync (not GATT CTS yet)
 };
@@ -72,6 +72,13 @@ void start_stack(GattServer* gatt, SessionProfile profile);
 
 /** Push battery % into BAS when linked (no-op if BAS off / NimBLE off). */
 void update_battery_level(std::uint8_t percent);
+
+/**
+ * Heart Rate Service (0x180D). App owns the sensor; NimBLE notifies + CCCD.
+ */
+using HrsCccdFn = void (*)(bool subscribed, void* ctx);
+void set_hrs_cccd_hook(HrsCccdFn fn, void* ctx);
+void update_heart_rate(std::uint8_t bpm);
 
 /** True while any central holds a connection — not just a full SDP session.
     A sustained connection is what qualifies an image for IMAGE_OK, because it

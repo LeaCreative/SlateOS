@@ -874,10 +874,12 @@ at the SDP / companion JS display-list layer.
 
 ### I-11 — HRS GATT / HRS3300 driver deferred
 
-- **Status:** Deferred
+- **Status:** **RESOLVED** — HRS3300 driver + InfiniTime PPG + `hr` FreeRTOS
+  task + GATT `0x180D` + synced `hr_enabled` (wire v2) + scrollable settings.
 - **Area:** BLE / sensors
-- **Impact:** No heart-rate service
-- **Notes:** `ble_gatt` flag off; HR chip still needs sleep-at-boot care.
+- **Impact:** Heart-rate on demand when settings gate is On
+- **Notes:** Default `hr_enabled=0` keeps ambient budget; CCCD / local HR
+  screen start measurement only while enabled.
 
 ### I-12 — GATT CTS deferred
 
@@ -998,5 +1000,6 @@ over the air without an InfiniTime round-trip.
 5. **I-3** tickless soak and **I-14** RAM headroom — both are "watch" items
    that only bite under sustained runtime, which we now finally have.
 
-Deferred by choice: **I-10** (task split), **I-11** (HRS), **I-12** (CTS —
+Deferred by choice: **I-10** (task split), **I-12** (CTS —
 largely moot now that TIME_SYNC works and carries local time, see N-26).
+**I-11** (HRS) is resolved — see above.

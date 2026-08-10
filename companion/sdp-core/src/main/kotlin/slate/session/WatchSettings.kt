@@ -6,16 +6,17 @@ import slate.generated.SdpWire
  * Bidirectional watch-settings sync (CONTROL `SETTINGS_SYNC` = 0x21).
  *
  * The exact mirror of the firmware's `src/settings_sync.cpp`. Both ends encode
- * the same ten bytes and — importantly — both run the same merge rule from
+ * the same bytes and — importantly — both run the same merge rule from
  * their own point of view, which is what stops them overwriting each other
  * forever when the user has edited on both sides.
  *
- * Wire: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds][showSteps][showDiag]
+ * Wire v2: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds]
+ *          [showSteps][showDiag][hrEnabled]
  */
 object WatchSettings {
     const val OP: Int = SdpWire.ControlOp.SETTINGS_SYNC
-    const val WIRE_VERSION: Int = 1
-    const val PAYLOAD_BYTES: Int = 10
+    const val WIRE_VERSION: Int = 2
+    const val PAYLOAD_BYTES: Int = 11
 
     /** Display-timeout choices, in the order the watch's own row cycles them. */
     val WAKE_SECONDS_CHOICES: List<Int> = listOf(10, 20, 30, 60, 120, 0)
@@ -27,6 +28,9 @@ object WatchSettings {
      * configured the any-motion threshold that raise-to-wake replaced, so it no
      * longer does anything. Offering a control with no effect would be worse
      * than not offering it.
+     *
+     * `hrEnabled` is a master gate: Off keeps the HRS3300 asleep; On allows
+     * on-demand measurement (not continuous heart rate).
      */
     data class Payload(
         val revision: Long = 0L,
@@ -36,6 +40,8 @@ object WatchSettings {
         val showSteps: Boolean = true,
         /** Bring-up diagnostic lines on the watch face. */
         val showDiag: Boolean = true,
+        /** Heart-rate sensor master enable. */
+        val hrEnabled: Boolean = false,
     )
 
     fun encode(p: Payload): ByteArray {
@@ -50,6 +56,7 @@ object WatchSettings {
         out[7] = (p.wakeSeconds and 0xFF).toByte()
         out[8] = if (p.showSteps) 1 else 0
         out[9] = if (p.showDiag) 1 else 0
+        out[10] = if (p.hrEnabled) 1 else 0
         return out
     }
 
@@ -70,6 +77,7 @@ object WatchSettings {
             wakeSeconds = msg[7].toInt() and 0xFF,
             showSteps = (msg[8].toInt() and 0xFF) != 0,
             showDiag = (msg[9].toInt() and 0xFF) != 0,
+            hrEnabled = (msg[10].toInt() and 0xFF) != 0,
         )
     }
 
@@ -78,7 +86,8 @@ object WatchSettings {
         a.tiltEnabled != b.tiltEnabled ||
             a.wakeSeconds != b.wakeSeconds ||
             a.showSteps != b.showSteps ||
-            a.showDiag != b.showDiag
+            a.showDiag != b.showDiag ||
+            a.hrEnabled != b.hrEnabled
 
     /**
      * Should [incoming] replace [current]?

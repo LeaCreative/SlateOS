@@ -270,6 +270,10 @@ void Core::enter_sleep() {
   if (hooks_.display_sleep) {
     hooks_.display_sleep(true, hooks_.ctx);
   }
+  if (hooks_.hr_refresh) {
+    // hr_refresh with sleep: main's hook pushes GoToSleep then refresh.
+    hooks_.hr_refresh(hooks_.ctx);
+  }
   // Panel contents are undefined across SLPIN, so nothing Core believes about
   // the display survives. Without this the first wake could match the digest
   // and skip the repaint, leaving the watch awake with a blank screen.
@@ -579,6 +583,10 @@ bool Core::on_tap_elem(std::uint16_t elem_id) {
       local_state().settings.face_show_diag =
           local_state().settings.face_show_diag ? 0u : 1u;
       break;
+    case local::kSettingHr:
+      local_state().settings.hr_enabled =
+          local_state().settings.hr_enabled ? 0u : 1u;
+      break;
     default:
       changed = false;
       break;
@@ -594,6 +602,9 @@ bool Core::on_tap_elem(std::uint16_t elem_id) {
   highest_seen_rev_ = local_state().settings.revision;
   save_settings();
   settings_dirty_ = true;
+  if (hooks_.hr_refresh) {
+    hooks_.hr_refresh(hooks_.ctx);
+  }
   show_current();
   return true;
 }
@@ -623,6 +634,9 @@ bool Core::apply_settings_sync(const settings_sync::Payload& incoming) {
   settings_sync::apply_to(incoming, &local_state().settings);
   local_state().settings.revision = incoming.revision;
   save_settings();
+  if (hooks_.hr_refresh) {
+    hooks_.hr_refresh(hooks_.ctx);
+  }
   show_current();
   return true;
 }

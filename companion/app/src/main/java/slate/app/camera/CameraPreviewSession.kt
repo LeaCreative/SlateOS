@@ -63,8 +63,14 @@ class CameraPreviewSession(
         running.set(false)
         synthJob?.cancel(true)
         synthJob = null
-        provider?.unbindAll()
+        val p = provider
         provider = null
+        if (p != null) {
+            // CameraX bind/unbind must run on the main executor.
+            ContextCompat.getMainExecutor(context).execute {
+                runCatching { p.unbindAll() }
+            }
+        }
         onStatus("idle", 0.0)
     }
 

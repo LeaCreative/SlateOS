@@ -110,6 +110,15 @@ void update_battery_level(std::uint8_t percent) {
   (void)percent;
 }
 
+void set_hrs_cccd_hook(HrsCccdFn fn, void* ctx) {
+  (void)fn;
+  (void)ctx;
+}
+
+void update_heart_rate(std::uint8_t bpm) {
+  (void)bpm;
+}
+
 bool central_connected() { return false; }
 
 void bringup_snapshot(std::uint8_t* state, std::uint16_t* rc) {

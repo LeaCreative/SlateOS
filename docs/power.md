@@ -70,6 +70,8 @@ This delivery **does not claim lab-measured µA**. The table is a **budget model
 | SPI/TWI left enabled | tens–hundreds µA |
 | LCD not in SLPIN | ~mA vs sleep |
 | SAADC not STOPPED | residual µA |
+| **HRS3300 not slept** (`PDRIVER≠0`) | **~130 µA** (InfiniTime #1756) vs ~0.01 µA asleep |
+| **HRS3300 measuring** (LED on) | **~2.6–7.5 mA** avg — must stay off unless `hr_enabled` + session |
 
 ## Which single item moved the needle most?
 

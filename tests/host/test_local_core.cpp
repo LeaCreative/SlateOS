@@ -390,7 +390,7 @@ static void test_settings_taps_reach_their_setting() {
       rects[n_rects++] = r;
     }
   }
-  expect("three touchable rows on screen", n_rects == 3u);
+  expect("five touchable rows on screen", n_rects == 5u);
 
   for (std::size_t i = 0u; i < n_rects; ++i) {
     const input::HitRect& r = rects[i];
@@ -415,6 +415,14 @@ static void test_settings_taps_reach_their_setting() {
       case slate::local::kSettingSteps:
         expect("steps row toggles the step display",
                after.face_show_steps != before.face_show_steps);
+        break;
+      case slate::local::kSettingDiag:
+        expect("diag row toggles face diag",
+               after.face_show_diag != before.face_show_diag);
+        break;
+      case slate::local::kSettingHr:
+        expect("hr row toggles heart rate gate",
+               after.hr_enabled != before.hr_enabled);
         break;
       default:
         expect("no unexpected touchable element", false);

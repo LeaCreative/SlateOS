@@ -11,7 +11,10 @@
   Gesture IDs: 0x01 slide-down, 0x02 slide-up, 0x03 slide-left, 0x04 slide-right,
   0x05 single-tap, 0x0B double-tap, 0x0C long-press.
 - Accel: BMA421 (pre-Jul-2021) or BMA425 (after), I2C 0x18, IRQ=P0.08. Detect at runtime.
-- HR: HRS3300, I2C. Enabled at power-on — write 0x00 to PDRIVER (0x0C) to sleep it.
+- HR: HRS3300, I2C 0x44. Enabled at power-on — write 0x00 to PDRIVER (0x0C) to sleep it.
+- **I2C bus rules (normative):** touch, accel, and HR share TWIM1. Read
+  `docs/i2c-bus.md` before changing `twi` or any I2C client / new I2C task.
+  Mutex under FreeRTOS is mandatory (InfiniTime TwiMaster parity).
 - Button: P0.15 enable + P0.13 sense (active-high, pulldown). Match InfiniTime: leave
   enable high (~34 µA). Do not invent a strobe-only scheme that breaks WDT-hold reset.
 - Battery: ADC AIN7 (P0.31), 1:2 divider. Sample as InfiniTime does — SAADC
@@ -25,15 +28,17 @@
 ## Stack
 FreeRTOS + NimBLE + LittleFS + MCUBoot. C++17. No LVGL — custom tile renderer.
 
-**Task topology (current):** one FreeRTOS **app** task (former main loop: UI, WDT,
-session/core tick, SDP drain) plus NimBLE **ll** / **ble** host tasks and the
-FreeRTOS timer daemon. GATT RX only reassembles + publishes into `ble::AppInbox`
+**Task topology (current):** FreeRTOS **app** task (UI, WDT, session/core tick,
+SDP drain) plus **hr** (HRS3300 / PPG when enabled), NimBLE **ll** / **ble**
+host tasks, and the FreeRTOS timer daemon. GATT RX only reassembles + publishes
+into `ble::AppInbox`
 (zero-copy: the inbox borrows the reassembler buffer; ingest is gated while a
 message is pending, CREDIT withheld until apply);
 the app task drains (`Link::drain_app_messages`) and owns interpreter/renderer —
 InfiniTime-style link→app handoff (N-1 / I-10 stage 1). Full roadmap §3.1
 `display` / `link` / `sensors` / `system` split remains **deferred**. M5a
 scheduler proof is `freertos_smoke` (2-task + queue, then self-delete).
+I2C clients on `app` and `hr` must obey `docs/i2c-bus.md`.
 
 ## Hard constraints
 - RAM: total static + heap under 54KB, >=6KB slack. CI enforces.
@@ -74,6 +79,7 @@ only the app task loop (plus bounded flash helpers and future tickless
 - Anything BLE-facing gets a host-side unit test that runs on desktop.
 - SDP framing (§4.2) lives in `sdp_frame.hpp` / `sdp_frame.cpp`; BLE link/GATT in
   `ble_*.hpp`. UUID base and mbuf math: `docs/ble.md`.
+- Shared buses: SPI → `spi_bus` mutex; I2C → `twi` mutex + `docs/i2c-bus.md`.
 
 # Project: Slate companion — Android bridge, script host and app repository client
 

@@ -58,8 +58,21 @@ class LinkForegroundService : Service() {
         LinkLog.e("uncaught in link service scope — link kept alive", t)
     }
 
+    /**
+     * Link/compositor work must not share the UI looper.
+     *
+     * Historically this was [Dispatchers.Main.immediate], so every heartbeat,
+     * notif upsert, display push and JS seed ran on Main — which is what made
+     * MainActivity appear frozen under link load and blocked lifecycle
+     * timeouts. A single worker thread keeps session/compositor ordering
+     * while leaving the UI free.
+     */
     private val scope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + crashGuard)
+        CoroutineScope(
+            SupervisorJob() +
+                Dispatchers.Default.limitedParallelism(1) +
+                crashGuard,
+        )
     private var rttJob: Job? = null
     private var heartbeatJob: Job? = null
     private var reconnectJob: Job? = null

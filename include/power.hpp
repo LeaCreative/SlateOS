@@ -39,7 +39,8 @@ void buses_wake();
 // Sample battery via SAADC then TASKS_STOP (not merely ENABLE=0).
 int sample_battery_adc();
 
-// Put HRS3300 to sleep (PDRIVER=0). Call once at boot; wake only when measuring.
+// Put HRS3300 to sleep (PDRIVER=0). Prefer hrs::Driver::disable() when the
+// driver owns the chip; this remains as a boot fallback before the driver init.
 void hrs_sleep();
 
 // Enter System ON idle until RTC2 compare or PIN DETECT (touch).

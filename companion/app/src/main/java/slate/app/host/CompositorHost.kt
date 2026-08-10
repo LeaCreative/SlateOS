@@ -77,8 +77,16 @@ class CompositorHost(
         hostVersion = hostVersion,
     )
 
-    private val controlListener: (ByteArray) -> Unit = { msg -> onControlMessage(msg) }
-    private val inputListener: (ByteArray) -> Unit = { msg -> onInputMessage(msg) }
+    private val controlListener: (ByteArray) -> Unit = { msg ->
+        // GATT callbacks arrive on a binder thread; keep session/compositor
+        // on the link scope so they never race Main or each other.
+        val copy = msg.copyOf()
+        scope.launch { onControlMessage(copy) }
+    }
+    private val inputListener: (ByteArray) -> Unit = { msg ->
+        val copy = msg.copyOf()
+        scope.launch { onInputMessage(copy) }
+    }
 
     val compositor = Compositor(
         nowMs = { System.currentTimeMillis() },
@@ -490,7 +498,8 @@ class CompositorHost(
             LinkLog.i(
                 "settings ← watch (rev ${incoming.revision}): " +
                     "raise=${incoming.tiltEnabled} timeout=${incoming.wakeSeconds}s " +
-                    "steps=${incoming.showSteps} diag=${incoming.showDiag}",
+                        "steps=${incoming.showSteps} diag=${incoming.showDiag} " +
+                        "hr=${incoming.hrEnabled}",
             )
         } else {
             // Ours is newer or identical. Either way the watch has now told us
@@ -513,7 +522,8 @@ class CompositorHost(
         val p = pending ?: watchSettings.current()
         LinkLog.i(
             "settings → watch (rev ${p.revision}): raise=${p.tiltEnabled} " +
-                "timeout=${p.wakeSeconds}s steps=${p.showSteps} diag=${p.showDiag}",
+                "timeout=${p.wakeSeconds}s steps=${p.showSteps} diag=${p.showDiag} " +
+                "hr=${p.hrEnabled}",
         )
         gatt.sendMessage(SdpFrame.CHAN_CONTROL, WatchSettings.encode(p))
     }
