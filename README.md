@@ -39,7 +39,7 @@ If needed, holding the button reboots the PineTime. The InfiniTime bootloader is
 2. You need to know what side-loading on Android means, and what risks it carries.
 3. You need to know what PineTime's green, blue and red pine cones mean.
 4. If you want to develop your own sub-apps, then you will at least need to know how to vibe code effectively. If you know how to write and debug JS by hand, then all the better! Make sure to follow [`docs/subapp-rules.md`]
-5. I am not responsible if you brick your device, or download someone's wonky JS sub-app!
+5. I am not responsible if you brick your device, or download someone's wonky JS sub-app ([`docs/subapp-rules.md`]!)
 
 | | |
 |---|---|
