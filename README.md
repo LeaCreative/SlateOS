@@ -76,6 +76,7 @@ Capability map (keep this honest): [`docs/capabilities.md`](docs/capabilities.md
 3. On the PineTime, run InfiniTime (or recovery) and enable firmware updates.
 4. In the Slate companion, open **Install Slate on sealed PineTime**, pick `slate-dfu.zip`, and flash.
 5. Use **Associate watch (CDM)** and start the link service if needed. A new image shows an amber trial bar until IMAGE_OK is confirmed.
+6. In the companion app, via the "Sub-app repository" button, you can select which sub-apps you want listed in SlateOS' launcher.
 
 ### Companion (Android)
 
