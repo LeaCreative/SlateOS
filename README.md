@@ -15,7 +15,7 @@
      alt="Local Map app on PineTime"
      width="200">
 	 
-I love my PineTime. I wanted it to be able to do more! So off I went, iteratively vibe coding along the way. The result is SlateOS, based on Pine's own InfiniTime (https://github.com/InfiniTimeOrg/InfiniTime) at the low level, is a departure from the traditional smartwatch OS, in that it literally turns your PineTime into a slate for your phone. In this way it also brings apps to your PineTime, without changing the firmware! 
+I love my PineTime. I wanted it to be able to do more! SlateOS, based on Pine's own InfiniTime (https://github.com/InfiniTimeOrg/InfiniTime) at the low level, is a departure from the traditional smartwatch OS, in that it literally turns your PineTime into a slate for your phone. In this way it also brings apps to your PineTime, without changing the firmware! 
 
 How? well, we ususally install and run apps on our smartwatches, treating them as a full blown computing devices. But smartwatches conserve power by not having the beefiest CPUs and memories. And we usually have our phones nearby when we wear our smartwatches. So why not let the phones do all of the heavy lifting?
 
