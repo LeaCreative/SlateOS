@@ -363,6 +363,13 @@ static void test_settings_taps_reach_their_setting() {
   core.init(hk, nullptr);
   core.show_settings();
   expect("settings screen drawn", g_last_list_len > 0u);
+  expect("settings is current",
+         core.local_state().screen == slate::local::Screen::Settings);
+  core.show_face();
+  expect("show_face returns to the watch face",
+         core.local_state().screen == slate::local::Screen::Face);
+  // Re-open settings so the list below is the settings layout, not the face.
+  core.show_settings();
 
   // Collect the touchable rects straight out of the list Core just pushed.
   input::HitRect rects[8];

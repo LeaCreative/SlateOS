@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-// Aggregated local UI / sensor / settings state — must fit §3.2 3 KB budget.
+// Aggregated local UI / sensor / settings state — fits kLocalScreenStateBytes.
 
 namespace slate {
 namespace local {
@@ -52,8 +52,8 @@ struct Settings {
 // reaches watches that already have a settings block persisted with the old
 // 5 s default. load_settings() only applies defaults when the magic mismatches,
 // so without a bump the change would silently do nothing on this very watch.
-// Cost: any customised tilt settings revert to defaults once. There is no
-// settings UI yet, so nothing has been customised.
+// Cost: any customised tilt settings revert to defaults once. Acceptable: the
+// watch settings UI did not exist when SLTT shipped, so nothing useful was lost.
 //
 // Bumped again 9 Aug 2026 ('SLTT' -> 'SLTU'): `revision` was added, so the
 // struct is a different size and shape. An old blob read into the new layout
@@ -187,17 +187,16 @@ struct State {
   std::uint8_t pad1[8] = {};
 };
 
-// Full resilient-core RAM block reported against the 3 KB budget.
+// Local screen state + a small reserve. Sized to kLocalScreenStateBytes (I-19).
 struct ScreenBlock {
   State state{};
-  // Room for future face caches / layout ids without blowing the budget.
   std::uint8_t reserve[budget::kLocalScreenStateBytes - sizeof(State)] = {};
 };
 
 static_assert(sizeof(ScreenBlock) == budget::kLocalScreenStateBytes,
-              "local screen block must be exactly 3 KB");
+              "local screen block must match kLocalScreenStateBytes");
 static_assert(sizeof(State) <= budget::kLocalScreenStateBytes,
-              "local State overflows 3 KB");
+              "local State overflows screen-block budget");
 
 constexpr std::size_t state_bytes_used() { return sizeof(State); }
 constexpr std::size_t screen_block_bytes() { return sizeof(ScreenBlock); }

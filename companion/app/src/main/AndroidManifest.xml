@@ -109,12 +109,12 @@
             android:exported="false"
             android:label="Log" />
 
-        <!-- Sideload a JS sub-app by opening its .zip on the phone, so
-             iterating on sub-apps does not require reinstalling the APK. -->
+        <!-- Open a .zip as either a JS sub-app (sideload) or slate-dfu.zip
+             (SDP OTA). Classification is in ZipIntake / SideloadActivity. -->
         <activity
             android:name=".repo.SideloadActivity"
             android:exported="true"
-            android:label="Install Slate sub-app">
+            android:label="Open with Slate">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

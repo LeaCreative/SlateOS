@@ -177,6 +177,24 @@ class ScriptRuntimeHost(
         apps.clear()
     }
 
+    /**
+     * Drop every running JS endpoint and the shared sandbox host.
+     *
+     * Used when create() fails with the N-51 "bound but unreachable" brick so
+     * the next launch can rebind without force-stopping the whole companion.
+     * Also safe on link-service destroy.
+     */
+    suspend fun resetRuntime() {
+        close()
+        lastRenderIpcMs = -1L
+        AndroidJsEngine.forceReset()
+    }
+
+    /** Forget one app so [ensureRegistered] rebuilds it with a fresh isolate. */
+    fun evict(appId: String) {
+        apps.remove(appId)?.close()
+    }
+
     companion object {
         const val TIMER_ID = "slate.timer"
         const val NAV_ID = "slate.navigation"

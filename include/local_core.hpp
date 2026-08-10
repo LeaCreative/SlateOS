@@ -187,10 +187,17 @@ public:
    */
   bool apply_settings_sync(const settings_sync::Payload& incoming);
 
-  /** Open the settings screen (swipe left-to-right). */
+  /** Open the settings screen (swipe left-to-right from the face). */
   void show_settings() {
     wake_display();
     local_state().screen = local::Screen::Settings;
+    show_current();
+  }
+
+  /** Leave settings (or any local screen) back to the watch face. */
+  void show_face() {
+    wake_display();
+    local_state().screen = local::Screen::Face;
     show_current();
   }
 

@@ -318,6 +318,22 @@ void test_config_upload_is_spread_across_the_stream() {
   expect("and it landed byte for byte", matches);
 }
 
+/**
+ * Accel config must match InfiniTime: 100 Hz, NORMAL_AVG4, CIC_AVG → 0x28.
+ * Continuous mode (0xA8) was a silent divergence after the pedometer enable
+ * path was fixed; soft step counts followed.
+ */
+void test_acc_conf_matches_infinitime() {
+  FakeBma dev;
+  g_dev = &dev;
+  slate::bma::Driver drv;
+  drv.init(make_bus());
+  std::vector<std::uint8_t> cfg(8u, 0u);
+  (void)drv.configure(cfg.data(), cfg.size(), 3u);
+  expect("ACC_CONF is InfiniTime's 0x28 (not continuous 0xA8)",
+         dev.regs[0x40] == 0x28u);
+}
+
 }  // namespace
 
 int main() {
@@ -326,6 +342,7 @@ int main() {
   test_axes_are_reported_in_the_watch_frame();
   test_accel_scaling_is_1024_per_g();
   test_config_upload_is_spread_across_the_stream();
+  test_acc_conf_matches_infinitime();
   if (g_fails != 0) {
     std::printf("%d failure(s)\n", g_fails);
     return 1;

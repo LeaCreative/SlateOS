@@ -7,7 +7,10 @@
 namespace slate {
 namespace budget {
 
-constexpr std::size_t kLocalScreenStateBytes = 3072u;  // 3 KB
+// Local UI state. Was 3072 with a ~2.9 KB empty reserve (State is ~152 B);
+// that pad was pure RAM cost against a ~200 B link margin (I-19). 256 B leaves
+// headroom for a few more fields without inviting another multi-KiB hole.
+constexpr std::size_t kLocalScreenStateBytes = 256u;
 constexpr std::size_t kNotifStoreBytes = 4096u;        // 4 KB
 constexpr std::size_t kSettingsStateBytes = 2048u;     // 2 KB (persist mirror)
 

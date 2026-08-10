@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="slate.app.debug"
-    android:versionCode="38"
-    android:versionName="0.8.2-p37" >
+    android:versionCode="42"
+    android:versionName="0.8.2-p41" >
 
     <uses-sdk
         android:minSdkVersion="30"
@@ -127,13 +127,13 @@
             android:label="Log" />
 
         <!--
-             Sideload a JS sub-app by opening its .zip on the phone, so
-             iterating on sub-apps does not require reinstalling the APK.
+             Open a .zip as either a JS sub-app (sideload) or slate-dfu.zip
+             (SDP OTA). Classification is in ZipIntake / SideloadActivity.
         -->
         <activity
             android:name="slate.app.repo.SideloadActivity"
             android:exported="true"
-            android:label="Install Slate sub-app" >
+            android:label="Open with Slate" >
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 

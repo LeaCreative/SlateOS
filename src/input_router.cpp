@@ -31,8 +31,12 @@ void InputRouter::emit(const std::uint8_t* msg, std::size_t len) {
   }
   if (session_ != nullptr) {
     const auto st = session_->state();
+    // Connected: GATT is up, HELLO may still be in flight. main.cpp forwards
+    // the launcher swipe in that window so the phone can open the drawer once
+    // Ready — dropping here made that path a silent no-op (connected UI, dead
+    // gesture). Disconnected still drops: there is no peer to receive it.
     if (st != session::State::Ready && st != session::State::Active &&
-        st != session::State::Idle) {
+        st != session::State::Idle && st != session::State::Connected) {
       return;
     }
   }
@@ -100,6 +104,20 @@ void InputRouter::on_event(const input::Event& ev) {
         if (session_ != nullptr) {
           (void)session_->local_back(0u);
         }
+        return;
+      }
+
+      // Left-to-right over a phone-owned screen dismisses it locally as well as
+      // on the host (launcher, navigation, …). Relying on SCREEN_POP alone left
+      // the watch on remote pixels with depth already cleared on the phone, or
+      // with a local Disconnected screen that then stole the next RIGHT for
+      // settings.
+      if (dir == sdp::swipe_dir::RIGHT && session_ != nullptr &&
+          session_->remote_depth() > 0u) {
+        const std::size_t n =
+            sdp::input_wire::encode_swipe(buf, sizeof(buf), dir);
+        emit(buf, n);
+        (void)session_->local_back(0u);
         return;
       }
 

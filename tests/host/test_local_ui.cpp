@@ -84,6 +84,9 @@ void count_text_ops(const std::uint8_t* p, std::size_t n, int* text,
       case sdp::op::RECT:
         i += 4u + 3u + 1u;  // xywh + COLOR + STYLE
         break;
+      case sdp::op::RECT_ROUND:
+        i += 5u + 3u + 1u;  // xywh rad + COLOR + STYLE
+        break;
       case sdp::op::PROGRESS_BAR:
         i += 4u + 1u + 3u + 3u;  // xywh pct COLOR COLOR
         break;
@@ -201,7 +204,11 @@ static void test_settings_rows_are_tappable() {
   // Walk the list for BEGIN_ELEM (0x30): u16 id, x, y, w, h, flags.
   bool saw_raise = false, saw_timeout = false, saw_steps = false;
   int touchable = 0;
+  int rounds = 0;
   for (std::size_t i = 0u; i + 8u <= n; ++i) {
+    if (buf[i] == sdp::op::RECT_ROUND) {
+      ++rounds;
+    }
     if (buf[i] != sdp::op::BEGIN_ELEM) {
       continue;
     }
@@ -220,9 +227,11 @@ static void test_settings_rows_are_tappable() {
   expect("raise row carries its id", saw_raise);
   expect("timeout row carries its id", saw_timeout);
   expect("steps row carries its id", saw_steps);
+  // Edge + fill per row.
+  expect("six rounded rects for button chrome", rounds == 6);
 }
 
-/** A timeout of 0 reads as "Off", not as the number zero. */
+/** A timeout of 0 reads as "Never", not as the number zero or "Off". */
 static void test_settings_timeout_off_reads_as_off() {
   slate::local::State st{};
   st.screen = slate::local::Screen::Settings;
@@ -231,14 +240,15 @@ static void test_settings_timeout_off_reads_as_off() {
   std::uint8_t buf[512];
   const std::size_t n = slate::ui::build_screen(vm, buf, sizeof(buf));
   expect("timeout=0 screen parses", n > 0u && parse_ok(buf, n));
-  bool found_off = false;
-  for (std::size_t i = 0u; i + 3u <= n; ++i) {
-    if (buf[i] == 'O' && buf[i + 1u] == 'f' && buf[i + 2u] == 'f') {
-      found_off = true;
+  bool found_never = false;
+  for (std::size_t i = 0u; i + 5u <= n; ++i) {
+    if (buf[i] == 'N' && buf[i + 1u] == 'e' && buf[i + 2u] == 'v' &&
+        buf[i + 3u] == 'e' && buf[i + 4u] == 'r') {
+      found_never = true;
       break;
     }
   }
-  expect("timeout 0 renders as Off", found_off);
+  expect("timeout 0 renders as Never", found_never);
 }
 
 static void test_notifs_budget() {

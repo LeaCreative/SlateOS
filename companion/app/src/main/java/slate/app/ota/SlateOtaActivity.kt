@@ -1,6 +1,7 @@
 package slate.app.ota
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -63,8 +64,10 @@ class SlateOtaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        packageUri = savedInstanceState?.getString(STATE_URI)?.let(Uri::parse)
+        packageUri = uriFromIntent(intent)
+            ?: savedInstanceState?.getString(STATE_URI)?.let(Uri::parse)
             ?: packageSelection.restore()
+        packageUri?.let { packageSelection.remember(it) }
 
         val pad = dp(16)
         val root = LinearLayout(this).apply {
@@ -143,15 +146,42 @@ class SlateOtaActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 SlateOtaService.state.collect { s ->
                     progress.progress = s.progress
-                    status.text = if (s.error == null) s.message else "${s.message}: ${s.error}"
+                    status.text = when {
+                        s.error != null -> "${s.message}: ${s.error}"
+                        s.active || s.progress > 0 -> s.message
+                        packageUri != null ->
+                            "Package selected: ${packageUri!!.lastPathSegment ?: packageUri}. " +
+                                "Check the watch is connected, then start."
+                        else -> s.message
+                    }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val fromOpen = uriFromIntent(intent) ?: return
+        packageUri = fromOpen
+        packageSelection.remember(fromOpen)
+        if (::status.isInitialized) {
+            status.text = "Package selected: ${fromOpen.lastPathSegment ?: fromOpen}"
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString(STATE_URI, packageUri?.toString())
         super.onSaveInstanceState(outState)
+    }
+
+    private fun uriFromIntent(intent: Intent?): Uri? {
+        if (intent == null) return null
+        intent.getStringExtra(EXTRA_PACKAGE_URI)?.let { raw ->
+            return Uri.parse(raw)
+        }
+        intent.data?.let { return it }
+        return intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
     }
 
     private fun requiredPermissions(): Array<String> {
@@ -192,8 +222,9 @@ class SlateOtaActivity : ComponentActivity() {
             setOnClickListener { action() }
         }
 
-    private companion object {
-        const val STATE_URI = "ota_uri"
-        const val PREFS = "slate_ota_selection"
+    companion object {
+        const val EXTRA_PACKAGE_URI = "slate.ota.PACKAGE_URI"
+        private const val STATE_URI = "ota_uri"
+        private const val PREFS = "slate_ota_selection"
     }
 }

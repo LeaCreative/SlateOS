@@ -38,7 +38,12 @@ Priority: **CRITICAL > INTERRUPT > NORMAL > AMBIENT**
 | `minProtocolVersion` > watch | **Deny** + push “Update watch” screen |
 
 Displaced app: **Blur**, not Destroy. Pop / RelinquishFocus restores the previous
-entry with **Focus** again. Ambient is the singleton base under higher screens.
+entry with **Focus** again. Ambient is the singleton base **when present**.
+
+**Current host policy (10 Aug):** `CompositorHost` does **not** keep `ClockApp`
+focused as an ambient base. An empty stack leaves the watch on its local face
+(N-34: ambient clock was overwriting focused apps). The priority/quota rules
+above still apply if an AMBIENT app is focused again.
 
 ## Quotas & credit
 

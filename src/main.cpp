@@ -615,18 +615,39 @@ static void app_loop() {
       // ignores and ones handled by a phone-pushed screen. Reading the watch is
       // activity whoever owns the panel.
       g_core.note_activity();
-      // Swipe right-to-left opens the app drawer, which only the phone can
-      // compose — it is the phone that knows what is installed. With no
-      // session there is nobody to ask, and the gesture would silently do
-      // nothing, so answer locally instead. Guarded here rather than in
-      // InputRouter because this is a policy about what the *watch* shows,
-      // not about how an event is encoded.
-      // Swipe left-to-right is the settings gesture. Answered locally and
-      // unconditionally: these are the WATCH's settings, so unlike the launcher
-      // there is nothing to ask the phone for and no reason to require a link.
+      // Swipe routing (local vs phone):
+      //   Face + left-to-right  → watch settings (local) — Face only
+      //   Settings + right-to-left → face (local) — NOT the launcher
+      //   Disconnected + either horizontal swipe → face (local)
+      //   Face + right-to-left → launcher (phone), or "not connected" if no BLE
+      //   Remote screen + left-to-right → dismiss (phone + local_back) — must
+      //     NOT open settings. That was the residual launcher→settings bug:
+      //     the local Disconnected ("Not connected") screen still owned the
+      //     panel, so RIGHT was treated like Face→settings.
       if (ev.type == input::EventType::Swipe &&
           ev.swipe == input::SwipeDir::Right) {
-        g_core.show_settings();
+        if (!g_local_owns_screen && g_session.remote_depth() > 0u) {
+          // Launcher / nav / etc. — fall through to g_input (local_back there).
+        } else if (g_local_owns_screen &&
+                   g_core.local_state().screen == slate::local::Screen::Face) {
+          g_core.show_settings();
+          continue;
+        } else if (g_local_owns_screen &&
+                   g_core.local_state().screen ==
+                       slate::local::Screen::Disconnected) {
+          g_core.show_face();
+          continue;
+        } else {
+          // Settings, Notifs, … — do not open settings.
+          continue;
+        }
+      }
+      if (ev.type == input::EventType::Swipe &&
+          ev.swipe == input::SwipeDir::Left && g_local_owns_screen &&
+          (g_core.local_state().screen == slate::local::Screen::Settings ||
+           g_core.local_state().screen ==
+               slate::local::Screen::Disconnected)) {
+        g_core.show_face();
         continue;
       }
       const bool launcher_swipe =
@@ -641,8 +662,18 @@ static void app_loop() {
           sess == slate::session::State::Ready ||
           sess == slate::session::State::Active ||
           sess == slate::session::State::Idle;
+      // GATT can be up while HELLO is still in flight (Connected). The phone
+      // UI already says "connected"; claiming "Not connected" on the watch is
+      // a lie — forward the gesture and let the host open the launcher once
+      // Ready, or no-op harmlessly.
       if (launcher_swipe && !session_negotiated) {
-        g_core.show_not_connected();
+        if (g_core.local_state().link_up != 0u ||
+            sess == slate::session::State::Connected) {
+          g_input.on_event(ev);
+        } else {
+          g_core.show_not_connected();
+        }
+        continue;
       } else if (g_local_owns_screen || g_session.remote_depth() == 0u) {
         if (ev.type == input::EventType::Button) {
           g_core.on_button_press();

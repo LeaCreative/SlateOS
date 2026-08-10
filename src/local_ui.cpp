@@ -58,7 +58,18 @@ struct W {
     b(w);
     b(h);
     rgb(c);
-    b(0x00u);  // STYLE: fill, width 0
+    b(sdp::style::ModeFill);
+  }
+  void rect_round(std::uint8_t x, std::uint8_t y, std::uint8_t w, std::uint8_t h,
+                  std::uint8_t rad, std::uint16_t c) {
+    b(sdp::op::RECT_ROUND);
+    b(x);
+    b(y);
+    b(w);
+    b(h);
+    b(rad);
+    rgb(c);
+    b(sdp::style::ModeFill);
   }
   void gauge(std::uint8_t x, std::uint8_t y, std::uint8_t w, std::uint8_t h,
              std::uint8_t pct, std::uint16_t fg, std::uint16_t bg) {
@@ -495,12 +506,10 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
 }
 
 /**
- * The settings screen: three tappable rows, tap to change.
+ * Watch settings — three full-width rounded buttons (launcher language).
  *
- * Font 1 throughout — these are words a person reads, and the 3x5 is a
- * diagnostic font. The previous version of this screen drew three bare numbers
- * with no labels and no tap targets at all; it was a bring-up placeholder that
- * nothing could navigate to.
+ * Font 1 throughout — these are words a person reads. Each row is a visible
+ * button with the current value on the right so the state is glanceable.
  *
  * Element ids are [kSettingRaise..kSettingSteps] and are the contract with
  * Core::on_tap_elem — they are named constants in local_state.hpp precisely so
@@ -518,43 +527,57 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   w.u16(0xFFFFu);   // pal 0: white
   w.b(sdp::op::SET_PALETTE);
   w.b(0x01u);
-  w.u16(0x07E0u);   // pal 1: green, for "on"
+  w.u16(0x07E0u);   // pal 1: green, for "On"
   w.b(sdp::op::SET_PALETTE);
   w.b(0x02u);
-  w.u16(0x8410u);   // pal 2: grey, for "off"
+  w.u16(0x8410u);   // pal 2: grey, for "Off"
+
+  constexpr std::uint16_t kEdge = 0x4A69u;
+  constexpr std::uint16_t kFill = 0x1082u;
+  constexpr std::uint8_t kRowX = 8u;
+  constexpr std::uint8_t kRowW = 224u;
+  constexpr std::uint8_t kRowH = 60u;
+  constexpr std::uint8_t kPitch = 68u;
+  constexpr std::uint8_t kTop = 32u;
+  constexpr std::uint8_t kRad = 8u;
 
   w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "SETTINGS", 1u);
 
-  constexpr std::uint8_t kRowH = 52u;
-  constexpr std::uint8_t kTop = 34u;
-
   const auto row = [&](std::uint16_t id, std::uint8_t index, const char* label,
                        const char* value, std::uint8_t value_pal) {
-    const std::uint8_t y = static_cast<std::uint8_t>(kTop + index * kRowH);
+    const std::uint8_t y = static_cast<std::uint8_t>(kTop + index * kPitch);
     w.b(sdp::op::BEGIN_ELEM);
     w.u16(id);
-    w.b(4u);
+    w.b(kRowX);
     w.b(y);
-    w.b(232u);
-    w.b(static_cast<std::uint8_t>(kRowH - 6u));
-    w.b(sdp::elem_flags::EMIT_TOUCH);
-    w.text_big(10, static_cast<std::uint8_t>(y + 2u), sdp::align::LEFT, 2u, 0u,
+    w.b(kRowW);
+    w.b(kRowH);
+    w.b(sdp::elem_flags::EMIT_TOUCH | sdp::elem_flags::HAPTIC);
+    w.rect_round(kRowX, y, kRowW, kRowH, kRad, kEdge);
+    w.rect_round(static_cast<std::uint8_t>(kRowX + 1u),
+                 static_cast<std::uint8_t>(y + 1u),
+                 static_cast<std::uint8_t>(kRowW - 2u),
+                 static_cast<std::uint8_t>(kRowH - 2u),
+                 static_cast<std::uint8_t>(kRad - 1u), kFill);
+    w.text_big(16, static_cast<std::uint8_t>(y + 20u), sdp::align::LEFT, 2u, 0u,
                label, 1u);
-    w.text_big(10, static_cast<std::uint8_t>(y + 24u), sdp::align::LEFT, 3u,
+    w.text_big(224, static_cast<std::uint8_t>(y + 20u), sdp::align::RIGHT, 2u,
                value_pal, value, 1u);
     w.b(sdp::op::END_ELEM);
   };
 
-  row(local::kSettingRaise, 0u, "Raise to wake",
+  row(local::kSettingRaise, 0u, "Raise wake",
       st.settings.tilt_enabled ? "On" : "Off",
       st.settings.tilt_enabled ? 1u : 2u);
 
   char secs[8];
   if (st.settings.wake_seconds == 0u) {
-    secs[0] = 'O';
-    secs[1] = 'f';
-    secs[2] = 'f';
-    secs[3] = '\0';
+    secs[0] = 'N';
+    secs[1] = 'e';
+    secs[2] = 'v';
+    secs[3] = 'e';
+    secs[4] = 'r';
+    secs[5] = '\0';
   } else {
     fmt_u32(secs, sizeof(secs) - 1u, st.settings.wake_seconds);
     std::size_t l = 0u;
@@ -566,7 +589,7 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
       secs[l + 1u] = '\0';
     }
   }
-  row(local::kSettingTimeout, 1u, "Display timeout", secs, 0u);
+  row(local::kSettingTimeout, 1u, "Timeout", secs, 0u);
 
   row(local::kSettingSteps, 2u, "Show steps",
       st.settings.face_show_steps ? "On" : "Off",

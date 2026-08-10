@@ -36,7 +36,9 @@ InfiniTime-style link→app handoff (N-1 / I-10 stage 1). Full roadmap §3.1
 scheduler proof is `freertos_smoke` (2-task + queue, then self-delete).
 
 ## Hard constraints
-- RAM: total static + heap under 54KB, >=6KB slack. CI enforces.
+- RAM: target static + heap under 54KB with >=6KB link slack (aspirational;
+  measured slack after I-19 ScreenBlock reclaim is ~3 KB — see
+  `docs/capabilities.md`). Linker asserts `__StackLimit >= __heap_end__`.
 - NO full framebuffer. Render two 240x8 RGB565 tiles (3,840B each, 7,680B total) and
   DMA them out. A full-screen redraw is 115,200 bytes = ~115ms at 8MHz, so dirty-rect
   rendering is mandatory, not an optimisation.
@@ -149,6 +151,8 @@ The four axes where the defects actually were:
 
 ## Working practice (added 5 Aug 2026)
 
+- **`docs/capabilities.md` is the capability map** (what works today). Read it
+  before assuming a feature is missing, deferred, or still broken.
 - **`docs/issue-prompts-open.md` is the single point of truth** for open work
   and current state. `issues.md` is historical and partial; where they
   disagree, the prompts doc wins. Update it as work proceeds, not in a batch

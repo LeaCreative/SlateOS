@@ -16,8 +16,8 @@ android {
         // It sat at 1 through roughly fifteen installs, which made the version
         // display useless for the one thing it exists for â€” telling two builds
         // apart. versionName tracks features; versionCode tracks the install.
-        versionCode = 38
-        versionName = "0.8.2-p37"
+        versionCode = 42
+        versionName = "0.8.2-p41"
     }
 
     buildTypes {
@@ -57,6 +57,7 @@ dependencies {
     implementation("androidx.javascriptengine:javascriptengine:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     testImplementation(kotlin("test"))
+    testImplementation("org.json:json:20240303")
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")

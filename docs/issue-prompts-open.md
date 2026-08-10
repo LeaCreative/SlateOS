@@ -1,16 +1,64 @@
 # EvoTime — open work register
 
-> **This file is the single point of truth.** `issues.md` is older and now
-> partial; where they disagree, this file wins. Updated 6 August 2026.
+> **This file is the single point of truth for open work.** `issues.md` is older
+> and now partial; where they disagree, this file wins. Capability inventory
+> (what works today): [`capabilities.md`](capabilities.md). Updated
+> **10 August 2026**.
 
 ---
 
-## Current state (9 Aug 2026)
+## Current state (10 Aug 2026)
 
-### N-59 / N-60 — steps and raise-to-wake, both dead, both accelerometer
+### Companion installed + dual ZIP Open-with
 
-**Firmware to flash: `5543D0BF9804` (stamp 13:47).** Supersedes `1560AB3C3466`.
-22/22 host tests (`-E ble_link`). RAM slack 200 B.
+Pixel has **`0.8.2-p38` / versionCode 39** (`slate.app.debug`). Opening a `.zip`
+with Slate classifies via `ZipIntake`: JS sub-app → sideload; Nordic/Slate DFU
+(`manifest.application` or `slate-mcuboot-image.bin`) → SDP OTA with URI
+pre-selected. Sealed InfiniTime install remains the dedicated main-screen flow.
+
+### N-59 / N-60 — CONFIRMED on hardware (operator, after `5543D0BF9804`)
+
+**Raise-to-wake works** (display wakes on wrist raise). **Steps work**, non-zero
+on the face — so the pedometer enable path and the axis swap both landed.
+Accuracy after ACC_CONF `0x28`: **operator reports acceptable** (10 Aug).
+
+**False-wake:** operator confirmed no wake on typing / arms-down walk — nothing
+further needed.
+
+**Firmware ready to flash:** `build/dfu/slate-dfu.zip` — SHA-256 prefix
+`23BF8499CA72` (face stamp ~`06:13`). Includes Face-only settings routing,
+remote RIGHT → `local_back`, no false “Not connected” while GATT is up, and
+**rounded settings buttons** with On/Off / timeout / Never on the right.
+
+### Swipe settings ↔ launcher (firmware routing bug)
+
+On settings, swipe right→left opened the launcher (phone) instead of the face;
+on the launcher, swipe left→right opened settings instead of closing to the face.
+
+Cause: `main.cpp` always stole RIGHT for `show_settings()`, even when a remote
+screen owned the panel — so LauncherApp never saw its close gesture. LEFT from
+settings fell through to the phone.
+
+**Partial fix (in `9421B271FDC3`):** Settings+LEFT → face. Residual: RIGHT still
+opened settings from the local **Disconnected** (“Not connected”) screen, and
+that screen appeared while the phone was already GATT-connected but SDP not
+Ready yet.
+
+**Follow-up (10 Aug):** RIGHT → settings **only from Face**; remote RIGHT does
+`local_back` + notify phone; launcher swipe while `link_up` / Connected no longer
+shows “Not connected”.
+
+**Follow-up 2 (10 Aug, same day):** that Connected forward path was still a
+silent no-op — `InputRouter::emit` dropped every message unless the session was
+already Ready/Active/Idle, so GATT-up / HELLO-in-flight swipes never left the
+watch. Connected is now allowed through `emit`. Disconnected (“Not connected”)
+also swallowed both horizontal swipes (RIGHT was the anti-settings `continue`,
+LEFT re-entered not-connected); either direction now returns to the face.
+
+### N-59 / N-60 — steps and raise-to-wake, both dead, both accelerometer (history)
+
+**Firmware that carried the fix: `5543D0BF9804` (stamp 13:47).** Superseded
+`1560AB3C3466`. 22/22 host tests (`-E ble_link`). RAM slack 200 B.
 **Companion build 38 (`0.8.2-p37`) installed.**
 
 Reported after flashing `1560AB3C3466`: step counter 0, wrist raise does not
@@ -76,9 +124,8 @@ asserts it starts clear.
 - **Raise.** With the screen asleep, raise your wrist to read the watch. It
   should wake, and should NOT wake from typing or walking arms-down.
 - **Disproof for steps:** still 0 means the bit lands but the feature engine is
-  not running — next look would be ACC_CONF (Slate writes 0xA8, InfiniTime's
-  config computes 0x28: `perf_mode` differs) and whether advanced power save
-  should be left on, neither of which is proven to matter yet.
+  not running — next look would be ACC_CONF (now matched to InfiniTime `0x28`)
+  and whether advanced power save should be left on.
 
 ### Companion watch-settings screen — layout fixed
 
@@ -266,18 +313,18 @@ phone copy.
   two ends are both applying each other — the tie-break is the thing to look at,
   and `LinkLog` prints every send and receive with its revision.
 
-### I-19 — RAM margin is down to 176 bytes (owner asked this be recorded)
+### I-19 — RAM margin (partial reclaim)
 
-Verbatim, as stated to the owner on 8 Aug:
+Was 176–200 B link margin (`__StackLimit` − `__heap_end__`). `ScreenBlock` was
+a fixed **3072 B** with ~2.9 KiB empty `reserve` around a ~152 B `State`.
 
-> RAM margin is now 176 bytes, down from 432. This session's firmware work cost
-> ~256 B. The failure mode is a link-time assert, not runtime corruption, but
-> it's thin — and CLAUDE.md's stated ≥6 KB slack hasn't been met for some time
-> (RAM is at 93.5%). Reclaiming it needs a real look at ucHeap, g_interp,
-> g_renderer and g_core; that's its own task and I didn't want to start it
-> mid-flight.
+Reclaim: `kLocalScreenStateBytes` **3072 → 256** (`local_budgets.hpp`). Saves
+~2816 B static RAM. Post-reclaim link margin from `build/dfu/slate_firmware.map`
+(9 Aug DFU): **`__StackLimit` − `__heap_end__` = 3016 B**; RAM ~89.15% (was
+~93.5% / 176 B). `g_core` shrinks with the block (~3568 B in `.data`).
 
-Supporting numbers, measured from `build/dfu/slate_firmware.map`:
+Supporting numbers, measured from `build/dfu/slate_firmware.map` (pre-reclaim,
+8 Aug):
 
 | | bytes | section |
 |---|---|---|
@@ -288,7 +335,7 @@ Supporting numbers, measured from `build/dfu/slate_firmware.map`:
 | `g_link` | 4252 | .data |
 | `persist_nvmc::g_page_cache` | 4096 | .bss |
 | **total RAM** | **61264 / 65536 = 93.5%** | |
-| **`__StackLimit` − `__heap_end__`** | **176** | link margin |
+| **`__StackLimit` − `__heap_end__`** | **176** | link margin (pre-reclaim) |
 
 Notes for whoever picks this up:
 
@@ -852,13 +899,36 @@ in `shared_prefs/slate_repo.xml` — `slate.vibrate`, `slate.camera`,
 checkbox in the repository screen, not a defect, but with the main-menu buttons
 gone those apps are now unreachable until they are re-enabled there.
 
-### N-51 — a dropped sandbox reference bricks JS for the whole process — FIXED
+### N-51 — a dropped sandbox reference bricks JS for the whole process — FIXED (recurrence 10 Aug)
 
 The tail of N-48, and the deeper cause. After N-48 the companion no longer
 died, but Local Map then reported **"Did not start"** with
 `JS sandbox unavailable: Binding to already bound service` — thrown from the
 *first* call, meaning no sandbox reference was held and yet the service was
 bound.
+
+**Recurrence (post-OTA, 10 Aug):** same user-visible brick —
+`JS sandbox is bound but unreachable — Force-stop Slate and reopen it` — after
+an OTA reconnect while the FGS stayed alive. Root class unchanged: androidx
+permits one bind per process; losing the Java handle without `close()` shuts
+the static gate forever. Extra failure modes seen in the field:
+
+- Seed at service start failed and was only logged — every later launch stayed
+  bricked until force-stop.
+- `CompositorHost.stop()` closed isolates but not the shared sandbox, so a
+  sticky FGS restart left the gate shut with no handle.
+- Launcher swipe while GATT was up but HELLO not Ready pushed nothing
+  (`pushToWatch` drops) — looked like a dead gesture until disconnect/reconnect.
+
+**Mitigations shipped in companion 0.8.2-p40 / versionCode 41:**
+
+| | |
+|---|---|
+| Strong `sandboxInstance` + `forceReset()` / `releaseSharedSandbox()` always `close()` | `AndroidJsEngine.kt` |
+| `create()` retries once after forceReset on brick-shaped errors | `AndroidJsEngine.kt` |
+| Seed failure and launcher start both reset+retry | `CompositorHost.kt` |
+| `stop()` calls `forceReset()` after `scripts.close()` | `CompositorHost.kt` |
+| Defer launcher open until session Ready; flush on Ready edge | `CompositorHost.kt` |
 
 Read out of the androidx 1.0.0 sources rather than guessed at, after two
 theories had already been spent on this area:
@@ -893,6 +963,9 @@ better. The process used to die and take the poisoned static with it; once it
 stopped dying, the bricked state persisted until a force-stop. That is why the
 error message now names the recovery, and why installing build 33 force-stopped
 the app first.
+
+**If still bricked after install:** force-stop once to clear the static gate,
+then reopen — subsequent OTA/reconnects should self-heal via forceReset.
 
 ### N-48 — the companion crash on opening a sub-app (7 Aug) — FIXED
 
@@ -1331,7 +1404,7 @@ replying entirely until reconnect (see below).
 | `NotificationsApp` | Kotlin | NORMAL, raised at **INTERRUPT** | Raised by an incoming notification (`maybeInterrupt`), so it can pre-empt any screen |
 | `TestApp` | Kotlin | NORMAL | The P-1 reference app |
 | `LauncherApp` | Kotlin | NORMAL | The app drawer (6 Aug). Reserved swipe-left opens it; swipe-right closes it. Lists only what `InstalledStore` holds, which is JS-only by construction |
-| `timer`, `camera`, `navigation`, `vibrate` | **JS sub-apps** | NORMAL | In `companion/examples/`. The Timer is *not* the clock app — separate things. `camera` and `navigation` are UI shells with no function yet; `vibrate` (Buzz Phone) is the phone-side binding demo |
+| `timer`, `camera`, `navigation`, `vibrate`, `location`, `map` | **JS sub-apps** | NORMAL | Bundled in `companion/examples/` and seeded. Timer ≠ clock. Nav/camera/location/map are **functional** thin controllers (host adapters). `vibrate` demos phone haptic. Sideload-only: `image`, `image-vector` |
 
 **How AMBIENT differs** (`Compositor.kt`):
 - A new AMBIENT focus **replaces** the existing ambient base rather than

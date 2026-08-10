@@ -6,10 +6,12 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import slate.app.apps.ClockApp
 import slate.app.apps.LauncherApp
@@ -31,7 +33,9 @@ import slate.app.notif.NotifChange
 import slate.app.notif.NotifPrefs
 import slate.app.notif.NotifStore
 import slate.app.notif.toJsonArray
+import slate.app.script.AndroidJsEngine
 import slate.app.script.ScriptRuntimeHost
+import slate.script.ScriptConsole
 import slate.compositor.Compositor
 import slate.compositor.FocusReason
 import slate.compositor.StackOp
@@ -41,7 +45,6 @@ import slate.host.HostOutbound
 import slate.host.PriorityClass
 import slate.input.InputEventDecoder
 import slate.notif.SystemNotifCodec
-import slate.script.ScriptConsole
 import slate.session.ConfirmStatus
 import slate.session.SessionClient
 import slate.generated.SdpWire
@@ -126,7 +129,9 @@ class CompositorHost(
             )
         },
         onScreenPop = {
-            if (session.state == SessionClient.State.Ready) {
+            // Phone SessionClient stays Ready after HELLO (no Active state).
+            // Still guard only on a live session — a pop after link-down is noise.
+            if (session.state != SessionClient.State.Disconnected) {
                 gatt.sendMessage(SdpFrame.CHAN_CONTROL, session.encodeScreenPop())
             }
         },
@@ -178,6 +183,13 @@ class CompositorHost(
     /** Last display list pushed, for duplicate coalescing. */
     private var lastPushDigest: Int = 0
     private var lastPushAtMs: Long = 0L
+    /**
+     * Swipe-to-launcher while GATT is up but HELLO has not finished (Connected).
+     * [pushToWatch] drops until Ready, so without this the gesture is a silent
+     * no-op until the user disconnects — classic post-OTA symptom.
+     */
+    @Volatile
+    private var pendingLauncherOpen = false
 
     /**
      * Write the pre-display CONTROL and then the display list.
@@ -223,6 +235,27 @@ class CompositorHost(
             } catch (t: Throwable) {
                 ScriptConsole.log("slate.runtime", "error", "JS sandbox: ${t.message}")
                 LinkLog.e("JS sandbox failed", t)
+                val brick = t.message.orEmpty().contains("sandbox", ignoreCase = true) ||
+                    t.message.orEmpty().contains("already bound", ignoreCase = true)
+                if (brick) {
+                    LinkLog.w("JS sandbox seed brick — forceReset + retry")
+                    runCatching { scripts.resetRuntime() }
+                    try {
+                        scripts.ensureSeeded()
+                        scripts.ensureTimerRegistered()
+                        LinkLog.i(
+                            "JS packages seeded after reset; " +
+                                "render IPC≈${scripts.lastRenderIpcMs}ms",
+                        )
+                    } catch (t2: Throwable) {
+                        ScriptConsole.log(
+                            "slate.runtime",
+                            "error",
+                            "JS sandbox still down: ${t2.message}",
+                        )
+                        LinkLog.e("JS sandbox failed after reset", t2)
+                    }
+                }
             }
         }
         // A settings edit made anywhere in the process — the phone's settings
@@ -267,6 +300,7 @@ class CompositorHost(
                     _confirmUi.value = ConfirmUi.Idle
                     SharedLink.publishConfirmUi(ConfirmUi.Idle)
                     if (wasConnected) {
+                        pendingLauncherOpen = false
                         session.onLinkDown()
                         onLinkLost()
                     }
@@ -290,6 +324,11 @@ class CompositorHost(
         stopMap()
         serviceLifecycle.destroy()
         scripts.close()
+        // Close the shared V8 host too — otherwise a sticky restart can leave
+        // androidx's bind gate shut with no handle (N-51 after OTA / FGS churn).
+        runBlocking(Dispatchers.IO) {
+            AndroidJsEngine.forceReset()
+        }
         _confirmUi.value = ConfirmUi.Idle
         SharedLink.publishConfirmUi(ConfirmUi.Idle)
     }
@@ -367,6 +406,11 @@ class CompositorHost(
         }
         if (!wasReady && session.state == SessionClient.State.Ready) {
             openSettingsExchange()
+            if (pendingLauncherOpen) {
+                pendingLauncherOpen = false
+                LinkLog.i("openLauncher: flushing deferred open (session now Ready)")
+                scope.launch { openLauncher() }
+            }
             val addr = SharedLink.associatedAddress
                 ?: gatt.metrics.value.deviceAddress.takeIf { it.isNotBlank() }
             if (addr != null) {
@@ -629,13 +673,38 @@ class CompositorHost(
 
     /** Swipe-left, or the phone-side button. */
     suspend fun openLauncher() {
+        // metrics and the compositor flag can briefly disagree after a reconnect
+        // race; prefer the live GATT reading so a Ready session is not denied.
+        if (!compositor.linkConnected && gatt.metrics.value.connected) {
+            LinkLog.w("openLauncher: repairing linkConnected from GATT metrics")
+            compositor.linkConnected = true
+        }
+        if (!compositor.linkConnected) {
+            LinkLog.w(
+                "openLauncher: linkConnected=false " +
+                    "(session=${session.state}) — watch may have shown Not connected",
+            )
+        }
+        // Display lists only go out in Ready. Remember the gesture so the
+        // Ready edge can open the drawer instead of requiring a reconnect.
+        if (session.state != SessionClient.State.Ready) {
+            pendingLauncherOpen = true
+            LinkLog.i(
+                "openLauncher: deferred until Ready " +
+                    "(session=${session.state}, linkConnected=${compositor.linkConnected})",
+            )
+            return
+        }
+        pendingLauncherOpen = false
         val deny = compositor.requestFocus(
             LauncherApp.APP_ID,
             PriorityClass.NORMAL,
             FocusReason.UserNavigation,
             StackOp.Push,
         )
-        if (deny != null) LinkLog.i("openLauncher: DENIED — $deny")
+        if (deny != null) {
+            LinkLog.i("openLauncher: DENIED — $deny (session=${session.state})")
+        }
     }
 
     /**
@@ -654,10 +723,28 @@ class CompositorHost(
         try {
             scripts.ensureRegistered(appId)
         } catch (t: Throwable) {
-            LinkLog.e("launcher: $appId failed to start", t)
-            ScriptConsole.log(appId, "error", "failed to start: ${t.message}")
-            showLaunchFailure(appId, t)
-            return
+            val msg = t.message.orEmpty()
+            val sandboxBrick =
+                msg.contains("sandbox", ignoreCase = true) ||
+                    msg.contains("already bound", ignoreCase = true)
+            if (sandboxBrick) {
+                LinkLog.w("launcher: $appId sandbox fault — reset + retry (${t.message})")
+                scripts.evict(appId)
+                runCatching { scripts.resetRuntime() }
+                try {
+                    scripts.ensureRegistered(appId)
+                } catch (t2: Throwable) {
+                    LinkLog.e("launcher: $appId failed to start after sandbox reset", t2)
+                    ScriptConsole.log(appId, "error", "failed to start: ${t2.message}")
+                    showLaunchFailure(appId, t2)
+                    return
+                }
+            } else {
+                LinkLog.e("launcher: $appId failed to start", t)
+                ScriptConsole.log(appId, "error", "failed to start: ${t.message}")
+                showLaunchFailure(appId, t)
+                return
+            }
         }
         val deny = compositor.requestFocus(
             appId,
@@ -1109,6 +1196,15 @@ class CompositorHost(
             while (isActive) {
                 if (!SharedLink.benchmarkPaused) {
                     compositor.tick()
+                    // Safety net if the Ready-edge flush was missed (e.g. HELLO
+                    // while a prior Ready state was already latched).
+                    if (pendingLauncherOpen &&
+                        session.state == SessionClient.State.Ready
+                    ) {
+                        pendingLauncherOpen = false
+                        LinkLog.i("openLauncher: ticker flush of deferred open")
+                        openLauncher()
+                    }
                 }
                 delay(TICK_MS)
             }

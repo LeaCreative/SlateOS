@@ -229,8 +229,13 @@ bool Driver::enable_step_counter() {
 }
 
 bool Driver::enable_any_motion(std::uint8_t sens) {
-  // Accel low-power ~25 Hz, ±2g — enough for any-motion without continuous MCU wake.
-  if (!wr(kRegAccConf, 0xA8u)) {  // ODR ~25Hz, avg
+  // Match InfiniTime's Bma421::Init accel_conf exactly:
+  //   odr=100 Hz, bandwidth=NORMAL_AVG4, perf_mode=CIC_AVG → ACC_CONF 0x28.
+  // Slate previously wrote 0xA8 (same ODR/BW, but CONTINUOUS perf_mode). The
+  // feature ASIC's pedometer is tuned for the CIC-averaged stream; continuous
+  // mode was a silent divergence and a plausible cause of soft step counts
+  // once the enable bit finally reached the sensor (N-59).
+  if (!wr(kRegAccConf, 0x28u)) {
     return false;
   }
   if (!wr(kRegAccRange, 0x00u)) {  // ±2g
