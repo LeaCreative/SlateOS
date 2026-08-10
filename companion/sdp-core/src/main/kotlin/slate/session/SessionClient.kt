@@ -87,6 +87,14 @@ class SessionClient(
             SdpWire.ControlOp.HELLO_OFFER -> handleHelloOffer(msg)
             SdpWire.ControlOp.CREDIT -> {
                 parseCredit(msg)
+                // Watch sends CREDIT only after HELLO_ACCEPT lands and it enters
+                // Ready (session.cpp). Phone used to flip Ready on HELLO_OFFER,
+                // then enqueue ACCEPT — if that write returned rc=201 and was
+                // dropped, the phone pushed DISPLAY while the watch stayed
+                // Connected and discarded every list (++display_drops_).
+                if (state == State.Connected && helloOffer != null) {
+                    state = State.Ready
+                }
                 InboundResult()
             }
             SdpWire.ControlOp.CONFIRM_STATUS -> {
@@ -151,9 +159,10 @@ class SessionClient(
     private fun handleHelloOffer(msg: ByteArray): InboundResult {
         val offer = parseHelloOffer(msg) ?: return InboundResult()
         helloOffer = offer
+        // Embedded free_dl is an advertisement only; stay Connected until the
+        // post-accept CREDIT proves the watch processed HELLO_ACCEPT.
         freeCreditBytes = offer.freeDlBytes
         selectedProfileId = pickProfileId(offer.profiles)
-        state = State.Ready
         return InboundResult(outbound = listOf(encodeHelloAccept(selectedProfileId)))
     }
 

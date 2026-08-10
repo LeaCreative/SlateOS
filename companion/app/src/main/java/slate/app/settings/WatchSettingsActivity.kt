@@ -126,6 +126,15 @@ fun WatchSettingsScreen(store: WatchSettingsStore) {
             )
         }
 
+        SettingCard {
+            ToggleRow(
+                title = "Face diagnostics",
+                subtitle = "Show the bring-up counter lines on the watch face.",
+                checked = settings.showDiag,
+                onCheckedChange = { on -> store.edit { it.copy(showDiag = on) } },
+            )
+        }
+
         Text(
             text = syncStatusLine(pending, settings.revision),
             style = MaterialTheme.typography.bodySmall,

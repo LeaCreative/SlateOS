@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.camera.FrameGovernorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:03.709Z" hostname="DAN01" time="0.101">
-  <properties/>
-  <testcase name="fpsHintFor60x60()" classname="slate.camera.FrameGovernorTest" time="0.098"/>
-  <testcase name="dropsWhenOverBudget()" classname="slate.camera.FrameGovernorTest" time="0.003"/>
-  <testcase name="dropsWhenInFlightFull()" classname="slate.camera.FrameGovernorTest" time="0.0"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

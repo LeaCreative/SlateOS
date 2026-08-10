@@ -10,7 +10,7 @@ import slate.generated.SdpWire
  * their own point of view, which is what stops them overwriting each other
  * forever when the user has edited on both sides.
  *
- * Wire: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds][showSteps][reserved]
+ * Wire: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds][showSteps][showDiag]
  */
 object WatchSettings {
     const val OP: Int = SdpWire.ControlOp.SETTINGS_SYNC
@@ -34,6 +34,8 @@ object WatchSettings {
         /** 0 means "never sleep on a timer". */
         val wakeSeconds: Int = 20,
         val showSteps: Boolean = true,
+        /** Bring-up diagnostic lines on the watch face. */
+        val showDiag: Boolean = true,
     )
 
     fun encode(p: Payload): ByteArray {
@@ -47,7 +49,7 @@ object WatchSettings {
         out[6] = if (p.tiltEnabled) 1 else 0
         out[7] = (p.wakeSeconds and 0xFF).toByte()
         out[8] = if (p.showSteps) 1 else 0
-        out[9] = 0 // reserved; a later setting goes here without a version bump
+        out[9] = if (p.showDiag) 1 else 0
         return out
     }
 
@@ -67,6 +69,7 @@ object WatchSettings {
             tiltEnabled = (msg[6].toInt() and 0xFF) != 0,
             wakeSeconds = msg[7].toInt() and 0xFF,
             showSteps = (msg[8].toInt() and 0xFF) != 0,
+            showDiag = (msg[9].toInt() and 0xFF) != 0,
         )
     }
 
@@ -74,7 +77,8 @@ object WatchSettings {
     fun differs(a: Payload, b: Payload): Boolean =
         a.tiltEnabled != b.tiltEnabled ||
             a.wakeSeconds != b.wakeSeconds ||
-            a.showSteps != b.showSteps
+            a.showSteps != b.showSteps ||
+            a.showDiag != b.showDiag
 
     /**
      * Should [incoming] replace [current]?

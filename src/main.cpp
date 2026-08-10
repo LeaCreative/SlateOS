@@ -603,91 +603,96 @@ static void app_loop() {
       // single tap would make a pocket into a wake source. Consuming the event
       // matters too: waking on a tap that then also lands on whatever button
       // was under it is how a watch dials a number in your pocket.
+      //
+      // Do NOT `continue` here. Sleeve brushes while asleep used to skip the
+      // rest of the loop — including poll_raise() — so the raise-to-wake
+      // detector starved exactly when the wrist was moving against fabric
+      // (the gesture window). Discard non-wake sleep events and fall through.
       if (g_core.sleeping()) {
         const bool wakes = ev.type == input::EventType::Button ||
                            ev.type == input::EventType::MultiTap;
         if (wakes) {
-          g_core.wake_display();
-        }
-        continue;
-      }
-      // Awake: any input defers the timeout, including gestures the local UI
-      // ignores and ones handled by a phone-pushed screen. Reading the watch is
-      // activity whoever owns the panel.
-      g_core.note_activity();
-      // Swipe routing (local vs phone):
-      //   Face + left-to-right  → watch settings (local) — Face only
-      //   Settings + right-to-left → face (local) — NOT the launcher
-      //   Disconnected + either horizontal swipe → face (local)
-      //   Face + right-to-left → launcher (phone), or "not connected" if no BLE
-      //   Remote screen + left-to-right → dismiss (phone + local_back) — must
-      //     NOT open settings. That was the residual launcher→settings bug:
-      //     the local Disconnected ("Not connected") screen still owned the
-      //     panel, so RIGHT was treated like Face→settings.
-      if (ev.type == input::EventType::Swipe &&
-          ev.swipe == input::SwipeDir::Right) {
-        if (!g_local_owns_screen && g_session.remote_depth() > 0u) {
-          // Launcher / nav / etc. — fall through to g_input (local_back there).
-        } else if (g_local_owns_screen &&
-                   g_core.local_state().screen == slate::local::Screen::Face) {
-          g_core.show_settings();
-          continue;
-        } else if (g_local_owns_screen &&
-                   g_core.local_state().screen ==
-                       slate::local::Screen::Disconnected) {
-          g_core.show_face();
-          continue;
-        } else {
-          // Settings, Notifs, … — do not open settings.
-          continue;
-        }
-      }
-      if (ev.type == input::EventType::Swipe &&
-          ev.swipe == input::SwipeDir::Left && g_local_owns_screen &&
-          (g_core.local_state().screen == slate::local::Screen::Settings ||
-           g_core.local_state().screen ==
-               slate::local::Screen::Disconnected)) {
-        g_core.show_face();
-        continue;
-      }
-      const bool launcher_swipe =
-          ev.type == input::EventType::Swipe &&
-          ev.swipe == input::SwipeDir::Left;
-      // Ready is not the only good state: Active means a remote screen is up
-      // and Idle means heartbeats went stale on a session that still exists.
-      // Testing for Ready alone would claim "not connected" while the phone
-      // was demonstrably driving the screen.
-      const slate::session::State sess = g_session.state();
-      const bool session_negotiated =
-          sess == slate::session::State::Ready ||
-          sess == slate::session::State::Active ||
-          sess == slate::session::State::Idle;
-      // GATT can be up while HELLO is still in flight (Connected). The phone
-      // UI already says "connected"; claiming "Not connected" on the watch is
-      // a lie — forward the gesture and let the host open the launcher once
-      // Ready, or no-op harmlessly.
-      if (launcher_swipe && !session_negotiated) {
-        if (g_core.local_state().link_up != 0u ||
-            sess == slate::session::State::Connected) {
-          g_input.on_event(ev);
-        } else {
-          g_core.show_not_connected();
-        }
-        continue;
-      } else if (g_local_owns_screen || g_session.remote_depth() == 0u) {
-        if (ev.type == input::EventType::Button) {
-          g_core.on_button_press();
-        } else if (g_local_owns_screen && ev.type == input::EventType::Tap &&
-                   local_tap_handled(ev)) {
-          // Handled on the watch. The settings screen is drawn locally and its
-          // rows must work with no phone at all, so the tap is resolved here
-          // rather than encoded and sent off to a companion that may not be
-          // there — and, if it is, has never heard of these element ids.
-        } else {
-          g_input.on_event(ev);
+          g_core.wake_display(ev.type == input::EventType::Button ? 2u : 3u);
         }
       } else {
-        g_input.on_event(ev);
+        // Awake: any input defers the timeout, including gestures the local UI
+        // ignores and ones handled by a phone-pushed screen. Reading the watch is
+        // activity whoever owns the panel.
+        g_core.note_activity();
+        // Swipe routing (local vs phone):
+        //   Face + left-to-right  → watch settings (local) — Face only
+        //   Settings + right-to-left → face (local) — NOT the launcher
+        //   Disconnected + either horizontal swipe → face (local)
+        //   Face + right-to-left → launcher (phone), or "not connected" if no BLE
+        //   Remote screen + left-to-right → dismiss (phone + local_back) — must
+        //     NOT open settings. That was the residual launcher→settings bug:
+        //     the local Disconnected ("Not connected") screen still owned the
+        //     panel, so RIGHT was treated like Face→settings.
+        if (ev.type == input::EventType::Swipe &&
+            ev.swipe == input::SwipeDir::Right) {
+          if (!g_local_owns_screen && g_session.remote_depth() > 0u) {
+            // Launcher / nav / etc. — fall through to g_input (local_back there).
+          } else if (g_local_owns_screen &&
+                     g_core.local_state().screen == slate::local::Screen::Face) {
+            g_core.show_settings();
+            continue;
+          } else if (g_local_owns_screen &&
+                     g_core.local_state().screen ==
+                         slate::local::Screen::Disconnected) {
+            g_core.show_face();
+            continue;
+          } else {
+            // Settings, Notifs, … — do not open settings.
+            continue;
+          }
+        }
+        if (ev.type == input::EventType::Swipe &&
+            ev.swipe == input::SwipeDir::Left && g_local_owns_screen &&
+            (g_core.local_state().screen == slate::local::Screen::Settings ||
+             g_core.local_state().screen ==
+                 slate::local::Screen::Disconnected)) {
+          g_core.show_face();
+          continue;
+        }
+        const bool launcher_swipe =
+            ev.type == input::EventType::Swipe &&
+            ev.swipe == input::SwipeDir::Left;
+        // Ready is not the only good state: Active means a remote screen is up
+        // and Idle means heartbeats went stale on a session that still exists.
+        // Testing for Ready alone would claim "not connected" while the phone
+        // was demonstrably driving the screen.
+        const slate::session::State sess = g_session.state();
+        const bool session_negotiated =
+            sess == slate::session::State::Ready ||
+            sess == slate::session::State::Active ||
+            sess == slate::session::State::Idle;
+        // GATT can be up while HELLO is still in flight (Connected). The phone
+        // UI already says "connected"; claiming "Not connected" on the watch is
+        // a lie — forward the gesture and let the host open the launcher once
+        // Ready, or no-op harmlessly.
+        if (launcher_swipe && !session_negotiated) {
+          if (g_core.local_state().link_up != 0u ||
+              sess == slate::session::State::Connected) {
+            g_input.on_event(ev);
+          } else {
+            g_core.show_not_connected();
+          }
+          continue;
+        } else if (g_local_owns_screen || g_session.remote_depth() == 0u) {
+          if (ev.type == input::EventType::Button) {
+            g_core.on_button_press();
+          } else if (g_local_owns_screen && ev.type == input::EventType::Tap &&
+                     local_tap_handled(ev)) {
+            // Handled on the watch. The settings screen is drawn locally and its
+            // rows must work with no phone at all, so the tap is resolved here
+            // rather than encoded and sent off to a companion that may not be
+            // there — and, if it is, has never heard of these element ids.
+          } else {
+            g_input.on_event(ev);
+          }
+        } else {
+          g_input.on_event(ev);
+        }
       }
     }
     const std::uint32_t t = now_ms();

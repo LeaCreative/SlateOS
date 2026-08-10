@@ -114,11 +114,10 @@ void fmt_u32(char* o, std::size_t cap, std::uint32_t v) {
 #endif
 
 #if SLATE_DIAG_OVERLAY
-// "<reset reason>/<uptime s>/<paints>/<button>/<worst app stall ms>/<ble
-// state>.<ble rc>/<recovered ticks>", decimal
-// because font 0 has no A-F glyphs (codepoints 45..58 only). Reason is the raw
-// RESETREAS bitmask: 0 power-on or brownout, 1 pin, 2 watchdog, 4 soft,
-// 8 lockup, 65536 off-wake, 1048576 VBUS; several causes sum.
+// Line 1 — identity only. Dropped (stable since N-17 / N-36, ate width):
+// reset reason, paints, stall_ms, tick_catchup, stall_events, phase/ms,
+// millivolts, parse/render. Battery % is already on the face; stalls and BLE
+// bring-up no longer move. Format: "<uptime s>/<chip>.<status>.<step_en>"
 void fmt_diag(char* o, std::size_t cap, const local::State& st) {
   char part[12];
   std::size_t i = 0u;
@@ -127,36 +126,41 @@ void fmt_diag(char* o, std::size_t cap, const local::State& st) {
       o[i++] = *p;
     }
   };
-  fmt_u32(part, sizeof(part), st.diag_reset_reason);
-  append(part);
-  append("/");
   fmt_u32(part, sizeof(part), st.diag_uptime_s);
   append(part);
   append("/");
-  fmt_u32(part, sizeof(part), st.diag_paints);
+  fmt_u32(part, sizeof(part), st.diag_bma_chip);
   append(part);
-  append("/");
-  // Dropped: raw button level and the BLE bring-up stage/rc. Both were
-  // bring-up instruments — the button reads 0 except while held, and the BLE
-  // pair has read 7.0 on every build since N-17. Freed room for the SDP
-  // counters on line 3, which earn their space.
-  fmt_u32(part, sizeof(part), st.diag_stall_ms);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_bma_status);
   append(part);
-  append("/");
-  fmt_u32(part, sizeof(part), st.diag_tick_catchup);
-  append(part);
-  append("/");
-  // Stall episodes. Read against uptime: flat means a one-off at connect,
-  // climbing means it recurs (N-36).
-  fmt_u32(part, sizeof(part), st.diag_stall_events);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_bma_step_en);
   append(part);
   o[i] = '\0';
 }
 
-// Second bring-up line:
-// "<worst phase>.<its ms>/<adc raw>/<battery mV>/<parse ms>.<render ms>".
-// Phase ids in local_state.hpp; 6 (the notify wait) running long means the app
-// task was starved rather than slow.
+void fmt_i32(char* o, std::size_t cap, std::int32_t v) {
+  if (cap == 0u) {
+    return;
+  }
+  if (v < 0) {
+    if (cap < 2u) {
+      o[0] = '\0';
+      return;
+    }
+    o[0] = '-';
+    fmt_u32(o + 1, cap - 1u, static_cast<std::uint32_t>(-v));
+  } else {
+    fmt_u32(o, cap, static_cast<std::uint32_t>(v));
+  }
+}
+
+// Line 2 — raise-to-wake only (replaces the old phase/mv/BMA and SDP lines).
+// Accel shown as counts/16 so ±1g (~1024) fits in 3 digits with sign.
+// Format: "<sleeps>.<samples>/<rej>.<fires>.<wake>/<x16>/<y16>/<z16>"
+// Reject: 0 fire, 1 filling, 2 |x|, 3 y-var, 4 face-down, 5 y-mean, 6 roll.
+// Wake: 0 none, 1 raise, 2 button, 3 double-tap, 4 charge, 5 alert.
 void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
   char part[12];
   std::size_t i = 0u;
@@ -165,96 +169,28 @@ void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
       o[i++] = *p;
     }
   };
-  fmt_u32(part, sizeof(part), st.diag_phase);
+  fmt_u32(part, sizeof(part), st.diag_sleep_enters);
   append(part);
   append(".");
-  fmt_u32(part, sizeof(part), st.diag_phase_ms);
+  fmt_u32(part, sizeof(part), st.diag_raise_samples);
   append(part);
   append("/");
-  // ADC raw dropped: line 2 outgrew the 240 px panel once the dl/touch/face
-  // counters were added. Millivolts is the derived value that actually gets
-  // checked against a multimeter; the raw count can come back if needed.
-  fmt_u32(part, sizeof(part), st.diag_mv);
+  fmt_u32(part, sizeof(part), st.diag_raise_reject);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_raise_fires);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_wake_src);
   append(part);
   append("/");
-  fmt_u32(part, sizeof(part), st.diag_parse_ms);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_render_ms);
-  append(part);
-  // BMA identity and feature-config result, appended here rather than to line 3
-  // because line 3 is already the longest and has overrun the 240 px panel once
-  // before. Format: /<chip>.<internal status>
-  //   chip   0 = undetected, 1 = BMA421, 2 = BMA425
-  //   status the sensor's INTERNAL_STATUS (0x2A) after the 6 KB config upload.
-  //          1 = feature ASIC booted, so the pedometer is live. 255 = no upload
-  //          attempted. 254 = the status read itself failed.
-  // This exists because "steps read 0" cannot otherwise be told apart from
-  // "you have not walked", and that ambiguity has now cost two flashes.
-  append("/");
-  fmt_u32(part, sizeof(part), st.diag_bma_chip);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_bma_status);
-  append(part);
-  // Third field: the pedometer enable bit, written AND read back verified.
-  // Separate from the status because they fail independently — the config
-  // stream can load perfectly while the feature write lands at the wrong ASIC
-  // address and the pedometer stays off.
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_bma_step_en);
-  append(part);
-  o[i] = '\0';
-}
-
-// Third line — the SDP path end to end, so a lost display list can be placed
-// exactly:
-//   "<frame>.<inbox>/<applied>.<rejected>.<dropped>.<state>/
-//    <irq>.<readfail>.<touch>.<hit>"
-//
-// The twi::Status field that lived at the end was removed once N-31 closed:
-// readfail sits at 0 and the line needs the width. cst816s::last_twi_status()
-// still exists if a future failure needs it back.
-//
-// Read left to right it follows the message: frame reassembly, then the app
-// inbox, then the session, then the interpreter. The first non-zero drop
-// counter is where it died. Split out of line 2, which ran off the panel.
-void fmt_diag3(char* o, std::size_t cap, const local::State& st) {
-  char part[12];
-  std::size_t i = 0u;
-  const auto append = [&](const char* s2) {
-    for (const char* p2 = s2; *p2 != '\0' && i + 1u < cap; ++p2) {
-      o[i++] = *p2;
-    }
-  };
-  fmt_u32(part, sizeof(part), st.diag_frame_drop);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_inbox_drop);
+  fmt_i32(part, sizeof(part), st.diag_ax / 16);
   append(part);
   append("/");
-  fmt_u32(part, sizeof(part), st.diag_dl_ok);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_dl_rej);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_dl_drop);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_sess_state);
+  fmt_i32(part, sizeof(part), st.diag_ay / 16);
   append(part);
   append("/");
-  fmt_u32(part, sizeof(part), st.diag_touch_irq);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_touch_readfail);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_touch);
-  append(part);
-  append(".");
-  fmt_u32(part, sizeof(part), st.diag_touch_hit);
+  fmt_i32(part, sizeof(part), st.diag_az / 16);
   append(part);
   o[i] = '\0';
 }
@@ -314,23 +250,19 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   }
 
 #if SLATE_DIAG_OVERLAY
-  // Scale 2 and left-aligned: four numbers can exceed 240 px at scale 3, and a
-  // centred run that wide would start at a negative x and be rejected.
-  char diag[40];
-  fmt_diag(diag, sizeof(diag), st);
-  w.text_big(4, 16, sdp::align::LEFT, 2u, 1u, diag);
-  // Band 28..37 — still clear of the clock at y=56.
-  fmt_diag2(diag, sizeof(diag), st);
-  w.text_big(4, 28, sdp::align::LEFT, 2u, 1u, diag);
-  // SDP path counters get their own band; combined with line 2 they overran
-  // the 240 px panel and the right-hand fields were simply invisible.
-  fmt_diag3(diag, sizeof(diag), st);
-  w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
-  // Band 40..49 — OTA only, and only once a transfer has been begun or
-  // refused, so the idle face keeps its cheaper repaint (I-13).
-  if (st.diag_ota_shown) {
-    fmt_diag_ota(diag, sizeof(diag), st);
-    w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
+  if (st.settings.face_show_diag) {
+    // Two short lines (identity + raise). Dropped the third SDP line — it
+    // overran 240 px and the counters are in the companion log.
+    char diag[40];
+    fmt_diag(diag, sizeof(diag), st);
+    w.text_big(4, 16, sdp::align::LEFT, 2u, 1u, diag);
+    fmt_diag2(diag, sizeof(diag), st);
+    w.text_big(4, 28, sdp::align::LEFT, 2u, 1u, diag);
+    // Band 40..49 — OTA only while a transfer is active (I-13).
+    if (st.diag_ota_shown) {
+      fmt_diag_ota(diag, sizeof(diag), st);
+      w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
+    }
   }
   // Which image is actually running. A sealed watch has no SWD, so without
   // this the only way to tell one flash from the next is to infer it from
@@ -506,12 +438,12 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
 }
 
 /**
- * Watch settings — three full-width rounded buttons (launcher language).
+ * Watch settings — full-width rounded buttons (launcher language).
  *
- * Font 1 throughout — these are words a person reads. Each row is a visible
- * button with the current value on the right so the state is glanceable.
+ * Four rows: raise-to-wake, timeout, show steps, face diagnostics. Pitch is
+ * tight so all four fit without scrolling.
  *
- * Element ids are [kSettingRaise..kSettingSteps] and are the contract with
+ * Element ids are [kSettingRaise..kSettingDiag] and are the contract with
  * Core::on_tap_elem — they are named constants in local_state.hpp precisely so
  * the two cannot drift.
  *
@@ -536,9 +468,9 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   constexpr std::uint16_t kFill = 0x1082u;
   constexpr std::uint8_t kRowX = 8u;
   constexpr std::uint8_t kRowW = 224u;
-  constexpr std::uint8_t kRowH = 60u;
-  constexpr std::uint8_t kPitch = 68u;
-  constexpr std::uint8_t kTop = 32u;
+  constexpr std::uint8_t kRowH = 48u;
+  constexpr std::uint8_t kPitch = 52u;
+  constexpr std::uint8_t kTop = 28u;
   constexpr std::uint8_t kRad = 8u;
 
   w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "SETTINGS", 1u);
@@ -559,9 +491,9 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
                  static_cast<std::uint8_t>(kRowW - 2u),
                  static_cast<std::uint8_t>(kRowH - 2u),
                  static_cast<std::uint8_t>(kRad - 1u), kFill);
-    w.text_big(16, static_cast<std::uint8_t>(y + 20u), sdp::align::LEFT, 2u, 0u,
+    w.text_big(16, static_cast<std::uint8_t>(y + 14u), sdp::align::LEFT, 2u, 0u,
                label, 1u);
-    w.text_big(224, static_cast<std::uint8_t>(y + 20u), sdp::align::RIGHT, 2u,
+    w.text_big(224, static_cast<std::uint8_t>(y + 14u), sdp::align::RIGHT, 2u,
                value_pal, value, 1u);
     w.b(sdp::op::END_ELEM);
   };
@@ -594,6 +526,10 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   row(local::kSettingSteps, 2u, "Show steps",
       st.settings.face_show_steps ? "On" : "Off",
       st.settings.face_show_steps ? 1u : 2u);
+
+  row(local::kSettingDiag, 3u, "Face diag",
+      st.settings.face_show_diag ? "On" : "Off",
+      st.settings.face_show_diag ? 1u : 2u);
 
   w.b(sdp::op::COMMIT);
   w.b(0x00u);
@@ -680,11 +616,9 @@ std::size_t build_diag_banner(std::uint8_t* out, std::size_t cap,
   w.p = out;
   w.cap = cap;
 
-  // Lines sit at y=16, 28 and 40, each 10 px tall at scale 2, so 16..49 covers
-  // them. The clock starts at 56; staying under that is what keeps this a band
-  // rather than a screen.
+  // Two lines at y=16 and 28 (raise campaign). Clock starts at 56.
   constexpr std::uint8_t kTop = 16u;
-  constexpr std::uint8_t kHeight = 36u;
+  constexpr std::uint8_t kHeight = 24u;
   constexpr std::uint16_t kDim = 0x8410u;
 
   w.fill(0, kTop, 240, kHeight, 0x0000u);
@@ -699,9 +633,8 @@ std::size_t build_diag_banner(std::uint8_t* out, std::size_t cap,
   w.text_big(4, 16, sdp::align::LEFT, 2u, 1u, diag);
   fmt_diag2(diag, sizeof(diag), st);
   w.text_big(4, 28, sdp::align::LEFT, 2u, 1u, diag);
-  fmt_diag3(diag, sizeof(diag), st);
-  w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
   if (st.diag_ota_shown) {
+    w.fill(0, 40, 240, 10, 0x0000u);
     fmt_diag_ota(diag, sizeof(diag), st);
     w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
   }

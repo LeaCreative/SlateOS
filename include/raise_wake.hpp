@@ -73,7 +73,17 @@ public:
    * samples against zeros, which reads as a huge roll and would fire on the
    * first movement after every wake.
    */
-  bool should_raise_wake() const;
+  bool should_raise_wake() const { return reject_code() == 0; }
+
+  /**
+   * Why [should_raise_wake] is false, or 0 when it would fire.
+   *
+   * 0 fire, 1 filling, 2 |x| (arm not level), 3 y variance, 4 face-down
+   * z variance, 5 y_mean too high (not looking), 6 roll short of −45°.
+   * Latched onto the face diag overlay so a sealed watch can say which
+   * threshold rejected the gesture.
+   */
+  std::uint8_t reject_code() const;
 
 private:
   std::int16_t at_x(std::size_t n) const { return x_[(idx_ + n) % kHistory]; }

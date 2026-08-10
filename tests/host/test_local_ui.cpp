@@ -189,6 +189,7 @@ static void test_settings_rows_are_tappable() {
   st.settings.tilt_enabled = 1u;
   st.settings.wake_seconds = 20u;
   st.settings.face_show_steps = 1u;
+  st.settings.face_show_diag = 1u;
   slate::ui::ViewModel vm{&st, nullptr, nullptr};
   std::uint8_t buf[512];
   const std::size_t n = slate::ui::build_screen(vm, buf, sizeof(buf));
@@ -197,12 +198,13 @@ static void test_settings_rows_are_tappable() {
 
   int text = 0, scaled = 0;
   count_text_ops(buf, n, &text, &scaled);
-  // Title plus a label and a value for each of the three rows.
-  expect("settings TEXT_SCALED x7", scaled == 7);
+  // Title plus a label and a value for each of the four rows.
+  expect("settings TEXT_SCALED x9", scaled == 9);
   expect("settings no TEXT", text == 0);
 
   // Walk the list for BEGIN_ELEM (0x30): u16 id, x, y, w, h, flags.
-  bool saw_raise = false, saw_timeout = false, saw_steps = false;
+  bool saw_raise = false, saw_timeout = false, saw_steps = false,
+       saw_diag = false;
   int touchable = 0;
   int rounds = 0;
   for (std::size_t i = 0u; i + 8u <= n; ++i) {
@@ -222,13 +224,15 @@ static void test_settings_rows_are_tappable() {
     if (id == slate::local::kSettingRaise) saw_raise = true;
     if (id == slate::local::kSettingTimeout) saw_timeout = true;
     if (id == slate::local::kSettingSteps) saw_steps = true;
+    if (id == slate::local::kSettingDiag) saw_diag = true;
   }
-  expect("three touchable rows", touchable == 3);
+  expect("four touchable rows", touchable == 4);
   expect("raise row carries its id", saw_raise);
   expect("timeout row carries its id", saw_timeout);
   expect("steps row carries its id", saw_steps);
+  expect("diag row carries its id", saw_diag);
   // Edge + fill per row.
-  expect("six rounded rects for button chrome", rounds == 6);
+  expect("eight rounded rects for button chrome", rounds == 8);
 }
 
 /** A timeout of 0 reads as "Never", not as the number zero or "Off". */

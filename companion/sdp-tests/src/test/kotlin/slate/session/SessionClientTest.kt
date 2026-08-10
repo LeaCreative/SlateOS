@@ -19,7 +19,8 @@ class SessionClientTest {
         assertEquals(SessionClient.State.Connected, client.state)
 
         val result = client.onControlMessage(offer)
-        assertEquals(SessionClient.State.Ready, client.state)
+        // Stay Connected until post-accept CREDIT — offer alone must not Ready.
+        assertEquals(SessionClient.State.Connected, client.state)
         assertEquals(1, result.outbound.size)
 
         val accept = result.outbound[0]
@@ -39,6 +40,11 @@ class SessionClientTest {
         assertEquals(3, parsed.profiles.size)
         assertEquals("active", parsed.profiles[1].name)
         assertEquals(4096, client.freeCreditBytes)
+
+        client.onControlMessage(
+            byteArrayOf(SdpWire.ControlOp.CREDIT.toByte(), 0x00, 0x10.toByte()),
+        )
+        assertEquals(SessionClient.State.Ready, client.state)
     }
 
     @Test
@@ -52,6 +58,8 @@ class SessionClientTest {
         )
         client.onControlMessage(credit)
         assertEquals(4096, client.freeCreditBytes)
+        // CREDIT without a prior HELLO_OFFER must not Ready the session.
+        assertEquals(SessionClient.State.Connected, client.state)
     }
 
     @Test
@@ -85,8 +93,10 @@ class SessionClientTest {
         client.onLinkUp()
         assertEquals(SessionClient.State.Connected, client.state)
         val result = client.onControlMessage(SessionTestFixtures.encodeHelloOffer())
-        assertEquals(SessionClient.State.Ready, client.state)
+        assertEquals(SessionClient.State.Connected, client.state)
         assertEquals(1, result.outbound.size)
+        advanceToReady(client)
+        assertEquals(SessionClient.State.Ready, client.state)
     }
 
     @Test
@@ -143,13 +153,22 @@ class SessionClientTest {
         client.onLinkUp()
         client.onControlMessage(SessionTestFixtures.encodeHelloOffer(profiles = emptyList()))
         assertEquals(1, client.selectedProfileId)
+        assertEquals(SessionClient.State.Connected, client.state)
+        advanceToReady(client)
         assertEquals(SessionClient.State.Ready, client.state)
+    }
+
+    private fun advanceToReady(client: SessionClient) {
+        client.onControlMessage(
+            byteArrayOf(SdpWire.ControlOp.CREDIT.toByte(), 0x00, 0x10.toByte()),
+        )
     }
 
     private fun readyClient(): SessionClient {
         val client = SessionClient(phoneId, hostVersion)
         client.onLinkUp()
         client.onControlMessage(SessionTestFixtures.encodeHelloOffer())
+        advanceToReady(client)
         assertEquals(SessionClient.State.Ready, client.state)
         return client
     }

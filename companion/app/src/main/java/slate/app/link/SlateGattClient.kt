@@ -48,6 +48,16 @@ class SlateGattClient(
     private var lastPktEndedMessage = false
     private var lastPktChannel = -1
     private var lastWriteStartedMs = 0L
+    /**
+     * Earliest time the next SDP *message* may start.
+     *
+     * Critical: [sendMessage] also calls [pumpWrites]. Without this, the write
+     * callback clears [writing] and a producer still enqueueing (notif flood)
+     * starts the next write immediately — bypassing [INTER_MESSAGE_GAP_MS].
+     * That is what the operator's log showed: ch=4 writes ~4 ms apart, then
+     * launcher DISPLAY lost in the single-slot inbox.
+     */
+    private var gapUntilMs = 0L
     private var lastNotReadyLogMs = 0L
 
     private var gatt: BluetoothGatt? = null
@@ -368,6 +378,7 @@ class SlateGattClient(
         discoveryStarted = false
         writeQueue.reset()
         writing.set(false)
+        gapUntilMs = 0L
         rxChar = null
         txChar = null
         statusChar = null
@@ -436,12 +447,19 @@ class SlateGattClient(
             ) {
                 LinkLog.w("write pump stalled — forcing resume")
                 writing.set(false)
-                pumpWrites()
+                // Honour the inter-message gap: a forced resume must not dump
+                // the rest of the queue back-to-back into the single-slot inbox.
+                continuePump()
             }
         }, WRITE_STALL_MS)
     }
 
     private fun pumpWrites() {
+        val now = System.currentTimeMillis()
+        if (now < gapUntilMs) {
+            mainHandler.postDelayed({ pumpWrites() }, gapUntilMs - now)
+            return
+        }
         if (!writing.compareAndSet(false, true)) {
             scheduleStallCheck()
             return
@@ -463,8 +481,18 @@ class SlateGattClient(
         scheduleStallCheck()
         val ok = writeNoResponse(g, rx, pkt.bytes)
         if (!ok) {
+            // Packet was already polled. rc=201 (CONNECTION_CONGESTED) during
+            // CCCD bring-up dropped HELLO_ACCEPT permanently; phone went Ready
+            // while the watch stayed Connected and discarded DISPLAY.
+            writeQueue.requeueFront(pkt)
             writing.set(false)
-            update { copy(lastError = "writeNoResponse failed") }
+            update { copy(lastError = "writeNoResponse failed — requeued") }
+            LinkLog.w(
+                "write failed — requeued ch=${pkt.channel} len=${pkt.bytes.size}; " +
+                    "backoff ${WRITE_FAIL_BACKOFF_MS}ms",
+            )
+            gapUntilMs = System.currentTimeMillis() + WRITE_FAIL_BACKOFF_MS
+            mainHandler.postDelayed({ pumpWrites() }, WRITE_FAIL_BACKOFF_MS)
         }
     }
 
@@ -482,12 +510,16 @@ class SlateGattClient(
      * Channel 5 (OTA) is exempt: it has real credit-based flow control, never
      * has more than one message outstanding, and pacing it would cut transfer
      * throughput by more than half.
+     *
+     * [gapUntilMs] is what stops [sendMessage] → [pumpWrites] from racing past
+     * the delayed resume while a producer is still enqueueing.
      */
     private fun continuePump() {
         val gap = lastPktEndedMessage &&
             lastPktChannel != SdpFrame.CHAN_OTA &&
             !writeQueue.isEmpty()
         if (gap) {
+            gapUntilMs = System.currentTimeMillis() + INTER_MESSAGE_GAP_MS
             mainHandler.postDelayed({ pumpWrites() }, INTER_MESSAGE_GAP_MS)
         } else {
             pumpWrites()
@@ -680,14 +712,25 @@ class SlateGattClient(
          * list itself — sent 41 ms later — was discarded. 110 inbox drops
          * against 5 applied lists.
          *
-         * 250 ms clears a repaint. It does not clear a worst-case stall; the
-         * real fix is for the watch not to stall for a second, and for the
-         * redundant pre-display CONTROL (a Replace, which the firmware already
-         * defaults to) not to be sent at all.
+         * 250 ms clears a typical repaint. When we still must send CONTROL
+         * before DISPLAY (stack depth > 1), 500 ms covers the measured stalls
+         * far more often. The common case now skips that CONTROL entirely
+         * (see CompositorHost.sendListNow).
          */
-        private const val INTER_MESSAGE_GAP_MS = 250L
+        private const val INTER_MESSAGE_GAP_MS = 500L
 
-        /** How long a write may be outstanding before the pump is force-resumed. */
-        private const val WRITE_STALL_MS = 400L
+        /**
+         * After a rejected writeCharacteristic (e.g. CONNECTION_CONGESTED=201
+         * while CCCD writes are still in flight), wait before retrying the
+         * same packet. Do not skip to the next message — HELLO_ACCEPT must
+         * not be discarded.
+         */
+        private const val WRITE_FAIL_BACKOFF_MS = 150L
+
+        /**
+         * Must be longer than [INTER_MESSAGE_GAP_MS]. A shorter stall would
+         * fire during an intentional gap and force a back-to-back write.
+         */
+        private const val WRITE_STALL_MS = 1_500L
     }
 }

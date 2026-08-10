@@ -26,10 +26,16 @@ class WatchSettingsTest {
     @Test
     fun encodeMatchesFirmwareGoldenDefaults() {
         val bytes = WatchSettings.encode(
-            WatchSettings.Payload(revision = 0L, tiltEnabled = true, wakeSeconds = 20, showSteps = true),
+            WatchSettings.Payload(
+                revision = 0L,
+                tiltEnabled = true,
+                wakeSeconds = 20,
+                showSteps = true,
+                showDiag = true,
+            ),
         )
         assertContentEquals(
-            byteArrayOf(0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x14, 0x01, 0x00),
+            byteArrayOf(0x21, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x14, 0x01, 0x01),
             bytes,
         )
     }
@@ -37,7 +43,13 @@ class WatchSettingsTest {
     @Test
     fun encodeMatchesFirmwareGoldenEverythingOff() {
         val bytes = WatchSettings.encode(
-            WatchSettings.Payload(revision = 1L, tiltEnabled = false, wakeSeconds = 0, showSteps = false),
+            WatchSettings.Payload(
+                revision = 1L,
+                tiltEnabled = false,
+                wakeSeconds = 0,
+                showSteps = false,
+                showDiag = false,
+            ),
         )
         assertContentEquals(
             byteArrayOf(0x21, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00),
@@ -48,7 +60,13 @@ class WatchSettingsTest {
     @Test
     fun encodeMatchesFirmwareGoldenMixed() {
         val bytes = WatchSettings.encode(
-            WatchSettings.Payload(revision = 7L, tiltEnabled = true, wakeSeconds = 120, showSteps = false),
+            WatchSettings.Payload(
+                revision = 7L,
+                tiltEnabled = true,
+                wakeSeconds = 120,
+                showSteps = false,
+                showDiag = false,
+            ),
         )
         assertContentEquals(
             byteArrayOf(0x21, 0x01, 0x07, 0x00, 0x00, 0x00, 0x01, 0x78, 0x00, 0x00),
@@ -65,6 +83,7 @@ class WatchSettingsTest {
                 tiltEnabled = false,
                 wakeSeconds = 60,
                 showSteps = true,
+                showDiag = false,
             ),
         )
         assertContentEquals(
@@ -85,6 +104,7 @@ class WatchSettingsTest {
         assertFalse(p.tiltEnabled)
         assertEquals(60, p.wakeSeconds)
         assertTrue(p.showSteps)
+        assertFalse(p.showDiag)
     }
 
     @Test

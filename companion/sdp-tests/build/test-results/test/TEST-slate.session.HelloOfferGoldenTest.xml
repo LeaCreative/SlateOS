@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.session.HelloOfferGoldenTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:05.417Z" hostname="DAN01" time="0.009">
-  <properties/>
-  <testcase name="sessionClientDecodesFirmwareGolden()" classname="slate.session.HelloOfferGoldenTest" time="0.008"/>
-  <testcase name="fixtureEncoderMatchesFirmwareGolden()" classname="slate.session.HelloOfferGoldenTest" time="0.001"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

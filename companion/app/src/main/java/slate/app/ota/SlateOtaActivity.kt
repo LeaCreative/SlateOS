@@ -139,12 +139,15 @@ class SlateOtaActivity : ComponentActivity() {
             SlateOtaService.start(this, uri)
         })
         root.addView(button("Cancel active OTA") { SlateOtaService.cancel(this) })
+        root.addView(button("Done — main screen") { goMain() })
 
         setContentView(ScrollView(this).apply { addView(root) })
 
+        var sawTransferActive = false
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 SlateOtaService.state.collect { s ->
+                    if (s.active) sawTransferActive = true
                     progress.progress = s.progress
                     status.text = when {
                         s.error != null -> "${s.message}: ${s.error}"
@@ -154,9 +157,29 @@ class SlateOtaActivity : ComponentActivity() {
                                 "Check the watch is connected, then start."
                         else -> s.message
                     }
+                    // Only leave after a transfer that ran in this session —
+                    // do not bounce on a stale "complete" left in the service.
+                    if (sawTransferActive && !s.active && s.progress >= 100 &&
+                        s.error == null &&
+                        s.message.contains("complete", ignoreCase = true)
+                    ) {
+                        goMain()
+                    }
                 }
             }
         }
+    }
+
+    private fun goMain() {
+        startActivity(
+            Intent(this, slate.app.MainActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+            },
+        )
+        finish()
     }
 
     override fun onNewIntent(intent: Intent) {

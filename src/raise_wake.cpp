@@ -154,29 +154,36 @@ RaiseDetector::Stats RaiseDetector::stats() const {
   return s;
 }
 
-bool RaiseDetector::should_raise_wake() const {
+std::uint8_t RaiseDetector::reject_code() const {
   // A partly-filled history compares real samples against the zeros it was
   // constructed with, which reads as a huge roll — the watch would wake on the
   // first movement after every sleep.
   if (filled_ < kHistory) {
-    return false;
+    return 1u;
   }
   const Stats s = stats();
 
   // Arm not level: this is a reach or a swing, not a look at the watch.
   const std::int16_t ax = s.x_mean < 0 ? static_cast<std::int16_t>(-s.x_mean) : s.x_mean;
   if (ax > kXMeanThreshold) {
-    return false;
+    return 2u;
   }
   // Variance above the threshold means the samples carry real acceleration, so
   // they are not a gravity vector and the roll below would be meaningless.
-  if (s.y_var > kVarianceThreshold ||
-      (s.y_mean < kYMeanFaceDownThreshold && s.z_var > kVarianceThreshold) ||
-      s.y_mean > kYMeanThreshold) {
-    return false;
+  if (s.y_var > kVarianceThreshold) {
+    return 3u;
   }
-  return degrees_rolled(s.y_mean, s.z_mean, s.prev_y_mean, s.prev_z_mean) <
-         kRollDegreesThreshold;
+  if (s.y_mean < kYMeanFaceDownThreshold && s.z_var > kVarianceThreshold) {
+    return 4u;
+  }
+  if (s.y_mean > kYMeanThreshold) {
+    return 5u;
+  }
+  if (!(degrees_rolled(s.y_mean, s.z_mean, s.prev_y_mean, s.prev_z_mean) <
+        kRollDegreesThreshold)) {
+    return 6u;
+  }
+  return 0u;
 }
 
 }  // namespace motion

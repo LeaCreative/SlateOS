@@ -4,7 +4,58 @@
             "outputFile": "slate.app-mergeDebugResources-51:/values/values.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\508793b4d32c17f741a1ac0d9ddeb35f\\transformed\\lifecycle-viewmodel-release\\res\\values\\values.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\4ce8ccb75b8beb2d317490470c62e08a\\transformed\\ui-graphics-release\\res\\values\\values.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    },
+                    "to": {
+                        "startLines": "70",
+                        "startColumns": "4",
+                        "startOffsets": "4474",
+                        "endColumns": "65",
+                        "endOffsets": "4535"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\51ab0c383f6a0d773eb7cee359d3b448\\transformed\\customview-poolingcontainer-1.0.0\\res\\values\\values.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,109",
+                        "endColumns": "53,66",
+                        "endOffsets": "104,171"
+                    },
+                    "to": {
+                        "startLines": "73,76",
+                        "startColumns": "4,4",
+                        "startOffsets": "4646,4770",
+                        "endColumns": "53,66",
+                        "endOffsets": "4695,4832"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\719dd6dbec2c6e5b699f840f8b25a97b\\transformed\\lifecycle-runtime-release\\res\\values\\values.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "42",
+                        "endOffsets": "93"
+                    },
+                    "to": {
+                        "startLines": "94",
+                        "startColumns": "4",
+                        "startOffsets": "5738",
+                        "endColumns": "42",
+                        "endOffsets": "5776"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\508793b4d32c17f741a1ac0d9ddeb35f\\transformed\\lifecycle-viewmodel-release\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -21,26 +72,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\de66cc1f9e213a45b56e70b4869e71b2\\transformed\\material3-release\\res\\values\\values.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,15,16,17,18,19,20,21,22,23,24,25,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,74",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "100,173,261,347,428,512,581,646,729,835,921,1041,1095,1164,1225,1294,1383,1478,1552,1649,1742,1840,1989,2080,2168,2264,2362,2426,2494,2581,2675,2742,2814,2886,2987,3096,3172,3241,3289,3355,3419,3493,3550,3607,3679,3729,3783,3854,3925,3995,4064,4122,4198,4269,4343,4429,4479,4549,4614,5329",
-                        "endLines": "2,3,4,5,6,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,73,76",
-                        "endColumns": "72,87,85,80,83,68,64,82,105,85,13,53,68,60,68,88,94,73,96,92,97,13,90,87,95,97,63,67,86,93,66,71,71,100,108,75,68,47,65,63,73,56,56,71,49,53,70,70,69,68,57,75,70,73,85,49,69,64,12,12",
-                        "endOffsets": "168,256,342,423,507,576,641,724,830,916,1036,1090,1159,1220,1289,1378,1473,1547,1644,1737,1835,1984,2075,2163,2259,2357,2421,2489,2576,2670,2737,2809,2881,2982,3091,3167,3236,3284,3350,3414,3488,3545,3602,3674,3724,3778,3849,3920,3990,4059,4117,4193,4264,4338,4424,4474,4544,4609,5324,5477"
-                    },
-                    "to": {
-                        "startLines": "99,116,117,118,119,120,121,122,123,124,125,128,129,130,131,132,133,134,135,136,137,138,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,194,204",
-                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
-                        "startOffsets": "5998,7191,7279,7365,7446,7530,7599,7664,7747,7853,7939,8059,8113,8182,8243,8312,8401,8496,8570,8667,8760,8858,9007,9098,9186,9282,9380,9444,9512,9599,9693,9760,9832,9904,10005,10114,10190,10259,10307,10373,10437,10511,10568,10625,10697,10747,10801,10872,10943,11013,11082,11140,11216,11287,11361,11447,11497,11567,12493,13208",
-                        "endLines": "99,116,117,118,119,120,121,122,123,124,127,128,129,130,131,132,133,134,135,136,137,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,203,206",
-                        "endColumns": "72,87,85,80,83,68,64,82,105,85,13,53,68,60,68,88,94,73,96,92,97,13,90,87,95,97,63,67,86,93,66,71,71,100,108,75,68,47,65,63,73,56,56,71,49,53,70,70,69,68,57,75,70,73,85,49,69,64,12,12",
-                        "endOffsets": "6066,7274,7360,7441,7525,7594,7659,7742,7848,7934,8054,8108,8177,8238,8307,8396,8491,8565,8662,8755,8853,9002,9093,9181,9277,9375,9439,9507,9594,9688,9755,9827,9899,10000,10109,10185,10254,10302,10368,10432,10506,10563,10620,10692,10742,10796,10867,10938,11008,11077,11135,11211,11282,11356,11442,11492,11562,11627,13203,13356"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\e3f01f45e48e3f1ac254c3e1ba0b4948\\transformed\\foundation-release\\res\\values\\values.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\e3f01f45e48e3f1ac254c3e1ba0b4948\\transformed\\foundation-release\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -54,6 +86,23 @@
                         "startOffsets": "12270,12326",
                         "endColumns": "55,54",
                         "endOffsets": "12321,12376"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\efcb5c6b24c1166526ebd77b417e2f47\\transformed\\startup-runtime-1.1.1\\res\\values\\values.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "82",
+                        "endOffsets": "133"
+                    },
+                    "to": {
+                        "startLines": "101",
+                        "startColumns": "4",
+                        "startOffsets": "6141",
+                        "endColumns": "82",
+                        "endOffsets": "6219"
                     }
                 },
                 {
@@ -74,24 +123,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\8bbe6a72ea0b4f7939c4ae02ac141f08\\transformed\\savedstate-1.2.1\\res\\values\\values.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "53",
-                        "endOffsets": "104"
-                    },
-                    "to": {
-                        "startLines": "96",
-                        "startColumns": "4",
-                        "startOffsets": "5841",
-                        "endColumns": "53",
-                        "endOffsets": "5890"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\8817bcfc0775c7becb8cec37cea1c891\\transformed\\activity-1.9.3\\res\\values\\values.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\8817bcfc0775c7becb8cec37cea1c891\\transformed\\activity-1.9.3\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",
@@ -108,58 +140,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\719dd6dbec2c6e5b699f840f8b25a97b\\transformed\\lifecycle-runtime-release\\res\\values\\values.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "42",
-                        "endOffsets": "93"
-                    },
-                    "to": {
-                        "startLines": "94",
-                        "startColumns": "4",
-                        "startOffsets": "5738",
-                        "endColumns": "42",
-                        "endOffsets": "5776"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\51ab0c383f6a0d773eb7cee359d3b448\\transformed\\customview-poolingcontainer-1.0.0\\res\\values\\values.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,109",
-                        "endColumns": "53,66",
-                        "endOffsets": "104,171"
-                    },
-                    "to": {
-                        "startLines": "73,76",
-                        "startColumns": "4,4",
-                        "startOffsets": "4646,4770",
-                        "endColumns": "53,66",
-                        "endOffsets": "4695,4832"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\4ce8ccb75b8beb2d317490470c62e08a\\transformed\\ui-graphics-release\\res\\values\\values.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "65",
-                        "endOffsets": "116"
-                    },
-                    "to": {
-                        "startLines": "70",
-                        "startColumns": "4",
-                        "startOffsets": "4474",
-                        "endColumns": "65",
-                        "endOffsets": "4535"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\3e4da18a22b652a376d7cf16f52b5672\\transformed\\ui-release\\res\\values\\values.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\3e4da18a22b652a376d7cf16f52b5672\\transformed\\ui-release\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,61,64",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -178,7 +159,43 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\5056650f565ca465a1b6f65dc0807af2\\transformed\\core-1.15.0\\res\\values\\values.xml",
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\8bbe6a72ea0b4f7939c4ae02ac141f08\\transformed\\savedstate-1.2.1\\res\\values\\values.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "53",
+                        "endOffsets": "104"
+                    },
+                    "to": {
+                        "startLines": "96",
+                        "startColumns": "4",
+                        "startOffsets": "5841",
+                        "endColumns": "53",
+                        "endOffsets": "5890"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\de66cc1f9e213a45b56e70b4869e71b2\\transformed\\material3-release\\res\\values\\values.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9,10,11,12,15,16,17,18,19,20,21,22,23,24,25,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,74",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "100,173,261,347,428,512,581,646,729,835,921,1041,1095,1164,1225,1294,1383,1478,1552,1649,1742,1840,1989,2080,2168,2264,2362,2426,2494,2581,2675,2742,2814,2886,2987,3096,3172,3241,3289,3355,3419,3493,3550,3607,3679,3729,3783,3854,3925,3995,4064,4122,4198,4269,4343,4429,4479,4549,4614,5329",
+                        "endLines": "2,3,4,5,6,7,8,9,10,11,14,15,16,17,18,19,20,21,22,23,24,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,73,76",
+                        "endColumns": "72,87,85,80,83,68,64,82,105,85,13,53,68,60,68,88,94,73,96,92,97,13,90,87,95,97,63,67,86,93,66,71,71,100,108,75,68,47,65,63,73,56,56,71,49,53,70,70,69,68,57,75,70,73,85,49,69,64,12,12",
+                        "endOffsets": "168,256,342,423,507,576,641,724,830,916,1036,1090,1159,1220,1289,1378,1473,1547,1644,1737,1835,1984,2075,2163,2259,2357,2421,2489,2576,2670,2737,2809,2881,2982,3091,3167,3236,3284,3350,3414,3488,3545,3602,3674,3724,3778,3849,3920,3990,4059,4117,4193,4264,4338,4424,4474,4544,4609,5324,5477"
+                    },
+                    "to": {
+                        "startLines": "99,116,117,118,119,120,121,122,123,124,125,128,129,130,131,132,133,134,135,136,137,138,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,194,204",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "5998,7191,7279,7365,7446,7530,7599,7664,7747,7853,7939,8059,8113,8182,8243,8312,8401,8496,8570,8667,8760,8858,9007,9098,9186,9282,9380,9444,9512,9599,9693,9760,9832,9904,10005,10114,10190,10259,10307,10373,10437,10511,10568,10625,10697,10747,10801,10872,10943,11013,11082,11140,11216,11287,11361,11447,11497,11567,12493,13208",
+                        "endLines": "99,116,117,118,119,120,121,122,123,124,127,128,129,130,131,132,133,134,135,136,137,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,203,206",
+                        "endColumns": "72,87,85,80,83,68,64,82,105,85,13,53,68,60,68,88,94,73,96,92,97,13,90,87,95,97,63,67,86,93,66,71,71,100,108,75,68,47,65,63,73,56,56,71,49,53,70,70,69,68,57,75,70,73,85,49,69,64,12,12",
+                        "endOffsets": "6066,7274,7360,7441,7525,7594,7659,7742,7848,7934,8054,8108,8177,8238,8307,8396,8491,8565,8662,8755,8853,9002,9093,9181,9277,9375,9439,9507,9594,9688,9755,9827,9899,10000,10109,10185,10254,10302,10368,10432,10506,10563,10620,10692,10742,10796,10867,10938,11008,11077,11135,11211,11282,11356,11442,11492,11562,11627,13203,13356"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\0bc1c3ddacfa0d16936275f33f6b0f3e\\gradle\\caches\\8.14.5\\transforms\\5056650f565ca465a1b6f65dc0807af2\\transformed\\core-1.15.0\\res\\values\\values.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,98,99,103,104,105,106,112,122,157,178,211",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -194,23 +211,6 @@
                         "endLines": "2,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,74,75,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,100,102,103,104,105,106,107,108,185,214,218,219,223,224,225,226,232,242,277,298,331,337",
                         "endColumns": "59,71,87,64,65,68,62,69,67,71,69,60,73,72,60,60,61,63,61,60,67,99,59,65,72,68,56,51,61,71,75,64,34,34,54,62,54,57,57,60,62,56,50,49,60,56,65,33,34,34,69,66,71,68,68,73,71,87,70,116,12,109,12,128,71,66,24,24,24,24,24,24",
                         "endOffsets": "205,342,430,495,561,630,693,763,831,903,973,1034,1108,1181,1242,1303,1365,1429,1491,1552,1620,1720,1780,1846,1919,1988,2045,2097,2159,2231,2307,2372,4730,4765,4929,4992,5047,5105,5163,5224,5287,5344,5395,5445,5506,5563,5629,5663,5698,5733,6136,6286,6358,6427,6496,6570,6642,6730,12092,13779,13980,14090,14291,14420,14492,14559,14762,15063,16869,17550,18232,18399"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\highj\\AppData\\Local\\Temp\\cursor-sandbox-cache\\e6796022557f5b9313e6f004f2025eb3\\gradle\\caches\\8.14.5\\transforms\\efcb5c6b24c1166526ebd77b417e2f47\\transformed\\startup-runtime-1.1.1\\res\\values\\values.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "82",
-                        "endOffsets": "133"
-                    },
-                    "to": {
-                        "startLines": "101",
-                        "startColumns": "4",
-                        "startOffsets": "6141",
-                        "endColumns": "82",
-                        "endOffsets": "6219"
                     }
                 }
             ]

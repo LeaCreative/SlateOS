@@ -92,17 +92,25 @@ class SideloadActivity : Activity() {
     }
 
     private fun openOta(uri: Uri) {
+        // Open-with from Files often starts this activity as the task root.
+        // Jumping straight to SlateOtaActivity then left the task with only the
+        // OTA screen — tapping the launcher icon resumed that stack, so the
+        // main menu was unreachable without a force-stop. Seed MainActivity
+        // under OTA so Back / Done returns to the menu.
+        startActivity(
+            Intent(this, slate.app.MainActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP,
+                )
+            },
+        )
         val launch = Intent(this, SlateOtaActivity::class.java).apply {
             action = Intent.ACTION_VIEW
             data = uri
             putExtra(SlateOtaActivity.EXTRA_PACKAGE_URI, uri.toString())
-            addFlags(
-                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP or
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            )
-            // ClipData carries the URI grant across the activity boundary on
-            // modern Android when only Intent.data is set inconsistently.
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             clipData = android.content.ClipData.newUri(contentResolver, "dfu", uri)
         }
         LinkLog.i("sideload: DFU zip → SlateOtaActivity ($uri)")

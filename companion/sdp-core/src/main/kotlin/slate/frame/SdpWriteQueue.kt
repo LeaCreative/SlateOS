@@ -10,6 +10,11 @@ package slate.frame
  * and enqueues every fragment of a message in one atomic step, so fragments
  * of concurrent messages can never interleave on the link no matter which
  * threads call [enqueueMessage].
+ *
+ * Within the FIFO of *messages*, CONTROL and DISPLAY are inserted ahead of
+ * SYSTEM/ASSET so a launcher push is not trapped behind a notification dump
+ * (operator log: DISPLAY enqueued at :30.158, ATT write of that list at
+ * :45.908 — fifteen seconds of ch=4 ahead of it).
  */
 class SdpWriteQueue {
     /**
@@ -35,7 +40,12 @@ class SdpWriteQueue {
     private val pkts = ArrayDeque<Pkt>()
 
     /**
-     * Fragment [msg] and append all fragments contiguously.
+     * Fragment [msg] and insert all fragments contiguously.
+     *
+     * High-priority channels (CONTROL, DISPLAY, OTA) are placed before any
+     * already-queued low-priority message, without splitting an in-flight
+     * multi-fragment message.
+     *
      * Returns the number of fragments enqueued.
      */
     fun enqueueMessage(channel: Int, msg: ByteArray, extraFlags: Int = 0): Int =
@@ -43,11 +53,24 @@ class SdpWriteQueue {
             val holder = intArrayOf(seq[channel])
             val fragments = SdpFrame.fragmentMessage(channel, msg, holder, extraFlags)
             seq[channel] = holder[0]
-            fragments.forEachIndexed { i, f ->
-                pkts.add(Pkt(f, channel, endsMessage = i == fragments.lastIndex))
+            val batch = fragments.mapIndexed { i, f ->
+                Pkt(f, channel, endsMessage = i == fragments.lastIndex)
+            }
+            if (isHighPriority(channel)) {
+                insertHighPriority(batch)
+            } else {
+                pkts.addAll(batch)
             }
             fragments.size
         }
+
+    /**
+     * Put a previously polled packet back at the head (write failed before
+     * the controller accepted it). Must not invent a new sequence number.
+     */
+    fun requeueFront(pkt: Pkt) = synchronized(lock) {
+        pkts.addFirst(pkt)
+    }
 
     fun poll(): Pkt? = synchronized(lock) { pkts.removeFirstOrNull() }
 
@@ -73,4 +96,41 @@ class SdpWriteQueue {
     }
 
     fun isEmpty(): Boolean = synchronized(lock) { pkts.isEmpty() }
+
+    private fun isHighPriority(channel: Int): Boolean =
+        channel == SdpFrame.CHAN_CONTROL ||
+            channel == SdpFrame.CHAN_DISPLAY ||
+            channel == SdpFrame.CHAN_OTA
+
+    /**
+     * Insert [batch] before the first low-priority message, after any
+     * high-priority run already at the head (preserves message contiguity).
+     */
+    private fun insertHighPriority(batch: List<Pkt>) {
+        if (pkts.isEmpty()) {
+            pkts.addAll(batch)
+            return
+        }
+        // Skip leading high-priority fragments (complete messages + any
+        // partial high-priority message still being built at the head).
+        var i = 0
+        val snapshot = pkts.toList()
+        while (i < snapshot.size && isHighPriority(snapshot[i].channel)) {
+            ++i
+        }
+        // Walk back to a message boundary: never insert mid-message.
+        while (i > 0 && !snapshot[i - 1].endsMessage) {
+            --i
+        }
+        if (i >= pkts.size) {
+            pkts.addAll(batch)
+            return
+        }
+        // Rebuild: [0, i) + batch + [i, end)
+        val tail = ArrayList<Pkt>()
+        repeat(pkts.size - i) { tail.add(pkts.removeLast()) }
+        tail.reverse()
+        pkts.addAll(batch)
+        pkts.addAll(tail)
+    }
 }

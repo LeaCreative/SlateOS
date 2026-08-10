@@ -32,6 +32,8 @@ struct Settings {
    */
   std::uint8_t wake_seconds = 20u;
   std::uint8_t face_show_steps = 1u;
+  /** Bring-up diagnostic lines on the watch face (and the 2 s band refresh). */
+  std::uint8_t face_show_diag = 1u;
   /**
    * Sync revision, persisted with the values it stamps.
    *
@@ -68,8 +70,11 @@ struct Settings {
 constexpr std::uint16_t kSettingRaise = 1u;
 constexpr std::uint16_t kSettingTimeout = 2u;
 constexpr std::uint16_t kSettingSteps = 3u;
+constexpr std::uint16_t kSettingDiag = 4u;
 
-constexpr std::uint32_t kSettingsMagic = 0x534C5455u;  // 'SLTU'
+// Bumped 10 Aug 2026 ('SLTU' -> 'SLTV'): face_show_diag added. Old blobs reset
+// to defaults once so the new field is not garbage from the former reserved pad.
+constexpr std::uint32_t kSettingsMagic = 0x534C5456u;  // 'SLTV'
 
 struct State {
   Screen screen = Screen::Face;
@@ -171,6 +176,27 @@ struct State {
   // the loop lived, and both frozen means the loop itself stopped.
   std::uint32_t diag_paints = 0u;
 
+  /**
+   * Raise-to-wake bring-up (line 3 of the face diag overlay).
+   *
+   * Format: `<sleeps>.<samples>/<rej>.<fires>.<wake>/<x>/<y>/<z>`
+   *   sleeps  enter_sleep count since boot
+   *   samples accel polls during the last sleep (0 = never slept, or starved)
+   *   rej     last RaiseDetector::reject_code while history was full
+   *           (0 fire, 1 filling, 2 |x|, 3 y-var, 4 face-down, 5 y-mean, 6 roll)
+   *   fires   raise-to-wake successes
+   *   wake    last wake source: 0 none, 1 raise, 2 button, 3 double-tap, 4 charge
+   *   x/y/z   last accel sample (mount frame, 1g ≈ 1024)
+   */
+  std::uint16_t diag_sleep_enters = 0u;
+  std::uint16_t diag_raise_samples = 0u;
+  std::uint8_t diag_raise_reject = 0u;
+  std::uint8_t diag_raise_fires = 0u;
+  std::uint8_t diag_wake_src = 0u;
+  std::int16_t diag_ax = 0;
+  std::int16_t diag_ay = 0;
+  std::int16_t diag_az = 0;
+
   std::uint32_t steps = 0u;
   std::uint32_t steps_at_day_start = 0u;
   std::uint32_t day_epoch = 0u;  // unix midnight of current local day
@@ -181,10 +207,6 @@ struct State {
   std::uint8_t alert_kind = 0u;  // 1=alarm 2=timer
   std::uint8_t alert_id = 0u;
   char alert_label[20] = {};
-
-  // Scratch for built display lists (shared; not counted separately from budget
-  // when we place the builder buffer elsewhere — see local_ui).
-  std::uint8_t pad1[8] = {};
 };
 
 // Local screen state + a small reserve. Sized to kLocalScreenStateBytes (I-19).

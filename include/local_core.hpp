@@ -141,8 +141,11 @@ public:
    * here — button, tilt, touch, charge edge, alert — so making this the place
    * that leaves sleep means a new source cannot forget to. Same argument as
    * the guard inside show_current().
+   *
+   * [src] is latched onto diag_wake_src when leaving sleep: 1 raise, 2 button,
+   * 3 double-tap, 4 charge, 5 alert. 0 leaves the previous value.
    */
-  void wake_display();
+  void wake_display(std::uint8_t src = 0u);
 
   /** True while the panel is asleep. Nothing local paints in this state. */
   bool sleeping() const { return power_ == Power::Sleeping; }

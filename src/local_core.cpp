@@ -155,6 +155,9 @@ void Core::show_ota_progress(std::uint8_t pct) {
 
 void Core::show_diag_band() {
 #if SLATE_DIAG_OVERLAY
+  if (!local_state().settings.face_show_diag) {
+    return;
+  }
   if (hooks_.push_list == nullptr) {
     return;
   }
@@ -257,6 +260,8 @@ void Core::enter_sleep() {
   }
   power_ = Power::Sleeping;
   display_on_ = false;
+  ++local_state().diag_sleep_enters;
+  local_state().diag_raise_samples = 0u;
   // Backlight first, panel second. The other order shows one frame of a
   // sleeping panel lit up, which reads as a glitch.
   if (hooks_.backlight) {
@@ -271,13 +276,16 @@ void Core::enter_sleep() {
   forget_pushed_digest();
 }
 
-void Core::wake_display() {
+void Core::wake_display(std::uint8_t src) {
   const bool was_sleeping = (power_ == Power::Sleeping);
   power_ = Power::Running;
   display_on_ = true;
   last_activity_ms_ = last_tick_ms_;
   activity_seeded_ = true;
   if (was_sleeping) {
+    if (src != 0u) {
+      local_state().diag_wake_src = src;
+    }
     // Panel out of sleep BEFORE anything can draw: a push into a sleeping
     // ST7789 is accepted and discarded, so the screen would stay black until
     // whatever came next happened to repaint.
@@ -301,7 +309,7 @@ void Core::enter_alert(std::uint8_t kind, std::uint8_t id) {
   if (hooks_.haptic) {
     hooks_.haptic(sdp::haptic_pattern::DOUBLE, hooks_.ctx);
   }
-  wake_display();
+  wake_display(5u);
   show_current();
 }
 
@@ -347,7 +355,7 @@ void Core::poll_battery(std::uint32_t now_ms) {
   // Only the plug-in edge used to, so taking the watch off the charger left it
   // asleep — which is exactly the moment you look at it.
   if (chg != was) {
-    wake_display();
+    wake_display(4u);
     if (local_state().screen == local::Screen::Face) {
       show_current();
     }
@@ -391,6 +399,18 @@ void Core::poll_raise(std::uint32_t now_ms) {
   if (power_ != Power::Sleeping) {
     // Awake: keep the history empty so the next sleep starts cold.
     raise_.reset();
+    // Still sample accel for the diag overlay so a sealed watch can show the
+    // mount-frame orientation without sleeping (axis-swap / dead-sensor check).
+    if (local_state().settings.face_show_diag &&
+        static_cast<std::uint32_t>(now_ms - last_raise_ms_) >= 200u) {
+      last_raise_ms_ = now_ms;
+      std::int16_t x = 0, y = 0, z = 0;
+      if (bma_->read_accel(&x, &y, &z)) {
+        local_state().diag_ax = x;
+        local_state().diag_ay = y;
+        local_state().diag_az = z;
+      }
+    }
     return;
   }
   if (static_cast<std::uint32_t>(now_ms - last_raise_ms_) < kRaisePollMs) {
@@ -402,12 +422,27 @@ void Core::poll_raise(std::uint32_t now_ms) {
   if (!bma_->read_accel(&x, &y, &z)) {
     return;
   }
+  local_state().diag_ax = x;
+  local_state().diag_ay = y;
+  local_state().diag_az = z;
+  if (local_state().diag_raise_samples < 0xFFFFu) {
+    ++local_state().diag_raise_samples;
+  }
   raise_.update(x, y, z);
-  if (raise_.should_raise_wake()) {
+  const std::uint8_t rej = raise_.reject_code();
+  if (rej != 1u) {
+    // Latch every evaluation once the history is full — "filling" alone is
+    // not informative after the first 800 ms of sleep.
+    local_state().diag_raise_reject = rej;
+  }
+  if (rej == 0u) {
     // Clear before waking: the samples that fired are spent, and leaving them
     // would let the next sleep re-fire on stale history.
     raise_.reset();
-    wake_display();
+    if (local_state().diag_raise_fires < 0xFFu) {
+      ++local_state().diag_raise_fires;
+    }
+    wake_display(1u);
     if (local_state().screen == local::Screen::Face ||
         local_state().screen == local::Screen::Disconnected) {
       // Coalesced with any other repaint this tick — see Core::tick.
@@ -539,6 +574,10 @@ bool Core::on_tap_elem(std::uint16_t elem_id) {
     case local::kSettingSteps:
       local_state().settings.face_show_steps =
           local_state().settings.face_show_steps ? 0u : 1u;
+      break;
+    case local::kSettingDiag:
+      local_state().settings.face_show_diag =
+          local_state().settings.face_show_diag ? 0u : 1u;
       break;
     default:
       changed = false;

@@ -139,4 +139,32 @@ class SdpWriteQueueTest {
         assertTrue(pkts.last().endsMessage, "final fragment not marked")
         pkts.forEach { assertEquals(SdpFrame.CHAN_DISPLAY, it.channel) }
     }
+
+    @Test
+    fun displayJumpsAheadOfQueuedSystem() {
+        val q = SdpWriteQueue()
+        q.enqueueMessage(SdpFrame.CHAN_SYSTEM, ByteArray(20) { 0x04 })
+        q.enqueueMessage(SdpFrame.CHAN_SYSTEM, ByteArray(20) { 0x05 })
+        q.enqueueMessage(SdpFrame.CHAN_DISPLAY, ByteArray(30) { 0xD1.toByte() })
+        q.enqueueMessage(SdpFrame.CHAN_CONTROL, byteArrayOf(0x01))
+
+        val first = q.poll()!!
+        assertEquals(SdpFrame.CHAN_DISPLAY, first.channel)
+        val second = q.poll()!!
+        assertEquals(SdpFrame.CHAN_CONTROL, second.channel)
+        assertEquals(SdpFrame.CHAN_SYSTEM, q.poll()!!.channel)
+        assertEquals(SdpFrame.CHAN_SYSTEM, q.poll()!!.channel)
+        assertNull(q.poll())
+    }
+
+    @Test
+    fun requeueFrontRestoresPacket() {
+        val q = SdpWriteQueue()
+        q.enqueueMessage(SdpFrame.CHAN_CONTROL, byteArrayOf(0x0A))
+        q.enqueueMessage(SdpFrame.CHAN_SYSTEM, byteArrayOf(0x0B))
+        val dropped = q.poll()!!
+        q.requeueFront(dropped)
+        assertEquals(SdpFrame.CHAN_CONTROL, q.poll()!!.channel)
+        assertEquals(SdpFrame.CHAN_SYSTEM, q.poll()!!.channel)
+    }
 }

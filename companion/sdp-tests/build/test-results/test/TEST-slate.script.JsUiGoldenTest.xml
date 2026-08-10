@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="slate.script.JsUiGoldenTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-09T08:57:05.300Z" hostname="DAN01" time="0.013">
-  <properties/>
-  <testcase name="testAppFace_jsMatchesKotlin()" classname="slate.script.JsUiGoldenTest" time="0.008"/>
-  <testcase name="timerFace_jsMatchesKotlin()" classname="slate.script.JsUiGoldenTest" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

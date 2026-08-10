@@ -28,12 +28,13 @@ using slate::settings_sync::Payload;
 namespace ss = slate::settings_sync;
 
 Payload make(std::uint32_t rev, std::uint8_t tilt, std::uint8_t wake,
-             std::uint8_t steps) {
+             std::uint8_t steps, std::uint8_t diag = 1u) {
   Payload p;
   p.revision = rev;
   p.tilt_enabled = tilt;
   p.wake_seconds = wake;
   p.face_show_steps = steps;
+  p.face_show_diag = diag;
   return p;
 }
 
@@ -52,6 +53,7 @@ void test_round_trip() {
   expect("tilt survives", out.tilt_enabled == in.tilt_enabled);
   expect("wake_seconds survives", out.wake_seconds == in.wake_seconds);
   expect("show steps survives", out.face_show_steps == in.face_show_steps);
+  expect("show diag survives", out.face_show_diag == in.face_show_diag);
 }
 
 void test_decode_rejects_rubbish() {
@@ -154,10 +156,11 @@ void test_from_settings_round_trips() {
   s.tilt_enabled = 0u;
   s.wake_seconds = 35u;
   s.face_show_steps = 1u;
+  s.face_show_diag = 0u;
   const Payload p = ss::from(s, 12u);
   expect("from() captures the synced fields",
          p.revision == 12u && p.tilt_enabled == 0u && p.wake_seconds == 35u &&
-             p.face_show_steps == 1u);
+             p.face_show_steps == 1u && p.face_show_diag == 0u);
 }
 
 }  // namespace

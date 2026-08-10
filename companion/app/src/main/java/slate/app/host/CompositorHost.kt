@@ -199,7 +199,25 @@ class CompositorHost(
      */
     private fun sendListNow(bytes: ByteArray): Boolean {
         LinkLog.i("pushToWatch: ${bytes.size} B display list")
-        gatt.sendMessage(SdpFrame.CHAN_CONTROL, session.takePreDisplayControl())
+        val pre = session.takePreDisplayControl()
+        val op = pre[0].toInt() and 0xFF
+        val depth = compositor.stackSnapshot.size
+        // The watch AppInbox is one slot. A pre-display CONTROL that sits there
+        // through a face/diag paint (~230–900 ms) causes the following DISPLAY
+        // to be dropped — companion logs a successful write, watch never paints.
+        // Firmware already treats the first DISPLAY at remote_depth==0 as Push,
+        // and defaults pending_ to Replace after every apply, so most CONTROL
+        // prefixes are redundant. Only send SCREEN_PUSH when stacking on an
+        // existing remote screen (depth > 1).
+        val sendPre = op == SdpWire.ControlOp.SCREEN_PUSH && depth > 1
+        if (sendPre) {
+            gatt.sendMessage(SdpFrame.CHAN_CONTROL, pre)
+        } else {
+            LinkLog.i(
+                "pushToWatch: skip pre-display CONTROL op=0x${op.toString(16)} " +
+                    "stackDepth=$depth",
+            )
+        }
         return gatt.pushDisplayList(bytes)
     }
 
@@ -472,7 +490,7 @@ class CompositorHost(
             LinkLog.i(
                 "settings ← watch (rev ${incoming.revision}): " +
                     "raise=${incoming.tiltEnabled} timeout=${incoming.wakeSeconds}s " +
-                    "steps=${incoming.showSteps}",
+                    "steps=${incoming.showSteps} diag=${incoming.showDiag}",
             )
         } else {
             // Ours is newer or identical. Either way the watch has now told us
@@ -495,7 +513,7 @@ class CompositorHost(
         val p = pending ?: watchSettings.current()
         LinkLog.i(
             "settings → watch (rev ${p.revision}): raise=${p.tiltEnabled} " +
-                "timeout=${p.wakeSeconds}s steps=${p.showSteps}",
+                "timeout=${p.wakeSeconds}s steps=${p.showSteps} diag=${p.showDiag}",
         )
         gatt.sendMessage(SdpFrame.CHAN_CONTROL, WatchSettings.encode(p))
     }
@@ -696,11 +714,12 @@ class CompositorHost(
             return
         }
         pendingLauncherOpen = false
+        val already = compositor.focusedAppId == LauncherApp.APP_ID
         val deny = compositor.requestFocus(
             LauncherApp.APP_ID,
             PriorityClass.NORMAL,
             FocusReason.UserNavigation,
-            StackOp.Push,
+            if (already) StackOp.Replace else StackOp.Push,
         )
         if (deny != null) {
             LinkLog.i("openLauncher: DENIED — $deny (session=${session.state})")
@@ -811,6 +830,25 @@ class CompositorHost(
     private fun startNotifBridge() {
         if (notifJob?.isActive == true) return
         notifJob = scope.launch {
+            // Wait for session Ready (post-accept CREDIT), not merely GATT up.
+            // A 3 s timer from connect still overlapped HELLO and dumped ~30
+            // SYSTEM upserts ahead of any DISPLAY in the FIFO write queue.
+            while (compositor.linkConnected &&
+                session.state != SessionClient.State.Ready
+            ) {
+                delay(100L)
+            }
+            if (!compositor.linkConnected ||
+                session.state != SessionClient.State.Ready
+            ) {
+                return@launch
+            }
+            delay(NOTIF_SYNC_DEFER_MS)
+            if (!compositor.linkConnected ||
+                session.state != SessionClient.State.Ready
+            ) {
+                return@launch
+            }
             syncAllToSystemChannel()
             pushNotifSnapshotToApp()
             NotifStore.changes.collect { change ->
@@ -1228,10 +1266,19 @@ class CompositorHost(
 
         /**
          * Window in which an identical display list is treated as a duplicate.
-         * Comfortably longer than the burst (~33 ms) and far shorter than any
-         * interval at which real content changes.
+         * Only collapses the onFocus/onRender/flush burst (~33 ms). Must stay
+         * well under a human re-swipe: 500 ms previously "succeeded" on the
+         * phone while the watch dropped the first list, then skipped the
+         * recovery swipe as a duplicate.
          */
-        const val PUSH_COALESCE_MS = 500L
+        const val PUSH_COALESCE_MS = 80L
+
+        /**
+         * Quiet period after session Ready before bulk-syncing notifications.
+         * Ready already means HELLO_ACCEPT was acknowledged (CREDIT); this
+         * gap lets deferred launcher / time-sync CONTROL win the inbox.
+         */
+        const val NOTIF_SYNC_DEFER_MS = 1_500L
 
         /**
          * Cumulative delays after the session goes Ready, for the initial time

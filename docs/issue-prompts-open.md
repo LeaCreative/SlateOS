@@ -48,12 +48,12 @@ Ready yet.
 `local_back` + notify phone; launcher swipe while `link_up` / Connected no longer
 shows “Not connected”.
 
-**Follow-up 2 (10 Aug, same day):** that Connected forward path was still a
-silent no-op — `InputRouter::emit` dropped every message unless the session was
-already Ready/Active/Idle, so GATT-up / HELLO-in-flight swipes never left the
-watch. Connected is now allowed through `emit`. Disconnected (“Not connected”)
-also swallowed both horizontal swipes (RIGHT was the anti-settings `continue`,
-LEFT re-entered not-connected); either direction now returns to the face.
+**Follow-up 4 (10 Aug):** operator log on companion **p41** still showed
+CONTROL+DISPLAY pairs and a **notification flood** (sixteen `ch=4` writes in
+~50 ms). Root cause of the flood: `sendMessage` → `pumpWrites` raced past the
+inter-message gap as soon as `onCharacteristicWrite` cleared `writing`. Fixed
+with `gapUntilMs`; notif bulk-sync deferred 3 s; PUSH coalesce 500→80 ms so a
+failed first launcher push is not "duplicate-skipped" on the recovery swipe.
 
 ### N-59 / N-60 — steps and raise-to-wake, both dead, both accelerometer (history)
 

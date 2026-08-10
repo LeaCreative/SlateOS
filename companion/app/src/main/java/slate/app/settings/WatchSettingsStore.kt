@@ -112,6 +112,7 @@ class WatchSettingsStore(context: Context) {
         tiltEnabled = sp.getBoolean(KEY_TILT, true),
         wakeSeconds = sp.getInt(KEY_WAKE, 20),
         showSteps = sp.getBoolean(KEY_STEPS, true),
+        showDiag = sp.getBoolean(KEY_DIAG, true),
     )
 
     private fun persist(p: WatchSettings.Payload, dirty: Boolean) {
@@ -120,6 +121,7 @@ class WatchSettingsStore(context: Context) {
             .putBoolean(KEY_TILT, p.tiltEnabled)
             .putInt(KEY_WAKE, p.wakeSeconds)
             .putBoolean(KEY_STEPS, p.showSteps)
+            .putBoolean(KEY_DIAG, p.showDiag)
             .putLong(KEY_HIGHEST_SEEN, highestSeenRevision)
             .putBoolean(KEY_DIRTY, dirty)
             .apply()
@@ -132,6 +134,7 @@ class WatchSettingsStore(context: Context) {
         private const val KEY_TILT = "tilt_enabled"
         private const val KEY_WAKE = "wake_seconds"
         private const val KEY_STEPS = "show_steps"
+        private const val KEY_DIAG = "show_diag"
         private const val KEY_DIRTY = "dirty"
 
         @Volatile

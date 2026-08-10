@@ -31,6 +31,8 @@ struct Payload {
   std::uint8_t tilt_enabled = 1u;
   std::uint8_t wake_seconds = 20u;
   std::uint8_t face_show_steps = 1u;
+  /** Watch-face diagnostic overlay lines (bring-up counters). */
+  std::uint8_t face_show_diag = 1u;
 };
 
 /** Writes exactly [kPayloadBytes]. Returns 0 if `cap` is too small. */
