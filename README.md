@@ -11,7 +11,7 @@
 <img src="/docs/images/apps.jpg"
      alt="App launcher on PineTime"
      width="200">
-<img src="/docs/images/flocal map app.jpg"
+<img src="/docs/images/local map app.jpg"
      alt="Local Map app on PineTime"
      width="200">
 	 
