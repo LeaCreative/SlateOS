@@ -1,9 +1,8 @@
 package slate.app.repo
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,14 +14,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,14 +40,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import slate.app.SlateActivity
 import slate.app.link.LinkForegroundService
+import slate.app.theme.SlateTitleBar
+import slate.app.theme.setSlateContent
 import slate.repo.Availability
 import slate.repo.PermissionPolicy
 import slate.repo.RepoTrust
 import slate.script.ScriptPermission
 import slate.script.SubAppSetting
 
-class RepoActivity : ComponentActivity() {
+class RepoActivity : SlateActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val prefs = RepoPrefs(this)
@@ -61,12 +65,8 @@ class RepoActivity : ComponentActivity() {
                 LinkForegroundService.instance?.watchProtocolVersion() ?: 1
             },
         )
-        setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    RepoScreen(manager = manager, prefs = prefs, context = this)
-                }
-            }
+        setSlateContent {
+            RepoScreen(manager = manager, prefs = prefs, context = this)
         }
     }
 }
@@ -92,6 +92,10 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
     }
 
     val current = selected
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = { SlateTitleBar(title = "Sub-app repository") },
+    ) { innerPadding ->
     if (current != null) {
         DetailScreen(
             item = current,
@@ -107,31 +111,33 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
                 manager.uninstall(id)
                 selected = null
             },
+            modifier = Modifier.padding(innerPadding),
         )
-        return
+        return@Scaffold
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = "Sub-app repository",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-        )
+    Column(modifier = Modifier.padding(innerPadding).padding(16.dp)) {
         Text(text = status, style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { tab = Tab.Browse }) { Text("Browse") }
-            TextButton(onClick = { tab = Tab.Installed }) { Text("Installed") }
-            TextButton(onClick = { tab = Tab.Sources }) { Text("Sources") }
-            TextButton(onClick = { scope.launch { manager.refreshIndexes(force = true) } }) {
-                Text("Refresh")
-            }
-            TextButton(onClick = {
-                BundledPackageSeeder.ensureOfficialDemos(context)
-                manager.refreshLocal()
-            }) {
-                Text("Seed demos")
-            }
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            val chipShape = RoundedCornerShape(12.dp)
+            OutlinedButton(onClick = { tab = Tab.Browse }, shape = chipShape) { Text("Browse") }
+            OutlinedButton(onClick = { tab = Tab.Installed }, shape = chipShape) { Text("Installed") }
+            OutlinedButton(onClick = { tab = Tab.Sources }, shape = chipShape) { Text("Sources") }
+            OutlinedButton(
+                onClick = { scope.launch { manager.refreshIndexes(force = true) } },
+                shape = chipShape,
+            ) { Text("Refresh") }
+            OutlinedButton(
+                onClick = {
+                    BundledPackageSeeder.ensureOfficialDemos(context)
+                    manager.refreshLocal()
+                },
+                shape = chipShape,
+            ) { Text("Seed demos") }
         }
         Spacer(modifier = Modifier.height(8.dp))
         settingsFor?.let { item ->
@@ -179,6 +185,7 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
             }
             Tab.Sources -> SourcesPanel(prefs = prefs, manager = manager)
         }
+    }
     }
 }
 
@@ -298,6 +305,7 @@ private fun DetailScreen(
     onBack: () -> Unit,
     onInstall: (BrowseItem, Set<ScriptPermission>) -> Unit,
     onUninstall: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val app = item.entry.app
     var confirmInstall by remember { mutableStateOf(false) }
@@ -306,7 +314,7 @@ private fun DetailScreen(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .padding(16.dp)
             .verticalScroll(rememberScrollState()),
     ) {

@@ -30,7 +30,6 @@ import slate.app.repo.InstalledStore
 import slate.app.repo.RepoPrefs
 import slate.app.settings.WatchSettingsStore
 import slate.app.notif.NotifChange
-import slate.app.notif.NotifPrefs
 import slate.app.notif.NotifStore
 import slate.app.notif.toJsonArray
 import slate.app.script.AndroidJsEngine
@@ -63,7 +62,6 @@ class CompositorHost(
     private val context: Context,
     private val gatt: SlateGattClient,
     private val scope: CoroutineScope,
-    private val notifPrefs: NotifPrefs,
 ) {
     private val hostVersion = run {
         try {

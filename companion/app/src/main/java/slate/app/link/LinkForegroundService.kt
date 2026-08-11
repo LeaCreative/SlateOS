@@ -92,7 +92,6 @@ class LinkForegroundService : Service() {
             applicationContext,
             client,
             scope,
-            slate.app.notif.NotifPrefs(applicationContext),
         ).also { it.start() }
         repoScheduler = RepoUpdateScheduler(applicationContext, scope).also { it.start() }
         createChannel()
@@ -333,7 +332,7 @@ class LinkForegroundService : Service() {
         // SLATE_BLE_DIAG=0, so every one of these was rejected by the watch's
         // reassembler and counted as a frame drop — ~750 pings produced the
         // 538 "frame drops" that looked like a transport fault and were
-        // nothing of the kind. Use the "Ping RTT" button for a one-off probe.
+        // nothing of the kind. Use Debug → Benchmarks (gate B) for RTT.
         if (!RTT_PING_ENABLED) return
         if (rttJob?.isActive == true) return
         rttJob = scope.launch {

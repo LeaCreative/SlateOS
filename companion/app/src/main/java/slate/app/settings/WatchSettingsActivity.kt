@@ -1,8 +1,6 @@
 package slate.app.settings
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -29,7 +26,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import slate.app.SlateActivity
+import slate.app.theme.SlateTitleBar
+import slate.app.theme.setSlateContent
 import slate.session.WatchSettings
 
 /**
@@ -55,14 +55,12 @@ import slate.session.WatchSettings
  * when the watch changed underneath it. Each control writes through
  * immediately; [WatchSettingsStore] stamps the revision and the link sends it.
  */
-class WatchSettingsActivity : ComponentActivity() {
+class WatchSettingsActivity : SlateActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val store = WatchSettingsStore.get(this)
-        setContent {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                WatchSettingsScreen(store)
-            }
+        setSlateContent {
+            WatchSettingsScreen(store)
         }
     }
 }
@@ -74,20 +72,18 @@ fun WatchSettingsScreen(store: WatchSettingsStore) {
     val settings by store.settings.collectAsState()
     val pending by store.pendingSend.collectAsState()
 
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = { SlateTitleBar(title = "Watch settings") },
+    ) { innerPadding ->
     Column(
         modifier = Modifier
             .fillMaxSize()
-            // targetSdk 35 draws edge-to-edge, so without this the first row
-            // sits under the system bar and reads as clipped — which is exactly
-            // how it shipped.
-            .safeDrawingPadding()
+            .padding(innerPadding)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // No headline here: the activity's own title bar already says "Watch
-        // settings", and repeating it cost a row of vertical space on a screen
-        // that had to scroll to show three settings.
         Text(
             text = "These live on the watch. Change them here or there — both " +
                 "update, and the most recent change wins.",
@@ -200,6 +196,7 @@ fun WatchSettingsScreen(store: WatchSettingsStore) {
             },
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
         )
+    }
     }
 }
 

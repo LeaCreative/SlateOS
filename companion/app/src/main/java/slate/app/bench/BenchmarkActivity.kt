@@ -33,7 +33,8 @@ class BenchmarkActivity : ComponentActivity() {
         root.addView(
             text(
                 "Needs debug firmware with DIAG bench. Pauses clock push while running.\n" +
-                    "A: ≥60 kB/s   B: RTT p95 <250 ms   D: parse+render <30 ms",
+                    "A: ≥60 kB/s   B: RTT p95 <250 ms (use this for link latency)   " +
+                    "D: parse+render <30 ms",
                 13f,
                 false,
             ),

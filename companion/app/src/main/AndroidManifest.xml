@@ -53,13 +53,14 @@
         android:required="false" />
 
     <application
+        android:name=".SlateApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/full_backup_rules"
         android:icon="@android:drawable/ic_menu_compass"
         android:label="Slate"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.DeviceDefault.DayNight">
+        android:theme="@style/Theme.Slate">
 
         <activity
             android:name=".MainActivity"
@@ -69,6 +70,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".PermissionsActivity"
+            android:exported="false"
+            android:label="Permissions" />
+
+        <activity
+            android:name=".DebugActivity"
+            android:exported="false"
+            android:label="Debug" />
 
         <activity
             android:name=".ota.SealedDfuProbeActivity"
