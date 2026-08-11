@@ -27,7 +27,7 @@ Navigation: Swipe left for the app launcher, right for settings. I always found 
 
 The phone pushes display lists over Bluetooth; the watch renders them and returns element-level input. A local resilient core (face, steps, settings, sleep/wake, OTA) keeps working with no phone attached. The watch never executes code received over BLE — display lists are data only.
 
-Notifications: On my to-do list for today or tomorrow.
+Notifications: Swipe down on the watch face to open the notifications list.
 
 **SlateOS would not have been possible without the hard work done by the people at Pine, InfiniTimeOrg (https://github.com/InfiniTimeOrg, https://github.com/geekbozu, https://github.com/mark9064, https://github.com/FintasticMan), Nordic and the FreeRTOS project! You have my gratitude!**
 
