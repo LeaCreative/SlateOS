@@ -36,7 +36,7 @@
 - **Face:** time, date, optional steps, battery, link cue, trial amber bar, version/diag overlay.
 - **Settings** (swipe face **left→right**): raise-to-wake, display timeout (incl. never), show steps. Bidirectional `SETTINGS_SYNC` (0x21) with phone; persisted (`SLTU`).
 - **Swipe policy:** settings **right→left** → face (not launcher); launcher **left→right** → close (not settings); face **right→left** → launcher when linked.
-- **Notifs screen** (button cycle): local store from SYSTEM ch4 — numeric/monogram UI (no full fonts).
+- **Notifs shade** (swipe down from face): SYSTEM ch4 stubs (notification titles); body on demand via INPUT `NOTIF_REQ` + SYSTEM `BODY`. Amber status glyph while stubs remain.
 - Display sleep (default **20 s**, configurable); wake on button, double-tap, **raise-to-wake**, charger edge, alerts.
 - Offline launcher swipe → “not connected”.
 - Haptics via FreeRTOS timer motor driver.
@@ -86,7 +86,8 @@
 
 | Capability | Status |
 |---|---|
-| Notifications (NLS → ch4 store + Kotlin INTERRUPT app) | Working (JS notif app not yet) |
+| Notifications (NLS → stub store + local shade; body on tap) | Working |
+| Incoming call alert (Telephony / call-notif fallback) | Working (display-only) |
 | Navigation (OsmAnd-style + demo) | Working |
 | Camera (CameraX → RGB332 PATCH) | Working |
 | Location | Working |
@@ -108,9 +109,11 @@
 |---|---|
 | Face, swipe L→R | Local settings |
 | Settings, swipe R→L | Face |
+| Face, swipe down | Notification shade |
+| Notifs / detail, swipe up | Face |
 | Face, swipe R→L (linked) | Phone launcher |
 | Launcher, swipe L→R | Close to face |
-| Side button | Cycle Face → Notifs → Settings (and related local handling) |
+| Side button | Return to Face from local screens (does not open Notifs) |
 | Raise wrist (when enabled) | Wake display |
 | Double-tap / button | Wake when asleep |
 

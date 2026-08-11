@@ -83,10 +83,12 @@ class SlateNotificationListener : NotificationListenerService() {
 
         val icon = NotifIconMapper.map(sbn.packageName, title.ifEmpty { null })
         val actions = extractActions(key, n)
+        val appLabel = resolveAppLabel(sbn.packageName)
 
         val item = NotifItem(
             key = key,
             packageName = sbn.packageName,
+            appLabel = appLabel,
             title = title.ifEmpty { sbn.packageName.substringAfterLast('.') },
             text = text,
             whenMs = sbn.postTime,
@@ -99,6 +101,18 @@ class SlateNotificationListener : NotificationListenerService() {
         )
         NotifStore.registerActions(key, actions.associate { it.first.id to it.second })
         NotifStore.upsert(item)
+    }
+
+    private fun resolveAppLabel(packageName: String): String {
+        return try {
+            val pm = applicationContext.packageManager
+            val ai = pm.getApplicationInfo(packageName, 0)
+            pm.getApplicationLabel(ai).toString().take(32).ifEmpty {
+                packageName.substringAfterLast('.')
+            }
+        } catch (_: Throwable) {
+            packageName.substringAfterLast('.').take(32)
+        }
     }
 
     private fun extractActions(

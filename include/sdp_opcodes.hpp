@@ -139,12 +139,13 @@ constexpr std::uint8_t Max = 1u;
 }  // namespace patch_encoding
 
 namespace haptic_pattern {
-constexpr std::uint8_t TICK   = 0u;
-constexpr std::uint8_t SHORT  = 1u;
-constexpr std::uint8_t DOUBLE = 2u;
-constexpr std::uint8_t LONG   = 3u;
-constexpr std::uint8_t ERROR  = 4u;
-constexpr std::uint8_t Max    = 4u;
+constexpr std::uint8_t TICK         = 0u;
+constexpr std::uint8_t SHORT        = 1u;
+constexpr std::uint8_t DOUBLE       = 2u;
+constexpr std::uint8_t LONG         = 3u;
+constexpr std::uint8_t ERROR        = 4u;
+constexpr std::uint8_t TRIPLE_LONG  = 5u;  // incoming call: 3× long pulses
+constexpr std::uint8_t Max          = 5u;
 }  // namespace haptic_pattern
 
 // ── Input channel ops (§4.4) ─────────────────────────────────────────────────
@@ -162,6 +163,8 @@ constexpr std::uint8_t EDGE_SWIPE   = 0x09u;
 constexpr std::uint8_t TOUCH_DOWN   = 0x0Au;
 constexpr std::uint8_t TOUCH_UP     = 0x0Bu;
 // 0x0C–0x1F reserved
+// Length-prefixed extensions (0xE0–0xEF): old phones ignore unknown INPUT ops.
+constexpr std::uint8_t NOTIF_REQ    = 0xE2u;  // watch → phone: [op][key_len][key…]
 }  // namespace input_op
 
 namespace swipe_dir {

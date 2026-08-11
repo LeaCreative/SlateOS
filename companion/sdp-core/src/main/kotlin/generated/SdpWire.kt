@@ -112,7 +112,8 @@ object SdpWire {
         const val DOUBLE = 0x02
         const val LONG = 0x03
         const val ERROR = 0x04
-        const val MAX = 4
+        const val TRIPLE_LONG = 0x05
+        const val MAX = 5
     }
 
     object SwipeDir {
@@ -135,6 +136,7 @@ object SdpWire {
         const val EDGE_SWIPE = 0x09
         const val TOUCH_DOWN = 0x0A
         const val TOUCH_UP = 0x0B
+        const val NOTIF_REQ = 0xE2
     }
 
     object ButtonAction {

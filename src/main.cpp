@@ -680,14 +680,28 @@ static void app_loop() {
         // activity whoever owns the panel.
         g_core.note_activity();
         // Swipe routing (local vs phone):
+        //   Face + down → notification shade (local)
+        //   Notifs / NotifDetail + up → face (local) — close the shade
         //   Face + left-to-right  → watch settings (local) — Face only
-        //   Settings + right-to-left → face (local) — NOT the launcher
-        //   Disconnected + either horizontal swipe → face (local)
+        //   Right-to-left → hierarchical back (NotifDetail→Notifs→Face, …)
+        //     except Face, which opens the phone launcher
+        //   Settings / Disconnected + left → face (via go_back)
+        //   Remote screen + left-to-right → dismiss (phone + local_back)
         //   Face + right-to-left → launcher (phone), or "not connected" if no BLE
-        //   Remote screen + left-to-right → dismiss (phone + local_back) — must
-        //     NOT open settings. That was the residual launcher→settings bug:
-        //     the local Disconnected ("Not connected") screen still owned the
-        //     panel, so RIGHT was treated like Face→settings.
+        if (ev.type == input::EventType::Swipe &&
+            ev.swipe == input::SwipeDir::Down && g_local_owns_screen &&
+            g_core.local_state().screen == slate::local::Screen::Face) {
+          g_core.show_notifs();
+          continue;
+        }
+        if (ev.type == input::EventType::Swipe &&
+            ev.swipe == input::SwipeDir::Up && g_local_owns_screen &&
+            (g_core.local_state().screen == slate::local::Screen::Notifs ||
+             g_core.local_state().screen ==
+                 slate::local::Screen::NotifDetail)) {
+          g_core.show_face();
+          continue;
+        }
         if (ev.type == input::EventType::Swipe &&
             ev.swipe == input::SwipeDir::Right) {
           if (!g_local_owns_screen && g_session.remote_depth() > 0u) {
@@ -706,13 +720,13 @@ static void app_loop() {
             continue;
           }
         }
+        // General back (R→L), except Face which opens the launcher below.
         if (ev.type == input::EventType::Swipe &&
             ev.swipe == input::SwipeDir::Left && g_local_owns_screen &&
-            (g_core.local_state().screen == slate::local::Screen::Settings ||
-             g_core.local_state().screen ==
-                 slate::local::Screen::Disconnected)) {
-          g_core.show_face();
-          continue;
+            g_core.local_state().screen != slate::local::Screen::Face) {
+          if (g_core.go_back()) {
+            continue;
+          }
         }
         const bool launcher_swipe =
             ev.type == input::EventType::Swipe &&
@@ -1062,6 +1076,8 @@ extern "C" int main() {
   ckh.display_sleep = &core_display_sleep;
   ckh.sample_battery = [](void*) { slate::battery_hw::sample_now(); };
   ckh.hr_refresh = &hr_refresh_hook;
+  ckh.send_input = &send_input_msg;
+  ckh.ctx = &g_link;
   g_core.init(ckh, &g_bma);
   // init() memsets the state block and paints from it, so these have to be set
   // afterwards — and then repainted explicitly. Without the repaint the amber

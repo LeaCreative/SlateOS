@@ -15,18 +15,22 @@ screen is the only instrument you have.
 
 ## 1. Navigation
 
-There is one physical control: the **side button**.
+There is one physical control: the **side button**, plus touch swipes.
 
-A short press cycles through the local screens in a fixed loop:
+| Gesture | Effect |
+|---|---|
+| Face, swipe **down** | Notification shade |
+| Notifs / detail, swipe **up** | Face (close shade) |
+| Notif detail, swipe **left** (R→L) | Notification list (back) |
+| Notifs, swipe **left** | Face (back) |
+| Face, swipe **right** (L→R) | Settings |
+| Settings, swipe **left** (R→L) | Face |
+| Face, swipe **left** (linked) | Phone launcher |
+| Phone sub-app, swipe **left** | Back (detail→list→close app); not launcher |
+| Side button | Always returns toward the **Face** (from Notifs, detail, Settings, Call, Alert). Does **not** open Notifs from the Face |
 
-```
-Face  →  Notifications  →  Settings  →  Face
-```
-
-So from the **notifications screen, press the button twice** to get back to the
-watch face — Settings, then Face. There is no back gesture; the loop
-only runs one way. With **Heart rate** On in Settings, BPM appears on the face
-next to steps (continuous measure while enabled).
+With **Heart rate** On in Settings, BPM appears on the face next to steps
+(continuous measure while enabled).
 
 **When the phone owns the screen** (a sub-app is showing), a short press means
 *back*: the watch pops one remote screen, and when none are left it returns to
@@ -40,12 +44,9 @@ Other button behaviour:
 | Action | Result |
 |---|---|
 | Short press while asleep | Wakes the display; does **not** change screen |
-| Short press on an Alert screen | Returns straight to the Face |
+| Short press on an Alert / Call screen | Returns straight to the Face |
 | **Hold ~7 s** | Watchdog reset. The WDT is deliberately not petted while the button is held, so a wedged watch always reboots |
 | Hold through boot until the screen turns **blue** | MCUBoot rollback to the previous image — the guaranteed recovery path, works even on a confirmed image |
-
-Touch input is delivered to the phone as element events; the local screens are
-driven by the button.
 
 ---
 
@@ -237,43 +238,24 @@ confirms.
 
 ## 5. The notifications screen
 
-First press from the face. This is the screen in the photograph.
+Open with a **swipe down** from the face (not the side button).
+Swipe **left** on a detail returns to the list; swipe **left** on the list (or
+**up** anywhere in the shade) returns to the face. Leaving detail (button,
+swipe left to the list, or swipe up) **deletes that stub on the watch only** —
+the phone notification is unchanged. Dismissing on the phone removes the stub
+via SYSTEM `REMOVE`.
 
-```
-        00          ← screen id
-         5          ← notification count
+New notifications wake the watch with **two short** vibrations and show an
+amber glyph in the face status bar (left of the display-list / link blocks)
+while any stubs remain.
 
-   0    21
-   0    32
-   0     5
-   0    29
-   0    29
-```
+The shade lists **title buttons** (from the SYSTEM stub store). Tap a row to
+request the body from the phone; the detail screen shows the text.
 
-| Element | Meaning |
-|---|---|
-| `00` (top, centred) | Screen id — this is screen 00, notifications |
-| `5` (below it) | How many notifications are stored |
-| Left column | The notification's **monogram** — one character identifying the source app |
-| Middle column | **Title length** in characters |
-| Right column (`1`) | Present only if that notification is **stale** |
-
-Why it looks like this: **font 0 has no letters.** The local UI font is numeric
-only, so a notification's monogram is shown as a digit and its title is
-represented by its *length* rather than its text. It is a structural view — it
-tells you notifications are arriving, how many, and roughly how big — not a
-readable inbox. In your photo all five monograms show `0` because non-digit
-monograms fall back to `0`, and the title lengths are 21, 32, 5, 29 and 29
-characters.
-
-Up to six rows are visible; the region scrolls if there are more. Rows emit
-touch events, so tapping one is reported to the phone.
-
-Readable notification text is a companion-rendered display list, not a local
-screen — it belongs to the remote UI path, which is the next thing to be built.
-
-**To get back to the face: press the button twice** (Notifications →
-Settings → Face).
+**Incoming calls** (when the companion has phone-state permission, or as a
+fallback from call-category notifications): three **long** vibrations and a
+Call screen with the caller label for about 10 seconds. Display-only — no
+answer/decline on the watch.
 
 ---
 

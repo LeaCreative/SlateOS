@@ -6,13 +6,13 @@ import kotlin.test.assertTrue
 
 class NotifCodecTest {
     @Test
-    fun upsert_roundTripLayout() {
+    fun upsert_stub_empty_text() {
         val bytes = SystemNotifCodec.encodeUpsert(
             key = "pkg|0|1",
             category = NotifIconCategory.MESSAGE.atlasId,
             monogram = 'W',
-            title = "Alice",
-            text = "Hello",
+            title = "WhatsApp",
+            text = "",
             whenEpochSec = 1_700_000_000L,
             ongoing = false,
             clearable = true,
@@ -26,12 +26,35 @@ class NotifCodecTest {
         assertEquals(NotifIconCategory.MESSAGE.atlasId, bytes[i++].toInt() and 0xFF)
         assertEquals('W'.code, bytes[i++].toInt() and 0xFF)
         val titleLen = bytes[i++].toInt() and 0xFF
-        assertEquals(5, titleLen)
+        assertEquals(8, titleLen)
         i += titleLen
         val textLen = bytes[i++].toInt() and 0xFF
-        assertEquals(5, textLen)
-        i += textLen
+        assertEquals(0, textLen)
         assertEquals(4, bytes.size - i) // u32 when
+    }
+
+    @Test
+    fun body_and_call_ops() {
+        val body = SystemNotifCodec.encodeBody("k1", "Hello body")
+        assertEquals(SystemNotifCodec.OP_BODY, body[0].toInt() and 0xFF)
+        assertEquals(2, body[1].toInt() and 0xFF)
+
+        val alert = SystemNotifCodec.encodeCallAlert("Alice")
+        assertEquals(SystemNotifCodec.OP_CALL_ALERT, alert[0].toInt() and 0xFF)
+        assertEquals(5, alert[1].toInt() and 0xFF)
+
+        val end = SystemNotifCodec.encodeCallEnd()
+        assertEquals(SystemNotifCodec.OP_CALL_END, end[0].toInt() and 0xFF)
+    }
+
+    @Test
+    fun notif_req_roundtrip() {
+        val key = "pkg|42"
+        val msg = ByteArray(2 + key.length)
+        msg[0] = SystemNotifCodec.INPUT_NOTIF_REQ.toByte()
+        msg[1] = key.length.toByte()
+        key.toByteArray().copyInto(msg, 2)
+        assertEquals(key, SystemNotifCodec.decodeNotifReq(msg))
     }
 
     @Test

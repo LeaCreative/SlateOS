@@ -5,6 +5,7 @@
 #include "local_budgets.hpp"
 #include "local_ui.hpp"
 #include "persist.hpp"
+#include "sdp_input.hpp"
 #include "sdp_opcodes.hpp"
 #include "wall_clock.hpp"
 
@@ -126,11 +127,137 @@ void Core::set_remote_stale(bool stale) {
 }
 
 void Core::on_system_message(const std::uint8_t* msg, std::size_t len) {
-  if (notif::on_system_message(&notifs_, msg, len)) {
-    if (local_state().screen == local::Screen::Notifs) {
+  const notif::Ingest kind = notif::on_system_message(&notifs_, msg, len);
+  switch (kind) {
+    case notif::Ingest::None:
+      return;
+    case notif::Ingest::Body: {
+      char key[notif::kKeyCap];
+      std::uint8_t klen = 0u;
+      char text[notif::kTextCap];
+      std::uint8_t tlen = 0u;
+      if (!notif::parse_body(msg, len, key, notif::kKeyCap, &klen, text,
+                             notif::kTextCap, &tlen)) {
+        return;
+      }
+      detail_key_len_ = klen;
+      std::memcpy(detail_key_, key, klen);
+      if (klen < notif::kKeyCap) {
+        detail_key_[klen] = '\0';
+      }
+      detail_text_len_ = tlen;
+      std::memcpy(detail_text_, text, tlen);
+      if (tlen < notif::kTextCap) {
+        detail_text_[tlen] = '\0';
+      }
+      detail_pending_ = false;
+      detail_req_ms_ = 0u;
+      wake_display();
+      local_state().screen = local::Screen::NotifDetail;
       show_current();
+      return;
     }
+    case notif::Ingest::CallAlert: {
+      char caller[notif::kCallerCap];
+      std::uint8_t clen = 0u;
+      if (!notif::parse_call_alert(msg, len, caller, notif::kCallerCap, &clen)) {
+        return;
+      }
+      enter_call(caller, clen);
+      return;
+    }
+    case notif::Ingest::CallEnd:
+      end_call_screen();
+      return;
+    case notif::Ingest::StubNew: {
+      const bool on_call = local_state().screen == local::Screen::Call;
+      // Coalesce: reconnect / burst UPSERTs share one DOUBLE, not one per stub.
+      if (!on_call && hooks_.haptic != nullptr) {
+        const std::uint32_t now = last_tick_ms_;
+        const bool due = last_stub_haptic_ms_ == 0u ||
+                         static_cast<std::uint32_t>(now - last_stub_haptic_ms_) >=
+                             kStubHapticCoalesceMs;
+        if (due) {
+          hooks_.haptic(sdp::haptic_pattern::DOUBLE, hooks_.ctx);
+          last_stub_haptic_ms_ = now == 0u ? 1u : now;
+        }
+      }
+      wake_display(5u);
+      if (local_state().screen == local::Screen::Notifs ||
+          local_state().screen == local::Screen::Face) {
+        show_current();
+      } else {
+        mark_paint_pending();
+      }
+      return;
+    }
+    case notif::Ingest::StubUpdate:
+    case notif::Ingest::Removed:
+    case notif::Ingest::Cleared:
+      if (local_state().screen == local::Screen::Notifs ||
+          local_state().screen == local::Screen::Face ||
+          local_state().screen == local::Screen::NotifDetail) {
+        // If the open detail's stub vanished, go back to the list.
+        if (kind == notif::Ingest::Removed || kind == notif::Ingest::Cleared) {
+          if (local_state().screen == local::Screen::NotifDetail) {
+            detail_pending_ = false;
+            detail_key_len_ = 0u;
+            detail_text_len_ = 0u;
+            local_state().screen = local::Screen::Notifs;
+          }
+        }
+        show_current();
+      } else {
+        mark_paint_pending();
+      }
+      return;
   }
+}
+
+void Core::dismiss_notif_detail_if_needed() {
+  const bool viewing = local_state().screen == local::Screen::NotifDetail ||
+                       detail_pending_;
+  if (!viewing) {
+    return;
+  }
+  if (detail_key_len_ > 0u) {
+    (void)notif::remove_key(&notifs_, detail_key_, detail_key_len_);
+  }
+  detail_key_len_ = 0u;
+  detail_text_len_ = 0u;
+  detail_pending_ = false;
+  detail_key_[0] = '\0';
+  detail_text_[0] = '\0';
+}
+
+void Core::enter_call(const char* caller, std::uint8_t caller_len) {
+  wake_display(5u);
+  if (caller != nullptr && caller_len > 0u) {
+    const std::uint8_t n =
+        caller_len < sizeof(local_state().alert_label)
+            ? caller_len
+            : static_cast<std::uint8_t>(sizeof(local_state().alert_label) - 1u);
+    std::memcpy(local_state().alert_label, caller, n);
+    local_state().alert_label[n] = '\0';
+  } else {
+    local_state().alert_label[0] = '\0';
+  }
+  local_state().screen = local::Screen::Call;
+  call_until_ms_ = last_tick_ms_ + 10000u;
+  if (hooks_.haptic != nullptr) {
+    hooks_.haptic(sdp::haptic_pattern::TRIPLE_LONG, hooks_.ctx);
+  }
+  show_current();
+}
+
+void Core::end_call_screen() {
+  if (local_state().screen != local::Screen::Call) {
+    return;
+  }
+  call_until_ms_ = 0u;
+  local_state().alert_label[0] = '\0';
+  local_state().screen = local::Screen::Face;
+  show_current();
 }
 
 void Core::apply_cts_time(std::uint32_t unix_epoch_sec) {
@@ -219,6 +346,8 @@ void Core::show_current() {
   vm.state = &local_state();
   vm.notifs = &notifs_;
   vm.alarms = &alarms_;
+  vm.detail_text = detail_text_;
+  vm.detail_pending = detail_pending_;
   const std::size_t n = ui::build_screen(vm, dl_buf_, sizeof(dl_buf_));
   if (n == 0u) {
     return;
@@ -463,6 +592,15 @@ void Core::tick(std::uint32_t now_ms) {
     last_activity_ms_ = now_ms;
     activity_seeded_ = true;
   }
+  // BODY never arrived (key miss on phone, link drop) — leave the waiting dots.
+  if (detail_pending_ &&
+      local_state().screen == local::Screen::NotifDetail &&
+      detail_req_ms_ != 0u &&
+      static_cast<std::uint32_t>(now_ms - detail_req_ms_) >= kDetailBodyTimeoutMs) {
+    detail_pending_ = false;
+    detail_req_ms_ = 0u;
+    show_current();
+  }
   // Cadences use unsigned (now - last); requires mono_ms wrap at 2^32.
   if (now_ms - last_step_ms_ >= 2000u) {
     const std::uint32_t steps_before = local_state().steps;
@@ -502,6 +640,12 @@ void Core::tick(std::uint32_t now_ms) {
   }
   poll_alarms();
 
+  // Incoming-call screen auto-dismiss after 10 s.
+  if (local_state().screen == local::Screen::Call && call_until_ms_ != 0u &&
+      static_cast<std::int32_t>(now_ms - call_until_ms_) >= 0) {
+    end_call_screen();
+  }
+
   // Sleep last, so anything above that counted as activity has already said so.
   // Deliberately NOT gated on updating_: an OTA drives the panel through
   // show_ota_progress() and calls wake_display() with every step, which keeps
@@ -521,35 +665,114 @@ void Core::tick(std::uint32_t now_ms) {
 }
 
 void Core::on_button_press() {
-  wake_display();
-  // Cycle local screens when showing local UI.
+  wake_display(2u);
   if (local_state().screen == local::Screen::Alert) {
     local_state().screen = local::Screen::Face;
     show_current();
     return;
   }
+  if (local_state().screen == local::Screen::Call) {
+    end_call_screen();
+    return;
+  }
+  if (local_state().screen == local::Screen::NotifDetail) {
+    dismiss_notif_detail_if_needed();
+    local_state().screen = local::Screen::Notifs;
+    show_current();
+    return;
+  }
+  if (local_state().screen == local::Screen::Notifs ||
+      local_state().screen == local::Screen::Settings ||
+      local_state().screen == local::Screen::Disconnected ||
+      local_state().screen == local::Screen::Charging) {
+    local_state().screen = local::Screen::Face;
+    show_current();
+    return;
+  }
+  // Face: button does not open Notifs (swipe-down does).
+}
+
+bool Core::go_back() {
+  wake_display();
   switch (local_state().screen) {
     case local::Screen::Face:
+      return false;
+    case local::Screen::NotifDetail:
+      dismiss_notif_detail_if_needed();
       local_state().screen = local::Screen::Notifs;
-      break;
+      show_current();
+      return true;
+    case local::Screen::Call:
+      end_call_screen();
+      return true;
     case local::Screen::Notifs:
-      local_state().screen = local::Screen::Settings;
-      break;
     case local::Screen::Settings:
-      local_state().screen = local::Screen::Face;
-      break;
+    case local::Screen::Disconnected:
     case local::Screen::Charging:
+    case local::Screen::Alert:
+      dismiss_notif_detail_if_needed();
       local_state().screen = local::Screen::Face;
-      break;
-    default:
-      local_state().screen = local::Screen::Face;
-      break;
+      show_current();
+      return true;
   }
-  show_current();
+  return false;
 }
 
 bool Core::on_tap_elem(std::uint16_t elem_id) {
   wake_display();
+  if (local_state().screen == local::Screen::Notifs) {
+    if (elem_id == local::kNotifScrollUp) {
+      if (local_state().notif_sel >= local::kNotifPageRows) {
+        local_state().notif_sel = static_cast<std::uint8_t>(
+            local_state().notif_sel - local::kNotifPageRows);
+      } else {
+        local_state().notif_sel = 0u;
+      }
+      show_current();
+      return true;
+    }
+    if (elem_id == local::kNotifScrollDown) {
+      const std::uint8_t count = notifs_.count;
+      const std::uint8_t next = static_cast<std::uint8_t>(
+          local_state().notif_sel + local::kNotifPageRows);
+      if (next < count) {
+        local_state().notif_sel = next;
+        show_current();
+      }
+      return true;
+    }
+    if (elem_id < local::kNotifRowBase) {
+      return false;
+    }
+    const std::uint16_t page_i =
+        static_cast<std::uint16_t>(elem_id - local::kNotifRowBase);
+    const std::uint8_t idx = static_cast<std::uint8_t>(
+        local_state().notif_sel + page_i);
+    const notif::Entry* e = notif::at(&notifs_, idx);
+    if (e == nullptr || e->key_len == 0u) {
+      return true;
+    }
+    detail_key_len_ = e->key_len;
+    std::memcpy(detail_key_, e->key, e->key_len);
+    if (e->key_len < notif::kKeyCap) {
+      detail_key_[e->key_len] = '\0';
+    }
+    detail_text_len_ = 0u;
+    detail_text_[0] = '\0';
+    detail_pending_ = true;
+    detail_req_ms_ = last_tick_ms_ == 0u ? 1u : last_tick_ms_;
+    local_state().screen = local::Screen::NotifDetail;
+    show_current();
+    if (hooks_.send_input != nullptr) {
+      std::uint8_t buf[2u + notif::kKeyCap];
+      const std::size_t n = sdp::input_wire::encode_notif_req(
+          buf, sizeof(buf), detail_key_, detail_key_len_);
+      if (n > 0u) {
+        (void)hooks_.send_input(buf, n, hooks_.ctx);
+      }
+    }
+    return true;
+  }
   if (local_state().screen != local::Screen::Settings) {
     return false;
   }
@@ -560,8 +783,6 @@ bool Core::on_tap_elem(std::uint16_t elem_id) {
           local_state().settings.tilt_enabled ? 0u : 1u;
       break;
     case local::kSettingTimeout: {
-      // Cycle the values a person would actually pick, rather than stepping by
-      // one second through a 5..120 range nobody wants to tap through.
       static constexpr std::uint8_t kChoices[] = {10u, 20u, 30u, 60u, 120u, 0u};
       const std::uint8_t current = local_state().settings.wake_seconds;
       std::size_t idx = 0u;
@@ -594,9 +815,6 @@ bool Core::on_tap_elem(std::uint16_t elem_id) {
   if (!changed) {
     return false;
   }
-  // A local edit is a new revision, and the phone must be told. Bumping past
-  // anything either side has shown is what makes "last writer wins" hold after
-  // both have been offline - see settings_sync::next_revision.
   local_state().settings.revision = settings_sync::next_revision(
       local_state().settings.revision, highest_seen_rev_);
   highest_seen_rev_ = local_state().settings.revision;

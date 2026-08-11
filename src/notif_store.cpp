@@ -13,15 +13,6 @@ bool key_eq(const Entry& e, const std::uint8_t* key, std::uint8_t key_len) {
   return std::memcmp(e.key, key, key_len) == 0;
 }
 
-std::int16_t find_key(const Store* s, const std::uint8_t* key, std::uint8_t key_len) {
-  for (std::uint8_t i = 0u; i < s->count; ++i) {
-    if (key_eq(s->entries[i], key, key_len)) {
-      return static_cast<std::int16_t>(i);
-    }
-  }
-  return -1;
-}
-
 void copy_str(char* dst, std::uint8_t cap, const std::uint8_t* src, std::uint8_t len,
               std::uint8_t* out_len) {
   if (len > cap) {
@@ -38,6 +29,18 @@ void copy_str(char* dst, std::uint8_t cap, const std::uint8_t* src, std::uint8_t
 
 }  // namespace
 
+std::int16_t find_key(const Store* s, const std::uint8_t* key, std::uint8_t key_len) {
+  if (s == nullptr || key == nullptr) {
+    return -1;
+  }
+  for (std::uint8_t i = 0u; i < s->count; ++i) {
+    if (key_eq(s->entries[i], key, key_len)) {
+      return static_cast<std::int16_t>(i);
+    }
+  }
+  return -1;
+}
+
 void init(Store* store) {
   if (store == nullptr) {
     return;
@@ -49,41 +52,52 @@ void clear(Store* store) {
   init(store);
 }
 
-bool on_system_message(Store* store, const std::uint8_t* msg, std::size_t len) {
+Ingest on_system_message(Store* store, const std::uint8_t* msg, std::size_t len) {
   if (store == nullptr || msg == nullptr || len == 0u) {
-    return false;
+    return Ingest::None;
   }
   const std::uint8_t op = msg[0];
   if (op == kOpClearAll) {
     clear(store);
-    return true;
+    return Ingest::Cleared;
+  }
+  if (op == kOpBody) {
+    return Ingest::Body;
+  }
+  if (op == kOpCallAlert) {
+    return Ingest::CallAlert;
+  }
+  if (op == kOpCallEnd) {
+    return Ingest::CallEnd;
   }
   if (op == kOpRemove) {
     if (len < 2u) {
-      return false;
+      return Ingest::None;
     }
     const std::uint8_t klen = msg[1];
     if (static_cast<std::size_t>(2u + klen) > len) {
-      return false;
+      return Ingest::None;
     }
-    const std::int16_t idx = find_key(store, msg + 2, klen);
+    const std::uint8_t store_klen = klen > kKeyCap ? kKeyCap : klen;
+    const std::int16_t idx = find_key(store, msg + 2, store_klen);
     if (idx < 0) {
-      return false;
+      return Ingest::None;
     }
-    return remove_at(store, static_cast<std::uint8_t>(idx));
+    (void)remove_at(store, static_cast<std::uint8_t>(idx));
+    return Ingest::Removed;
   }
   if (op != kOpUpsert) {
-    return false;
+    return Ingest::None;
   }
-  // UPSERT: op, key_len, key, flags, category, monogram, title_len, title,
-  //         text_len, text, when_u32_le
+  // UPSERT stub: op, key_len, key, flags, category, monogram, title_len, title,
+  //         text_len, text (ignored / usually 0), when_u32_le
   if (len < 2u) {
-    return false;
+    return Ingest::None;
   }
   std::size_t i = 1u;
   const std::uint8_t klen = msg[i++];
   if (i + klen + 3u > len) {
-    return false;
+    return Ingest::None;
   }
   const std::uint8_t* key = msg + i;
   i += klen;
@@ -91,32 +105,35 @@ bool on_system_message(Store* store, const std::uint8_t* msg, std::size_t len) {
   const std::uint8_t category = msg[i++];
   const char mono = static_cast<char>(msg[i++]);
   if (i >= len) {
-    return false;
+    return Ingest::None;
   }
   const std::uint8_t tlen = msg[i++];
   if (i + tlen >= len) {
-    return false;
+    return Ingest::None;
   }
   const std::uint8_t* title = msg + i;
   i += tlen;
   if (i >= len) {
-    return false;
+    return Ingest::None;
   }
   const std::uint8_t xlen = msg[i++];
   if (i + xlen + 4u > len) {
-    return false;
+    return Ingest::None;
   }
-  const std::uint8_t* text = msg + i;
-  i += xlen;
+  i += xlen;  // skip body on stub path
   std::uint32_t when = static_cast<std::uint32_t>(msg[i]) |
                        (static_cast<std::uint32_t>(msg[i + 1]) << 8) |
                        (static_cast<std::uint32_t>(msg[i + 2]) << 16) |
                        (static_cast<std::uint32_t>(msg[i + 3]) << 24);
 
-  std::int16_t idx = find_key(store, key, klen);
+  // Match against the stored (possibly truncated) key length — comparing the
+  // full wire key_len against kKeyCap-clipped entries always missed, so every
+  // reconnect UPSERT looked brand-new (duplicate rows + haptic storm).
+  const std::uint8_t store_klen = klen > kKeyCap ? kKeyCap : klen;
+  std::int16_t idx = find_key(store, key, store_klen);
+  const bool is_new = idx < 0;
   if (idx < 0) {
     if (store->count >= kMaxEntries) {
-      // Drop oldest.
       for (std::uint8_t j = 1u; j < store->count; ++j) {
         store->entries[j - 1u] = store->entries[j];
       }
@@ -131,9 +148,47 @@ bool on_system_message(Store* store, const std::uint8_t* msg, std::size_t len) {
   e.category = category;
   e.monogram = mono;
   copy_str(e.title, kTitleCap, title, tlen, &e.title_len);
-  copy_str(e.text, kTextCap, text, xlen, &e.text_len);
   e.when_sec = when;
   e.stale = 0u;
+  return is_new ? Ingest::StubNew : Ingest::StubUpdate;
+}
+
+bool parse_body(const std::uint8_t* msg, std::size_t len, char* key_out,
+                std::uint8_t key_cap, std::uint8_t* key_len_out, char* text_out,
+                std::uint8_t text_cap, std::uint8_t* text_len_out) {
+  if (msg == nullptr || len < 2u || msg[0] != kOpBody || key_out == nullptr ||
+      text_out == nullptr || key_len_out == nullptr || text_len_out == nullptr) {
+    return false;
+  }
+  std::size_t i = 1u;
+  const std::uint8_t klen = msg[i++];
+  if (i + klen >= len) {
+    return false;
+  }
+  copy_str(key_out, key_cap, msg + i, klen, key_len_out);
+  i += klen;
+  if (i >= len) {
+    return false;
+  }
+  const std::uint8_t xlen = msg[i++];
+  if (i + xlen > len) {
+    return false;
+  }
+  copy_str(text_out, text_cap, msg + i, xlen, text_len_out);
+  return true;
+}
+
+bool parse_call_alert(const std::uint8_t* msg, std::size_t len, char* caller_out,
+                      std::uint8_t caller_cap, std::uint8_t* caller_len_out) {
+  if (msg == nullptr || len < 2u || msg[0] != kOpCallAlert || caller_out == nullptr ||
+      caller_len_out == nullptr) {
+    return false;
+  }
+  const std::uint8_t clen = msg[1];
+  if (static_cast<std::size_t>(2u + clen) > len) {
+    return false;
+  }
+  copy_str(caller_out, caller_cap, msg + 2, clen, caller_len_out);
   return true;
 }
 
@@ -163,6 +218,18 @@ bool remove_at(Store* store, std::uint8_t index) {
   --store->count;
   std::memset(&store->entries[store->count], 0, sizeof(Entry));
   return true;
+}
+
+bool remove_key(Store* store, const char* key, std::uint8_t key_len) {
+  if (store == nullptr || key == nullptr) {
+    return false;
+  }
+  const std::int16_t idx =
+      find_key(store, reinterpret_cast<const std::uint8_t*>(key), key_len);
+  if (idx < 0) {
+    return false;
+  }
+  return remove_at(store, static_cast<std::uint8_t>(idx));
 }
 
 }  // namespace notif

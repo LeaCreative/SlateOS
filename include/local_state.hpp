@@ -13,9 +13,11 @@ namespace local {
 enum class Screen : std::uint8_t {
   Face = 0,
   Notifs,
+  NotifDetail,
   Settings,
   Charging,
   Alert,
+  Call,
   Disconnected,
 };
 
@@ -77,6 +79,13 @@ constexpr std::uint16_t kSettingTimeout = 2u;
 constexpr std::uint16_t kSettingSteps = 3u;
 constexpr std::uint16_t kSettingDiag = 4u;
 constexpr std::uint16_t kSettingHr = 5u;
+
+/** Notif list row element ids: kNotifRowBase .. kNotifRowBase + visible - 1. */
+constexpr std::uint16_t kNotifRowBase = 100u;
+constexpr std::uint16_t kNotifScrollUp = 90u;
+constexpr std::uint16_t kNotifScrollDown = 91u;
+/** How many app-name rows fit beside the scroll arrows. */
+constexpr std::uint8_t kNotifPageRows = 4u;
 
 // Bumped 10 Aug 2026 ('SLTV' -> 'SLTW'): hr_enabled added.
 constexpr std::uint32_t kSettingsMagic = 0x534C5457u;  // 'SLTW'
@@ -217,10 +226,10 @@ struct State {
    */
   std::uint8_t hr_status = 0u;
 
-  // Alert screen payload (alarm/timer).
+  // Alert / call screen payload.
   std::uint8_t alert_kind = 0u;  // 1=alarm 2=timer
   std::uint8_t alert_id = 0u;
-  char alert_label[20] = {};
+  char alert_label[32] = {};
 };
 
 // Local screen state + a small reserve. Sized to kLocalScreenStateBytes (I-19).

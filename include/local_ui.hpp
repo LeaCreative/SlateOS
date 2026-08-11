@@ -17,6 +17,9 @@ struct ViewModel {
   const local::State* state = nullptr;
   const notif::Store* notifs = nullptr;
   const alarm::Table* alarms = nullptr;
+  /** Notif detail body (null / empty while pending). */
+  const char* detail_text = nullptr;
+  bool detail_pending = false;
 };
 
 // Returns bytes written (0 on overflow / null). Includes COMMIT.

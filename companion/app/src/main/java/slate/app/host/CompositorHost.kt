@@ -41,6 +41,7 @@ import slate.compositor.FocusReason
 import slate.compositor.StackOp
 import slate.dsl.displayList
 import slate.frame.SdpFrame
+import slate.host.HostInbound
 import slate.host.HostOutbound
 import slate.host.PriorityClass
 import slate.input.InputEventDecoder
@@ -148,6 +149,9 @@ class CompositorHost(
     private var tickJob: Job? = null
     private var notifJob: Job? = null
     private var confirmPollJob: Job? = null
+    /** Keys the wearer already read on the watch — skip on bulk re-sync. */
+    private val watchClearedKeys = mutableSetOf<String>()
+    private var callMonitor: slate.app.call.CallMonitor? = null
     private val clock = ClockApp()
     private val test = TestApp()
     private val notifications = NotificationsApp()
@@ -342,6 +346,7 @@ class CompositorHost(
         stopConfirmPoll()
         notifJob?.cancel()
         notifJob = null
+        stopCallMonitor()
         stopNav()
         stopCamera()
         // Leaving a location listener registered past the service outlives the
@@ -629,26 +634,32 @@ class CompositorHost(
     }
 
     private fun onInputMessage(msg: ByteArray) {
+        // Watch → phone notification body request (INPUT extension 0xE2).
+        SystemNotifCodec.decodeNotifReq(msg)?.let { key ->
+            scope.launch { handleNotifBodyRequest(key) }
+            return
+        }
         val input = InputEventDecoder.decode(msg) ?: return
         scope.launch {
-            // Swipe right-to-left is a reserved system gesture: it opens the
-            // launcher from wherever you are, so it is claimed here rather
-            // than offered to the focused sub-app. Everything else goes
-            // straight through.
-            //
-            // Deliberately idempotent. This used to skip the open when the
-            // launcher was already the focused app, which made the gesture a
-            // one-shot: if the push had been rejected, or the watch had
-            // rebooted and reset to its own face, the host still believed the
-            // launcher was up and swallowed every further swipe. Re-focusing
-            // an already-focused app re-sends its screen, which is exactly the
-            // recovery wanted here.
+            // Swipe right-to-left:
+            //   • Face (no focused app) / launcher → open or re-focus launcher
+            //   • Any other focused sub-app → BACK (detail→list→relinquish)
+            // Face→Settings→Launcher keep their dedicated gestures on the watch;
+            // this host intercept must not steal BACK from notification detail.
             if (input.op == SdpWire.InputOp.SWIPE &&
                 input.dir == SdpWire.SwipeDir.LEFT
             ) {
-                LinkLog.i("swipe LEFT — opening launcher " +
-                    "(focused=${compositor.focusedAppId})")
-                openLauncher()
+                val focused = compositor.focusedAppId
+                if (focused == null || focused == LauncherApp.APP_ID) {
+                    LinkLog.i("swipe LEFT — opening launcher " +
+                        "(focused=$focused)")
+                    openLauncher()
+                } else {
+                    LinkLog.i("swipe LEFT — BACK for focused=$focused")
+                    compositor.dispatchInput(
+                        HostInbound.Input(op = SdpWire.InputOp.BACK),
+                    )
+                }
                 return@launch
             }
             if (input.op == SdpWire.InputOp.SWIPE) {
@@ -661,6 +672,31 @@ class CompositorHost(
             // such authority — so it parks the id and the host acts on it.
             launcher.takePendingLaunch()?.let { launchFromLauncher(it) }
         }
+    }
+
+    private fun handleNotifBodyRequest(key: String) {
+        val item = NotifStore.getByWireKey(key)
+        if (item == null) {
+            LinkLog.w("NOTIF_REQ unknown key=$key")
+            // Still reply so the watch leaves the "..." waiting state.
+            gatt.sendMessage(
+                SdpFrame.CHAN_SYSTEM,
+                SystemNotifCodec.encodeBody(key, ""),
+            )
+            return
+        }
+        val body = listOf(item.title, item.text)
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+            .ifBlank { item.appLabel }
+        gatt.sendMessage(
+            SdpFrame.CHAN_SYSTEM,
+            SystemNotifCodec.encodeBody(key, body),
+        )
+        // Treat body fetch as read-on-watch: do not re-UPSERT on reconnect.
+        watchClearedKeys.add(item.key)
+        watchClearedKeys.add(key)
+        LinkLog.i("NOTIF_REQ body sent key=$key (${body.length} chars)")
     }
 
     /**
@@ -826,6 +862,7 @@ class CompositorHost(
     private fun onLinkLost() {
         navAdapter?.notifyDisconnected()
         stopCamera()
+        stopCallMonitor()
         // resetStack() below drops every sub-app's screen, so the app that
         // subscribed can no longer draw a fix and has no way to unsubscribe.
         // Holding the GPS on for it would be a battery leak triggered by a
@@ -861,27 +898,27 @@ class CompositorHost(
             }
             syncAllToSystemChannel()
             pushNotifSnapshotToApp()
+            startCallMonitor()
             NotifStore.changes.collect { change ->
                 when (change) {
                     is NotifChange.Upserted -> {
                         val n = change.item
+                        if (n.key in watchClearedKeys) {
+                            return@collect
+                        }
+                        // Call-category ongoing posts: CallMonitor owns the
+                        // CALL_ALERT path when telephony is available; still
+                        // mirror a stub so the shade lists it, but never
+                        // auto-INTERRUPT.
                         gatt.sendMessage(
                             SdpFrame.CHAN_SYSTEM,
-                            SystemNotifCodec.encodeUpsert(
-                                key = n.key,
-                                category = n.icon.category.atlasId,
-                                monogram = n.icon.monogram,
-                                title = n.title,
-                                text = n.text,
-                                whenEpochSec = n.whenMs / 1000L,
-                                ongoing = n.ongoing,
-                                clearable = n.clearable,
-                            ),
+                            encodeStub(n),
                         )
                         pushNotifSnapshotToApp()
-                        maybeInterrupt(n.packageName, n.importance)
+                        maybeCallFallback(n)
                     }
                     is NotifChange.Removed -> {
+                        watchClearedKeys.remove(change.key)
                         gatt.sendMessage(
                             SdpFrame.CHAN_SYSTEM,
                             SystemNotifCodec.encodeRemove(change.key),
@@ -889,6 +926,7 @@ class CompositorHost(
                         pushNotifSnapshotToApp()
                     }
                     NotifChange.Cleared -> {
+                        watchClearedKeys.clear()
                         gatt.sendMessage(SdpFrame.CHAN_SYSTEM, SystemNotifCodec.encodeClearAll())
                         pushNotifSnapshotToApp()
                     }
@@ -897,18 +935,31 @@ class CompositorHost(
         }
     }
 
-    private suspend fun maybeInterrupt(packageName: String, importance: Int) {
-        if (!notifPrefs.mayInterrupt(packageName, importance)) return
-        if (!compositor.linkConnected) return
-        val deny = compositor.requestFocus(
-            notifications.manifest.id,
-            PriorityClass.INTERRUPT,
-            FocusReason.SystemRaise,
-            StackOp.Push,
+    private fun encodeStub(n: slate.app.notif.NotifItem): ByteArray {
+        return SystemNotifCodec.encodeUpsert(
+            key = n.key,
+            category = n.icon.category.atlasId,
+            monogram = n.icon.monogram,
+            title = n.title.take(32),
+            text = "",
+            whenEpochSec = n.whenMs / 1000L,
+            ongoing = n.ongoing,
+            clearable = n.clearable,
         )
-        if (deny != null) {
-            LinkLog.i("notif interrupt denied: $deny")
-        }
+    }
+
+    /** When Telephony is unavailable, raise CALL_ALERT from call-category notifs. */
+    private fun maybeCallFallback(n: slate.app.notif.NotifItem) {
+        if (callMonitor?.telephonyActive == true) return
+        if (n.category != slate.notif.NotifIconCategory.CALL) return
+        if (!n.ongoing) return
+        val who = n.title.ifBlank { n.appLabel }.ifBlank { "Call" }
+        gatt.sendMessage(SdpFrame.CHAN_SYSTEM, SystemNotifCodec.encodeCallAlert(who))
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    private suspend fun maybeInterrupt(packageName: String, importance: Int) {
+        // Local shade + vibes replaced INTERRUPT focus for notifications.
     }
 
     private suspend fun pushNotifSnapshotToApp() {
@@ -920,20 +971,37 @@ class CompositorHost(
 
     private fun syncAllToSystemChannel() {
         for (n in NotifStore.snapshot.value) {
-            gatt.sendMessage(
-                SdpFrame.CHAN_SYSTEM,
-                SystemNotifCodec.encodeUpsert(
-                    key = n.key,
-                    category = n.icon.category.atlasId,
-                    monogram = n.icon.monogram,
-                    title = n.title,
-                    text = n.text,
-                    whenEpochSec = n.whenMs / 1000L,
-                    ongoing = n.ongoing,
-                    clearable = n.clearable,
-                ),
-            )
+            if (n.key in watchClearedKeys) continue
+            gatt.sendMessage(SdpFrame.CHAN_SYSTEM, encodeStub(n))
         }
+    }
+
+    private fun startCallMonitor() {
+        if (callMonitor != null) return
+        callMonitor = slate.app.call.CallMonitor(context) { event ->
+            scope.launch {
+                when (event) {
+                    is slate.app.call.CallMonitor.Event.Ringing -> {
+                        gatt.sendMessage(
+                            SdpFrame.CHAN_SYSTEM,
+                            SystemNotifCodec.encodeCallAlert(event.caller),
+                        )
+                    }
+                    slate.app.call.CallMonitor.Event.Idle -> {
+                        gatt.sendMessage(
+                            SdpFrame.CHAN_SYSTEM,
+                            SystemNotifCodec.encodeCallEnd(),
+                        )
+                    }
+                }
+            }
+        }
+        callMonitor?.start()
+    }
+
+    private fun stopCallMonitor() {
+        callMonitor?.stop()
+        callMonitor = null
     }
 
     private fun handleAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {

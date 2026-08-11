@@ -25,12 +25,12 @@
 | Control | What it does |
 |---|---|
 | **Open TestApp** | Kotlin transport probe (black + white touch rect) |
-| **Open Notifications** | Kotlin `NotificationsApp` INTERRUPT snapshot |
+| **Open Notifications** | Debug-only Kotlin list (primary UX is the watch shade) |
 | **Watch launcher (on watch)** | Swipe face right→left; tap a JS app; swipe left→right to close |
 | **Bundled JS apps** | timer, navigation, camera, vibrate, location, map (seeded into repo) |
 
-Priorities: `NotificationsApp` raises at **INTERRUPT**. Focus stack empty →
-watch **local face** (ambient Kotlin clock is not forced as stack base).
+Focus stack empty → watch **local face**. New notifications no longer steal
+focus via INTERRUPT; swipe **down** on the face for the local shade.
 
 ---
 
@@ -38,12 +38,12 @@ watch **local face** (ambient Kotlin clock is not forced as stack base).
 
 | Button | What it does |
 |---|---|
-| **Interrupt filter: allow this phone's SMS pkgs** | Whitelist SMS/messaging packages for INTERRUPT |
-| **Interrupt filter: allow all HIGH+** | Allow HIGH+ importance to interrupt |
+| **1b. Notification access** | Required for the SYSTEM stub bridge |
+| **Grant phone state** (system) | Optional `READ_PHONE_STATE` for real incoming-call alerts |
 
-Two paths: SYSTEM ch4 local store (offline-capable, numeric UI) and Kotlin
-display-list INTERRUPT. Long-term Path B should be a JS app — see
-`docs/notifications.md`.
+On arrival the companion pushes a **stub** (app name only). The watch vibes
+twice and shows a status glyph. Tap a row to fetch the body. Reading on the
+watch clears the stub there only. See [`notifications.md`](notifications.md).
 
 ---
 

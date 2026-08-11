@@ -14,6 +14,8 @@ data class NotifAction(
 data class NotifItem(
     val key: String,
     val packageName: String,
+    /** Human-readable notifying app name for the watch stub list. */
+    val appLabel: String,
     val title: String,
     val text: String,
     val whenMs: Long,

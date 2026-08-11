@@ -46,6 +46,7 @@ fun List<NotifItem>.toJsonArray(): JSONArray {
             JSONObject()
                 .put("key", n.key)
                 .put("packageName", n.packageName)
+                .put("appLabel", n.appLabel)
                 .put("title", n.title)
                 .put("text", n.text)
                 .put("whenMs", n.whenMs)

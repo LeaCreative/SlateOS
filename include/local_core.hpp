@@ -34,6 +34,11 @@ struct Hooks {
    * Device wires this to slate::hr::refresh; host tests leave null.
    */
   void (*hr_refresh)(void* ctx) = nullptr;
+  /**
+   * Send an INPUT channel message (e.g. NOTIF_REQ). Null on host tests.
+   */
+  bool (*send_input)(const std::uint8_t* msg, std::size_t len, void* ctx) =
+      nullptr;
   void* ctx = nullptr;
 };
 
@@ -195,6 +200,16 @@ public:
    */
   bool apply_settings_sync(const settings_sync::Payload& incoming);
 
+  /** Open the notification shade (swipe down from the face). */
+  void show_notifs() {
+    wake_display();
+    if (local_state().notif_sel >= notifs_.count) {
+      local_state().notif_sel = 0u;
+    }
+    local_state().screen = local::Screen::Notifs;
+    show_current();
+  }
+
   /** Open the settings screen (swipe left-to-right from the face). */
   void show_settings() {
     wake_display();
@@ -205,9 +220,19 @@ public:
   /** Leave settings (or any local screen) back to the watch face. */
   void show_face() {
     wake_display();
+    dismiss_notif_detail_if_needed();
     local_state().screen = local::Screen::Face;
     show_current();
   }
+
+  /**
+   * Hierarchical back for swipe right→left.
+   *
+   * NotifDetail → Notifs; other local screens → Face. Returns false on the
+   * Face (caller opens the launcher) so Face/Settings/Launcher keep their
+   * dedicated navigation triangle.
+   */
+  bool go_back();
 
 private:
   void poll_steps();
@@ -217,6 +242,9 @@ private:
   void enter_alert(std::uint8_t kind, std::uint8_t id);
   void load_settings();
   void save_settings();
+  void dismiss_notif_detail_if_needed();
+  void enter_call(const char* caller, std::uint8_t caller_len);
+  void end_call_screen();
 
   Hooks hooks_{};
   bma::Driver* bma_ = nullptr;
@@ -225,6 +253,19 @@ private:
   alarm::Table alarms_{};
   bool local_owns_screen_ = true;
   bool updating_ = false;
+
+  char detail_key_[notif::kKeyCap] = {};
+  std::uint8_t detail_key_len_ = 0u;
+  char detail_text_[notif::kTextCap] = {};
+  std::uint8_t detail_text_len_ = 0u;
+  bool detail_pending_ = false;  // waiting for BODY after NOTIF_REQ
+  std::uint32_t detail_req_ms_ = 0u;
+  std::uint32_t call_until_ms_ = 0u;
+  /** Last StubNew DOUBLE — coalesce reconnect/burst UPSERTs into one vibe. */
+  std::uint32_t last_stub_haptic_ms_ = 0u;
+
+  static constexpr std::uint32_t kStubHapticCoalesceMs = 2500u;
+  static constexpr std::uint32_t kDetailBodyTimeoutMs = 4000u;
 
   /**
    * Display power state.

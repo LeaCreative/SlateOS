@@ -3,26 +3,29 @@ package slate.notif
 import java.nio.charset.StandardCharsets
 
 /**
- * Channel-4 SYSTEM codec for the notification retained store.
- * Firmware M10 will interpret these; until then the phone still sends them so
- * the wire path is ready and dumps are inspectable.
+ * Channel-4 SYSTEM codec for notification stubs, on-demand bodies, and call alerts.
  *
- * All strings are UTF-8, length-prefixed with u8 (max 255).
+ * All strings are UTF-8, length-prefixed with u8 (max 255, clipped by helpers).
  */
 object SystemNotifCodec {
     const val OP_UPSERT: Int = 0x01
     const val OP_REMOVE: Int = 0x02
     const val OP_CLEAR_ALL: Int = 0x03
+    const val OP_BODY: Int = 0x04
+    const val OP_CALL_ALERT: Int = 0x06
+    const val OP_CALL_END: Int = 0x07
 
     const val FLAG_ONGOING: Int = 1 shl 0
     const val FLAG_CLEARABLE: Int = 1 shl 1
+
+    const val INPUT_NOTIF_REQ: Int = 0xE2
 
     fun encodeUpsert(
         key: String,
         category: Int,
         monogram: Char,
         title: String,
-        text: String,
+        text: String = "",
         whenEpochSec: Long,
         ongoing: Boolean,
         clearable: Boolean,
@@ -62,6 +65,38 @@ object SystemNotifCodec {
     }
 
     fun encodeClearAll(): ByteArray = byteArrayOf(OP_CLEAR_ALL.toByte())
+
+    fun encodeBody(key: String, text: String): ByteArray {
+        val keyB = utf8(key, 64)
+        val textB = utf8(text, 96)
+        val out = ByteArray(3 + keyB.size + textB.size)
+        out[0] = OP_BODY.toByte()
+        out[1] = keyB.size.toByte()
+        System.arraycopy(keyB, 0, out, 2, keyB.size)
+        out[2 + keyB.size] = textB.size.toByte()
+        System.arraycopy(textB, 0, out, 3 + keyB.size, textB.size)
+        return out
+    }
+
+    fun encodeCallAlert(caller: String): ByteArray {
+        val c = utf8(caller, 48)
+        val out = ByteArray(2 + c.size)
+        out[0] = OP_CALL_ALERT.toByte()
+        out[1] = c.size.toByte()
+        System.arraycopy(c, 0, out, 2, c.size)
+        return out
+    }
+
+    fun encodeCallEnd(): ByteArray = byteArrayOf(OP_CALL_END.toByte())
+
+    /** Decode watch → phone NOTIF_REQ. Returns key or null. */
+    fun decodeNotifReq(msg: ByteArray): String? {
+        if (msg.isEmpty() || (msg[0].toInt() and 0xFF) != INPUT_NOTIF_REQ) return null
+        if (msg.size < 2) return null
+        val klen = msg[1].toInt() and 0xFF
+        if (msg.size < 2 + klen) return null
+        return String(msg, 2, klen, StandardCharsets.UTF_8)
+    }
 
     private fun utf8(s: String, max: Int): ByteArray {
         val raw = s.toByteArray(StandardCharsets.UTF_8)

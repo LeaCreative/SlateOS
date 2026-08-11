@@ -37,11 +37,12 @@ constexpr PatternDesc pattern_desc(std::uint8_t pattern) {
   // Values are sdp::haptic_pattern; duplicated as literals so this header stays
   // free of SDP wire constants (they live only in sdp_opcodes.hpp).
   switch (pattern) {
-    case 0u:  return PatternDesc{20u, 1u, 0u};    // TICK
-    case 1u:  return PatternDesc{40u, 1u, 0u};    // SHORT
-    case 2u:  return PatternDesc{25u, 2u, 40u};   // DOUBLE
-    case 3u:  return PatternDesc{120u, 1u, 0u};   // LONG
-    case 4u:  return PatternDesc{80u, 1u, 0u};    // ERROR
+    case 0u:  return PatternDesc{20u, 1u, 0u};     // TICK
+    case 1u:  return PatternDesc{40u, 1u, 0u};     // SHORT
+    case 2u:  return PatternDesc{25u, 2u, 40u};    // DOUBLE
+    case 3u:  return PatternDesc{120u, 1u, 0u};    // LONG
+    case 4u:  return PatternDesc{80u, 1u, 0u};     // ERROR
+    case 5u:  return PatternDesc{120u, 3u, 80u};   // TRIPLE_LONG
     default:  return PatternDesc{30u, 1u, 0u};
   }
 }

@@ -86,6 +86,15 @@ static void test_double_pulse() {
   expect("DOUBLE runs the motor for 50 ms", total_on_ms(steps) == 50u);
 }
 
+static void test_triple_long() {
+  bool done = false;
+  const std::vector<Step> steps = run(sdp::haptic_pattern::TRIPLE_LONG, &done);
+  expect("TRIPLE_LONG finishes", done);
+  // on 120, gap 80, on 120, gap 80, on 120
+  expect("TRIPLE_LONG is five steps", steps.size() == 5u);
+  expect("TRIPLE_LONG on-time 360 ms", total_on_ms(steps) == 360u);
+}
+
 static void test_every_pattern_terminates() {
   for (std::uint8_t p = 0u; p <= sdp::haptic_pattern::Max; ++p) {
     bool done = false;
@@ -138,6 +147,7 @@ static void test_degenerate_descriptors() {
 int main() {
   test_single_pulse();
   test_double_pulse();
+  test_triple_long();
   test_every_pattern_terminates();
   test_cancel_and_idle();
   test_degenerate_descriptors();

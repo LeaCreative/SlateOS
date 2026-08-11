@@ -45,6 +45,20 @@ object NotifStore {
 
     fun get(key: String): NotifItem? = items[key]
 
+    /**
+     * Resolve a watch wire key. Android [StatusBarNotification.getKey] is often
+     * longer than the watch store cap; the watch sends a truncated prefix.
+     */
+    fun getByWireKey(wireKey: String): NotifItem? {
+        items[wireKey]?.let { return it }
+        val wb = wireKey.toByteArray(Charsets.UTF_8)
+        if (wb.isEmpty()) return null
+        return items.values.firstOrNull { item ->
+            val kb = item.key.toByteArray(Charsets.UTF_8)
+            kb.size >= wb.size && kb.copyOf(wb.size).contentEquals(wb)
+        }
+    }
+
     fun registerActions(key: String, handlers: Map<String, () -> Unit>) {
         actionHandlers[key] = ConcurrentHashMap(handlers)
     }

@@ -12,13 +12,13 @@ import slate.host.PriorityClass
 import slate.host.RefreshPolicy
 import slate.wire.Align
 import slate.wire.Colors
-import slate.wire.Font
 import slate.wire.Style
 import slate.wire.pal
 import slate.wire.rgb
 
 /**
- * Notifications sub-app (M9) — M8 contract, scrollable list + detail + actions.
+ * Notifications sub-app — scrollable list + detail + actions.
+ * Uses TEXT_SCALED for arm's-length legibility (compare with local shade).
  */
 class NotificationsApp : KotlinSlateApp() {
     override val manifest = AppManifest(
@@ -56,8 +56,6 @@ class NotificationsApp : KotlinSlateApp() {
             out.push(buildScreen())
         } else {
             out.invalidate()
-            // High-priority interrupt requests are raised by CompositorHost; app may
-            // also ask for NORMAL focus when user opens notifications later.
         }
     }
 
@@ -75,7 +73,6 @@ class NotificationsApp : KotlinSlateApp() {
             SdpWire.InputOp.TAP -> {
                 val id = msg.elemId
                 if (detailKey == null) {
-                    // List rows: element ids 100..100+n
                     val idx = id - ID_ROW0
                     if (idx in items.indices) {
                         detailKey = items[idx].key
@@ -161,18 +158,31 @@ class NotificationsApp : KotlinSlateApp() {
         palette(1, Colors.WHITE)
         palette(2, rgb(0x4208))
         clear(pal(0))
-        text(Font.LARGE, 120, 12, Align.CENTER, pal(1), "Notifs")
-        val rowH = 44
-        val visible = items.take(12)
+        // Font id 1 (5×7) @ scale 2 — same family as local NOTIFS shade.
+        textScaled(
+            font = 1, x = 120, y = 8, align = Align.CENTER,
+            color = pal(1), scale = 2, text = "Notifications",
+        )
+        val rowH = 48
+        val visible = items.take(24)
         val contentH = (visible.size * rowH).coerceAtLeast(1)
-        scrollRegion(y = 36, h = 200, contentH = contentH) {
+        scrollRegion(y = 40, h = 196, contentH = contentH) {
             visible.forEachIndexed { i, row ->
-                val y = 36 + i * rowH
+                val y = 40 + i * rowH
                 element(id = ID_ROW0 + i, x = 4, y = y, w = 232, h = rowH - 4) {
                     rectRound(4, y, 232, rowH - 4, 6, pal(2), Style.FILL)
-                    text(Font.LARGE, 16, y + 6, Align.LEFT, pal(1), row.monogram.toString())
-                    text(Font.LARGE, 40, y + 6, Align.LEFT, pal(1), row.title.take(14))
-                    text(Font.LARGE, 40, y + 22, Align.LEFT, pal(1), row.text.take(16))
+                    textScaled(
+                        font = 1, x = 16, y = y + 6, align = Align.LEFT,
+                        color = pal(1), scale = 2, text = row.monogram.toString(),
+                    )
+                    textScaled(
+                        font = 1, x = 44, y = y + 4, align = Align.LEFT,
+                        color = pal(1), scale = 2, text = row.title.take(12),
+                    )
+                    textScaled(
+                        font = 1, x = 44, y = y + 26, align = Align.LEFT,
+                        color = pal(1), scale = 2, text = row.text.take(14),
+                    )
                 }
             }
         }
@@ -185,20 +195,44 @@ class NotificationsApp : KotlinSlateApp() {
         palette(2, rgb(0x2104))
         palette(3, rgb(0x07E0))
         clear(pal(0))
-        text(Font.LARGE, 16, 16, Align.LEFT, pal(1), row.monogram.toString())
-        text(Font.LARGE, 40, 16, Align.LEFT, pal(1), row.title.take(16))
-        text(Font.LARGE, 16, 48, Align.LEFT, pal(1), row.text.take(40))
+        textScaled(
+            font = 1, x = 16, y = 12, align = Align.LEFT,
+            color = pal(1), scale = 2, text = row.monogram.toString(),
+        )
+        textScaled(
+            font = 1, x = 44, y = 12, align = Align.LEFT,
+            color = pal(1), scale = 2, text = row.title.take(14),
+        )
+        // Body: wrap into short lines at scale 2.
+        val body = row.text.take(72)
+        var line = 0
+        var off = 0
+        while (off < body.length && line < 4) {
+            val end = (off + 16).coerceAtMost(body.length)
+            textScaled(
+                font = 1, x = 16, y = 48 + line * 24, align = Align.LEFT,
+                color = pal(1), scale = 2, text = body.substring(off, end),
+            )
+            off = end
+            line++
+        }
 
         var x = 8
         val y = 160
         element(id = ID_DISMISS, x = x, y = y, w = 70, h = 36) {
             rectRound(x, y, 70, 36, 6, pal(2), Style.FILL)
-            text(Font.LARGE, x + 35, y + 10, Align.CENTER, pal(1), "Del")
+            textScaled(
+                font = 1, x = x + 35, y = y + 8, align = Align.CENTER,
+                color = pal(1), scale = 2, text = "Del",
+            )
         }
         x += 78
         element(id = ID_SNOOZE, x = x, y = y, w = 70, h = 36) {
             rectRound(x, y, 70, 36, 6, pal(2), Style.FILL)
-            text(Font.LARGE, x + 35, y + 10, Align.CENTER, pal(1), "Zzz")
+            textScaled(
+                font = 1, x = x + 35, y = y + 8, align = Align.CENTER,
+                color = pal(1), scale = 2, text = "Zzz",
+            )
         }
         row.actions.filter { it.first != "dismiss" && it.first != "snooze" }
             .take(2)
@@ -207,7 +241,10 @@ class NotificationsApp : KotlinSlateApp() {
                 val ay = 200
                 element(id = ID_ACTION0 + i, x = ax, y = ay, w = 108, h = 32) {
                     rectRound(ax, ay, 108, 32, 6, pal(3), Style.FILL)
-                    text(Font.LARGE, ax + 54, ay + 8, Align.CENTER, pal(0), act.second.take(8))
+                    textScaled(
+                        font = 1, x = ax + 54, y = ay + 6, align = Align.CENTER,
+                        color = pal(0), scale = 2, text = act.second.take(8),
+                    )
                 }
             }
         commit()

@@ -1,8 +1,8 @@
-# Notifications bridge (M9)
+# Notifications bridge
 
-Phone-side adapter + Notifications sub-app. The watch never receives raw Android
-notification objects — only SDP display lists (live UI) and channel-4 SYSTEM
-records (retained store for phone-away reading).
+Phone-side adapter + local watch notification shade. The watch never receives
+raw Android notification objects — only channel-4 SYSTEM records (stubs and
+on-demand bodies) and, for calls, `CALL_ALERT` / `CALL_END`.
 
 ## NotificationListenerService permission
 
@@ -20,57 +20,59 @@ NLS access is **not** a runtime permission. `requestPermissions()` cannot grant 
 - Drop our own FGS package; drop group summaries (`FLAG_GROUP_SUMMARY`).
 - Dedup by notification key (upsert replaces).
 - Skip empty title+text with no actions.
-- Extract title / big-text / text / sub-text, importance, actions (incl. reply),
-  synthetic **Dismiss** / **Snooze**.
+- Extract title / big-text / text / sub-text, importance, actions.
+- Resolve **app label** via `PackageManager` (retained on the phone-side item; stubs use notification title).
 - Map package → category + monogram via `NotifIconMapper`.
 
-## Icon strategy — do we need an on-watch atlas?
+## Watch UX (local firmware)
 
-**Hybrid. Small category atlas on the watch; phone does the mapping.**
+| Moment | Behaviour |
+|--------|-----------|
+| New stub arrives | Wake + **DOUBLE** haptic (two short pulses); amber glyph on face status bar. Burst/reconnect UPSERTs coalesce to **one** DOUBLE within ~2.5 s |
+| Swipe **down** on face | Open Notifications shade (title buttons) |
+| Tap a row | Watch sends INPUT `NOTIF_REQ` (0xE2); companion replies SYSTEM `BODY`; detail screen |
+| Leave detail (button / swipe left to list / swipe up) | Stub **removed on watch only** (phone notification untouched) |
+| Phone dismisses (NLS remove) | SYSTEM `REMOVE` clears the watch stub |
+| Side button | Returns to face (does **not** cycle Face→Notifs→Settings) |
 
-| Layer | Role |
-|-------|------|
-| Phone | Maps `packageName` → category id + monogram. Live lists draw a chip + font letter (or `ICON` once packs exist). Never ships every app bitmap. |
-| Watch | Tiny category atlas (message / call / mail / … — tens of glyphs) + built-in font for monograms. Retained-store rows store `category` + `monogram`, not PNGs. |
-| Later (optional) | ASSET pushes for a few user-pinned app icons. |
+Kotlin `NotificationsApp` INTERRUPT focus is **disabled**; the shade is local.
 
-Why not “atlas only on the phone”? Live UI could be phone-drawn forever, but the
-**retained store** (channel 4) must remain readable when the phone is away. The
-watch then needs *some* local art — a category atlas, not an app icon zoo.
-Procedural monograms cover M9 without burning flash or BLE credit.
+Local list rows show the notification **title** (same field as Kotlin NotificationsApp).
 
-## Interrupt focus
+Detail shows `...` while waiting for BODY; if the body never arrives (unknown key / link), it falls through to **No text** after a few seconds.
 
-High importance (`IMPORTANCE_HIGH`+) may call `requestFocus(…, INTERRUPT, …)` on
-`slate.ref.notifications`. `NotifPrefs` gates this:
-
-- Filter **off**: any HIGH+ may interrupt.
-- Filter **on**: only packages on the allowlist.
+Stub keys are capped at **64** UTF-8 bytes (matching the codec). Longer Android keys are looked up by prefix on the phone.
 
 ## SYSTEM channel (4)
 
 `SystemNotifCodec` payloads on `SdpFrame.CHAN_SYSTEM`:
 
-| Op | Meaning |
-|----|---------|
-| `0x01` UPSERT | key, flags, category, monogram, title, text, when |
-| `0x02` REMOVE | key |
-| `0x03` CLEAR_ALL | — |
+| Op | Dir | Meaning |
+|----|-----|---------|
+| `0x01` UPSERT | phone→watch | Stub: key, flags, category, monogram, **notification title**, empty text, when |
+| `0x02` REMOVE | phone→watch | Drop stub |
+| `0x03` CLEAR_ALL | phone→watch | — |
+| `0x04` BODY | phone→watch | key + body text (on demand) |
+| `0x06` CALL_ALERT | phone→watch | caller label |
+| `0x07` CALL_END | phone→watch | dismiss call screen |
 
-Firmware M10 interprets these into the local retained store; the companion
-already pushes them so the wire path is live.
+Watch → phone body request uses INPUT extension `0xE2` (`NOTIF_REQ`): `[op][key_len][key…]`.
 
-## Notifications app
+On `NOTIF_REQ`, the companion records the key in `watchClearedKeys` so reconnect bulk sync does not re-UPSERT items already read on the watch until the phone also removes them.
 
-`NotificationsApp` (`slate.ref.notifications`): M8 `KotlinSlateApp`.
+Stub store: up to 24 entries, no resident body text (detail buffer is separate on the watch).
 
-- List: `SCROLL_REGION` so scroll is watch-local.
-- Detail: title/body + dismiss / snooze / up to two native actions.
-- Actions → `HostOutbound.AdapterCommand` → `NotifStore.invokeAction` (PendingIntent / cancel).
+## Incoming calls (display-only)
+
+1. Prefer `CallMonitor` + `READ_PHONE_STATE` (TelephonyCallback / PhoneStateListener).
+2. If permission is missing: ongoing **CALL**-category notifications raise `CALL_ALERT` as fallback (no double-fire when telephony is active).
+3. Watch: Call screen with caller label, **TRIPLE_LONG** haptic (three long pulses), auto-dismiss after **10 s** (or button / `CALL_END`). No answer/decline.
 
 ## Manual check
 
-1. Enable NLS via companion button **1b**.
-2. Connect watch / host emulator; start link FGS.
-3. Post a messaging notification; confirm list + SYSTEM upsert dump.
-4. Toggle interrupt allowlist; verify HIGH+ focus steal only when allowed.
+1. Enable NLS via companion settings.
+2. Optionally grant phone state for real ring alerts.
+3. Connect watch; post a messaging notification — expect two short vibes + face glyph.
+4. Swipe down → tap app name → see body → button back; stub gone on watch, still on phone.
+5. Dismiss on phone → stub disappears on watch.
+6. Incoming call → three long vibes + caller screen for ~10 s.

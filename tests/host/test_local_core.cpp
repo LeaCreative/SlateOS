@@ -270,7 +270,9 @@ static void test_notif_store() {
   msg[n++] = static_cast<std::uint8_t>(when >> 16);
   msg[n++] = static_cast<std::uint8_t>(when >> 24);
 
-  expect("upsert", slate::notif::on_system_message(&store, msg, n));
+  expect("upsert",
+         slate::notif::on_system_message(&store, msg, n) ==
+             slate::notif::Ingest::StubNew);
   expect("count 1", store.count == 1u);
   expect("title", store.entries[0].title_len == 2u);
   expect("when", store.entries[0].when_sec == 42u);
@@ -280,8 +282,31 @@ static void test_notif_store() {
 
   std::uint8_t rem[8] = {slate::notif::kOpRemove, 5};
   std::memcpy(rem + 2, key, 5);
-  expect("remove", slate::notif::on_system_message(&store, rem, 7));
+  expect("remove",
+         slate::notif::on_system_message(&store, rem, 7) ==
+             slate::notif::Ingest::Removed);
   expect("empty", store.count == 0u);
+
+  // BODY parse
+  std::uint8_t body[32];
+  std::size_t bn = 0u;
+  body[bn++] = slate::notif::kOpBody;
+  body[bn++] = 5;
+  std::memcpy(body + bn, key, 5);
+  bn += 5;
+  body[bn++] = 2;
+  body[bn++] = 'O';
+  body[bn++] = 'K';
+  expect("body ingest",
+         slate::notif::on_system_message(&store, body, bn) ==
+             slate::notif::Ingest::Body);
+  char kout[40];
+  char tout[80];
+  std::uint8_t kl = 0u;
+  std::uint8_t tl = 0u;
+  expect("body parse",
+         slate::notif::parse_body(body, bn, kout, 40, &kl, tout, 80, &tl));
+  expect("body text", tl == 2u && tout[0] == 'O' && tout[1] == 'K');
 }
 
 static void test_alarms() {

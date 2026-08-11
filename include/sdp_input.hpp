@@ -120,5 +120,22 @@ inline std::size_t encode_touch_up(std::uint8_t* out, std::size_t cap,
   return 7u;
 }
 
+/** Watch → phone: request notification body for key. */
+inline std::size_t encode_notif_req(std::uint8_t* out, std::size_t cap,
+                                    const char* key, std::uint8_t key_len) {
+  if (out == nullptr || key == nullptr) {
+    return 0u;
+  }
+  if (cap < static_cast<std::size_t>(2u + key_len)) {
+    return 0u;
+  }
+  out[0] = input_op::NOTIF_REQ;
+  out[1] = key_len;
+  for (std::uint8_t i = 0u; i < key_len; ++i) {
+    out[2u + i] = static_cast<std::uint8_t>(key[i]);
+  }
+  return static_cast<std::size_t>(2u + key_len);
+}
+
 }  // namespace input_wire
 }  // namespace sdp

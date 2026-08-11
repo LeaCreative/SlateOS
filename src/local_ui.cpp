@@ -380,6 +380,12 @@ std::size_t build_face(W& w, const ViewModel& vm) {
     w.fill(190, 212, 12, 12, dl_colour);
   }
 
+  // Unread notification glyph (left of DL activity).
+  if (vm.notifs != nullptr && vm.notifs->count > 0u) {
+    constexpr std::uint16_t kNotif = 0xFD20u;  // amber
+    w.fill(168, 212, 12, 12, kNotif);
+  }
+
   if (st.remote_stale) {
     w.fill(112, 176, 16, 4, kAmber);
   }
@@ -390,66 +396,191 @@ std::size_t build_face(W& w, const ViewModel& vm) {
 }
 
 std::size_t build_notifs(W& w, const ViewModel& vm) {
-  // Scale 3 body (9×15 glyphs). Header/count short enough to centre; row
-  // fields left-aligned. Six rows × ~44 B TEXT_SCALED elems fit in the
-  // 512-byte local dl_buf_ (~300 B measured worst case).
+  // App-name buttons + right-side scroll arrows (no SCROLL_REGION — vertical
+  // swipe returns to the face and must not also mean "scroll").
+  constexpr std::uint8_t kFont = 1u;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
   w.u16(0xFFFFu);
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x01u);
+  w.u16(0x8410u);
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x02u);
+  w.u16(0x4A69u);
 
-  w.text_big(120, 4, sdp::align::CENTER, 3u, 0u, "00");  // screen id
+  w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "Notifications", kFont);
 
   const notif::Store* ns = vm.notifs;
+  const local::State& st = *vm.state;
   const std::uint8_t count = ns ? ns->count : 0u;
-  char cbuf[4];
-  fmt_u32(cbuf, sizeof(cbuf), count);
-  w.text_big(120, 24, sdp::align::CENTER, 3u, 0u, cbuf);
+  if (count == 0u) {
+    w.text_big(120, 110, sdp::align::CENTER, 2u, 1u, "None", kFont);
+    w.b(sdp::op::COMMIT);
+    w.b(0x00u);
+    return w.ok ? w.n : 0u;
+  }
 
-  constexpr std::uint8_t kRowH = 28u;  // scale-3 glyph 15 + margin
-  constexpr std::uint8_t kMaxVisible = 6u;
-  const std::uint8_t visible = count > kMaxVisible ? kMaxVisible : count;
-  const std::uint16_t content_h =
-      static_cast<std::uint16_t>(visible == 0u ? 1u : visible * kRowH);
+  constexpr std::uint16_t kEdge = 0x4A69u;
+  constexpr std::uint16_t kFill = 0x1082u;
+  constexpr std::uint8_t kRowX = 8u;
+  constexpr std::uint8_t kRowW = 176u;  // leave strip for arrows
+  constexpr std::uint8_t kRowH = 40u;
+  constexpr std::uint8_t kPitch = 48u;
+  constexpr std::uint8_t kListTop = 36u;
+  constexpr std::uint8_t kRad = 8u;
+  constexpr std::uint8_t kArrowX = 196u;
+  constexpr std::uint8_t kArrowW = 36u;
+  constexpr std::uint8_t kArrowH = 40u;
 
-  constexpr std::uint8_t kScrollY = 48u;
-  w.b(sdp::op::SCROLL_REGION);
-  w.b(kScrollY);
-  w.b(180u);  // h
-  w.u16(content_h);
+  std::uint8_t start = st.notif_sel;
+  if (start >= count) {
+    start = 0u;
+  }
+  const std::uint8_t remain =
+      static_cast<std::uint8_t>(count - start);
+  const std::uint8_t visible =
+      remain > local::kNotifPageRows ? local::kNotifPageRows : remain;
 
   for (std::uint8_t i = 0u; i < visible; ++i) {
-    const notif::Entry* e = notif::at(ns, i);
+    const std::uint8_t idx = static_cast<std::uint8_t>(start + i);
+    const notif::Entry* e = notif::at(ns, idx);
     if (e == nullptr) {
       continue;
     }
     const std::uint8_t y =
-        static_cast<std::uint8_t>(kScrollY + i * kRowH);
+        static_cast<std::uint8_t>(kListTop + i * kPitch);
     w.b(sdp::op::BEGIN_ELEM);
-    w.u16(static_cast<std::uint16_t>(100u + i));
-    w.b(4u);
+    w.u16(static_cast<std::uint16_t>(local::kNotifRowBase + i));
+    w.b(kRowX);
     w.b(y);
-    w.b(232u);
-    w.b(static_cast<std::uint8_t>(kRowH - 2u));
+    w.b(kRowW);
+    w.b(kRowH);
     w.b(sdp::elem_flags::EMIT_TOUCH);
+    w.rect_round(kRowX, y, kRowW, kRowH, kRad, kFill);
+    w.fill(static_cast<std::uint8_t>(kRowX + 2u), y,
+           static_cast<std::uint8_t>(kRowW - 4u), 2u, kEdge);
 
-    char line[8];
-    line[0] = e->monogram >= '0' && e->monogram <= '9' ? e->monogram : '0';
-    line[1] = '\0';
-    w.text_big(8, static_cast<std::uint8_t>(y + 6u), sdp::align::LEFT, 3u, 0u,
-               line);
-
-    // Title length cue (numeric only — font 0 has no letters).
-    fmt_u32(line, sizeof(line), e->title_len);
-    w.text_big(40, static_cast<std::uint8_t>(y + 6u), sdp::align::LEFT, 3u, 0u,
-               line);
-    if (e->stale) {
-      w.text_big(200, static_cast<std::uint8_t>(y + 6u), sdp::align::LEFT, 3u,
-                 0u, "1");
+    char label[notif::kTitleCap + 1u];
+    if (e->title_len > 0u) {
+      const std::uint8_t n =
+          e->title_len < notif::kTitleCap ? e->title_len : notif::kTitleCap;
+      std::memcpy(label, e->title, n);
+      label[n] = '\0';
+    } else {
+      label[0] = e->monogram;
+      label[1] = '\0';
     }
+    if (std::strlen(label) > 14u) {
+      label[14] = '\0';
+    }
+    w.text_big(96, static_cast<std::uint8_t>(y + 12u), sdp::align::CENTER, 2u,
+               0u, label, kFont);
     w.b(sdp::op::END_ELEM);
   }
+
+  // Scroll up (earlier entries).
+  if (start > 0u) {
+    w.b(sdp::op::BEGIN_ELEM);
+    w.u16(local::kNotifScrollUp);
+    w.b(kArrowX);
+    w.b(40u);
+    w.b(kArrowW);
+    w.b(kArrowH);
+    w.b(sdp::elem_flags::EMIT_TOUCH);
+    w.rect_round(kArrowX, 40u, kArrowW, kArrowH, 6u, kFill);
+    w.text_big(static_cast<std::uint8_t>(kArrowX + kArrowW / 2u), 50u,
+               sdp::align::CENTER, 3u, 0u, "^", kFont);
+    w.b(sdp::op::END_ELEM);
+  }
+
+  // Scroll down (later entries).
+  if (static_cast<std::uint16_t>(start) + visible < count) {
+    w.b(sdp::op::BEGIN_ELEM);
+    w.u16(local::kNotifScrollDown);
+    w.b(kArrowX);
+    w.b(176u);
+    w.b(kArrowW);
+    w.b(kArrowH);
+    w.b(sdp::elem_flags::EMIT_TOUCH);
+    w.rect_round(kArrowX, 176u, kArrowW, kArrowH, 6u, kFill);
+    w.text_big(static_cast<std::uint8_t>(kArrowX + kArrowW / 2u), 186u,
+               sdp::align::CENTER, 3u, 0u, "v", kFont);
+    w.b(sdp::op::END_ELEM);
+  }
+
+  w.b(sdp::op::COMMIT);
+  w.b(0x00u);
+  return w.ok ? w.n : 0u;
+}
+
+std::size_t build_notif_detail(W& w, const ViewModel& vm) {
+  constexpr std::uint8_t kFont = 1u;
+  w.b(sdp::op::CLEAR);
+  w.rgb(0x0000u);
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x00u);
+  w.u16(0xFFFFu);
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x01u);
+  w.u16(0x8410u);
+
+  w.text_big(120, 8, sdp::align::CENTER, 2u, 0u, "DETAIL", kFont);
+
+  if (vm.detail_pending) {
+    w.text_big(120, 110, sdp::align::CENTER, 2u, 1u, "...", kFont);
+  } else if (vm.detail_text != nullptr && vm.detail_text[0] != '\0') {
+    // Wrap into up to 6 lines of 18 chars (scale 2).
+    const char* src = vm.detail_text;
+    const std::size_t total = std::strlen(src);
+    constexpr std::size_t kCols = 18u;
+    constexpr std::uint8_t kLineH = 22u;
+    std::uint8_t line = 0u;
+    std::size_t off = 0u;
+    while (off < total && line < 6u) {
+      char row[kCols + 1u];
+      std::size_t n = total - off;
+      if (n > kCols) {
+        n = kCols;
+      }
+      std::memcpy(row, src + off, n);
+      row[n] = '\0';
+      w.text_big(120, static_cast<std::uint8_t>(48u + line * kLineH),
+                 sdp::align::CENTER, 2u, 0u, row, kFont);
+      off += n;
+      ++line;
+    }
+  } else {
+    w.text_big(120, 110, sdp::align::CENTER, 2u, 1u, "No text", kFont);
+  }
+
+  w.b(sdp::op::COMMIT);
+  w.b(0x00u);
+  return w.ok ? w.n : 0u;
+}
+
+std::size_t build_call(W& w, const ViewModel& vm) {
+  constexpr std::uint8_t kFont = 1u;
+  const local::State& st = *vm.state;
+  w.b(sdp::op::CLEAR);
+  w.rgb(0x0000u);
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x00u);
+  w.u16(0x07E0u);
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x01u);
+  w.u16(0xFFFFu);
+
+  w.text_big(120, 48, sdp::align::CENTER, 2u, 0u, "CALL", kFont);
+  const char* who = st.alert_label[0] != '\0' ? st.alert_label : "Unknown";
+  char line[17];
+  const std::size_t n = std::strlen(who);
+  const std::size_t take = n > 16u ? 16u : n;
+  std::memcpy(line, who, take);
+  line[take] = '\0';
+  w.text_big(120, 110, sdp::align::CENTER, 2u, 1u, line, kFont);
 
   w.b(sdp::op::COMMIT);
   w.b(0x00u);
@@ -762,12 +893,16 @@ std::size_t build_screen(const ViewModel& vm, std::uint8_t* out, std::size_t cap
       return build_face(w, vm);
     case local::Screen::Notifs:
       return build_notifs(w, vm);
+    case local::Screen::NotifDetail:
+      return build_notif_detail(w, vm);
     case local::Screen::Settings:
       return build_settings(w, vm);
     case local::Screen::Charging:
       return build_charging(w, vm);
     case local::Screen::Alert:
       return build_alert(w, vm);
+    case local::Screen::Call:
+      return build_call(w, vm);
     case local::Screen::Disconnected:
       return build_disconnected(w, vm);
   }
