@@ -71,6 +71,18 @@ struct W {
     rgb(c);
     b(sdp::style::ModeFill);
   }
+  /** Outline-only rounded rect — ModeStroke is what actually rounds corners. */
+  void rect_round_stroke(std::uint8_t x, std::uint8_t y, std::uint8_t w,
+                         std::uint8_t h, std::uint8_t rad, std::uint16_t c) {
+    b(sdp::op::RECT_ROUND);
+    b(x);
+    b(y);
+    b(w);
+    b(h);
+    b(rad);
+    rgb(c);
+    b(sdp::style::ModeStroke);
+  }
   void gauge(std::uint8_t x, std::uint8_t y, std::uint8_t w, std::uint8_t h,
              std::uint8_t pct, std::uint16_t fg, std::uint16_t bg) {
     b(sdp::op::PROGRESS_BAR);
@@ -230,17 +242,17 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   const local::State& st = *vm.state;
   const clock::Civil c = clock::civil_now();
 
-  constexpr std::uint16_t kWhite = 0xFFFFu;
-  constexpr std::uint16_t kDim = 0x8410u;
+  const std::uint16_t kBright = st.settings.face_bright;
+  const std::uint16_t kDim = st.settings.face_dim;
   constexpr std::uint16_t kAmber = 0xFD20u;
   constexpr std::uint16_t kGreen = 0x07E0u;
-  constexpr std::uint16_t kTrack = 0x2124u;
+  constexpr std::uint16_t kGlyphTrack = 0x2124u;
 
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(kWhite);
+  w.u16(kBright);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x01u);
   w.u16(kDim);
@@ -339,7 +351,7 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   }
 
   w.gauge(20, 196, 200, 8,
-          st.battery_pct > 100u ? 0u : st.battery_pct, kWhite, kTrack);
+          st.battery_pct > 100u ? 0u : st.battery_pct, kBright, kDim);
 
   char bbuf[8];
   if (st.battery_pct > 100u) {
@@ -361,7 +373,7 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   }
 
   // Link state as a colour block: a lone 0/1 digit was unreadable and ambiguous.
-  w.fill(212, 212, 12, 12, st.link_up ? kGreen : kTrack);
+  w.fill(212, 212, 12, 12, st.link_up ? kGreen : kGlyphTrack);
 
   // Display-list activity, left of the link block. Red the moment the
   // interpreter rejects one — a rejected list and one that never arrived look
@@ -371,7 +383,7 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   {
     constexpr std::uint16_t kRed = 0xF800u;
     constexpr std::uint16_t kDimGreen = 0x03E0u;
-    std::uint16_t dl_colour = kTrack;
+    std::uint16_t dl_colour = kGlyphTrack;
     if (st.diag_dl_rej > 0u) {
       dl_colour = kRed;
     } else if (st.diag_dl_ok > 0u) {
@@ -396,44 +408,39 @@ std::size_t build_face(W& w, const ViewModel& vm) {
 }
 
 std::size_t build_notifs(W& w, const ViewModel& vm) {
-  // App-name buttons + right-side scroll arrows (no SCROLL_REGION — vertical
-  // swipe returns to the face and must not also mean "scroll").
+  // Outline rows + right-side scroll arrows (no SCROLL_REGION — vertical
+  // swipe is back-to-face and must not also mean "scroll").
   constexpr std::uint8_t kFont = 1u;
+  const local::State& st = *vm.state;
+  const std::uint16_t chrome = st.settings.ui_chrome;
+
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0xFFFFu);
-  w.b(sdp::op::SET_PALETTE);
-  w.b(0x01u);
-  w.u16(0x8410u);
-  w.b(sdp::op::SET_PALETTE);
-  w.b(0x02u);
-  w.u16(0x4A69u);
+  w.u16(chrome);
 
   w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "Notifications", kFont);
 
   const notif::Store* ns = vm.notifs;
-  const local::State& st = *vm.state;
   const std::uint8_t count = ns ? ns->count : 0u;
   if (count == 0u) {
-    w.text_big(120, 110, sdp::align::CENTER, 2u, 1u, "None", kFont);
+    w.text_big(120, 110, sdp::align::CENTER, 2u, 0u, "None", kFont);
     w.b(sdp::op::COMMIT);
     w.b(0x00u);
     return w.ok ? w.n : 0u;
   }
 
-  constexpr std::uint16_t kEdge = 0x4A69u;
-  constexpr std::uint16_t kFill = 0x1082u;
   constexpr std::uint8_t kRowX = 8u;
   constexpr std::uint8_t kRowW = 176u;  // leave strip for arrows
-  constexpr std::uint8_t kRowH = 40u;
+  constexpr std::uint8_t kRowH = 44u;
   constexpr std::uint8_t kPitch = 48u;
   constexpr std::uint8_t kListTop = 36u;
   constexpr std::uint8_t kRad = 8u;
+  constexpr std::uint8_t kTextY = 15u;  // (44 - 14) / 2
   constexpr std::uint8_t kArrowX = 196u;
   constexpr std::uint8_t kArrowW = 36u;
-  constexpr std::uint8_t kArrowH = 40u;
+  constexpr std::uint8_t kArrowH = 44u;
 
   std::uint8_t start = st.notif_sel;
   if (start >= count) {
@@ -459,9 +466,7 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
     w.b(kRowW);
     w.b(kRowH);
     w.b(sdp::elem_flags::EMIT_TOUCH);
-    w.rect_round(kRowX, y, kRowW, kRowH, kRad, kFill);
-    w.fill(static_cast<std::uint8_t>(kRowX + 2u), y,
-           static_cast<std::uint8_t>(kRowW - 4u), 2u, kEdge);
+    w.rect_round_stroke(kRowX, y, kRowW, kRowH, kRad, chrome);
 
     char label[notif::kTitleCap + 1u];
     if (e->title_len > 0u) {
@@ -476,7 +481,7 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
     if (std::strlen(label) > 14u) {
       label[14] = '\0';
     }
-    w.text_big(96, static_cast<std::uint8_t>(y + 12u), sdp::align::CENTER, 2u,
+    w.text_big(16, static_cast<std::uint8_t>(y + kTextY), sdp::align::LEFT, 2u,
                0u, label, kFont);
     w.b(sdp::op::END_ELEM);
   }
@@ -490,9 +495,10 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
     w.b(kArrowW);
     w.b(kArrowH);
     w.b(sdp::elem_flags::EMIT_TOUCH);
-    w.rect_round(kArrowX, 40u, kArrowW, kArrowH, 6u, kFill);
-    w.text_big(static_cast<std::uint8_t>(kArrowX + kArrowW / 2u), 50u,
-               sdp::align::CENTER, 3u, 0u, "^", kFont);
+    w.rect_round_stroke(kArrowX, 40u, kArrowW, kArrowH, kRad, chrome);
+    w.text_big(static_cast<std::uint8_t>(kArrowX + kArrowW / 2u),
+               static_cast<std::uint8_t>(40u + kTextY), sdp::align::CENTER, 2u,
+               0u, "^", kFont);
     w.b(sdp::op::END_ELEM);
   }
 
@@ -505,9 +511,10 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
     w.b(kArrowW);
     w.b(kArrowH);
     w.b(sdp::elem_flags::EMIT_TOUCH);
-    w.rect_round(kArrowX, 176u, kArrowW, kArrowH, 6u, kFill);
-    w.text_big(static_cast<std::uint8_t>(kArrowX + kArrowW / 2u), 186u,
-               sdp::align::CENTER, 3u, 0u, "v", kFont);
+    w.rect_round_stroke(kArrowX, 176u, kArrowW, kArrowH, kRad, chrome);
+    w.text_big(static_cast<std::uint8_t>(kArrowX + kArrowW / 2u),
+               static_cast<std::uint8_t>(176u + kTextY), sdp::align::CENTER, 2u,
+               0u, "v", kFont);
     w.b(sdp::op::END_ELEM);
   }
 
@@ -518,14 +525,15 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
 
 std::size_t build_notif_detail(W& w, const ViewModel& vm) {
   constexpr std::uint8_t kFont = 1u;
+  const std::uint16_t chrome = vm.state->settings.ui_chrome;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0xFFFFu);
+  w.u16(chrome);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x01u);
-  w.u16(0x8410u);
+  w.u16(chrome);
 
   w.text_big(120, 8, sdp::align::CENTER, 2u, 0u, "DETAIL", kFont);
 
@@ -564,14 +572,15 @@ std::size_t build_notif_detail(W& w, const ViewModel& vm) {
 std::size_t build_call(W& w, const ViewModel& vm) {
   constexpr std::uint8_t kFont = 1u;
   const local::State& st = *vm.state;
+  const std::uint16_t chrome = st.settings.ui_chrome;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0x07E0u);
+  w.u16(chrome);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x01u);
-  w.u16(0xFFFFu);
+  w.u16(chrome);
 
   w.text_big(120, 48, sdp::align::CENTER, 2u, 0u, "CALL", kFont);
   const char* who = st.alert_label[0] != '\0' ? st.alert_label : "Unknown";
@@ -602,20 +611,22 @@ std::size_t build_call(W& w, const ViewModel& vm) {
  */
 std::size_t build_settings(W& w, const ViewModel& vm) {
   const local::State& st = *vm.state;
+  const std::uint16_t chrome = st.settings.ui_chrome;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0xFFFFu);   // pal 0: white
+  w.u16(chrome);  // labels + outlines
   w.b(sdp::op::SET_PALETTE);
   w.b(0x01u);
-  w.u16(0x07E0u);   // pal 1: green, for "On"
+  w.u16(0x07E0u);  // On
   w.b(sdp::op::SET_PALETTE);
   w.b(0x02u);
-  w.u16(0x8410u);   // pal 2: grey, for "Off"
+  w.u16(0xF800u);  // Off
+  w.b(sdp::op::SET_PALETTE);
+  w.b(0x03u);
+  w.u16(0xFFE0u);  // variable values (timeout, etc.)
 
-  constexpr std::uint16_t kEdge = 0x4A69u;
-  constexpr std::uint16_t kFill = 0x1082u;
   constexpr std::uint8_t kRowX = 8u;
   constexpr std::uint8_t kRowW = 224u;
   constexpr std::uint8_t kRowH = 44u;
@@ -625,8 +636,12 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   constexpr std::uint8_t kListH = 212u;
   constexpr std::uint8_t kRad = 8u;
   constexpr std::uint8_t kRows = 5u;
+  constexpr std::uint8_t kTextY = 15u;  // (44 - 14) / 2 for scale-2 5×7
+  constexpr std::uint8_t kPalOn = 1u;
+  constexpr std::uint8_t kPalOff = 2u;
+  constexpr std::uint8_t kPalVar = 3u;
 
-  w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "SETTINGS", 1u);
+  w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "Settings", 1u);
 
   const std::uint16_t content_h =
       static_cast<std::uint16_t>(kRows * kPitch);
@@ -646,22 +661,17 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
     w.b(kRowW);
     w.b(kRowH);
     w.b(sdp::elem_flags::EMIT_TOUCH | sdp::elem_flags::HAPTIC);
-    w.rect_round(kRowX, y, kRowW, kRowH, kRad, kEdge);
-    w.rect_round(static_cast<std::uint8_t>(kRowX + 1u),
-                 static_cast<std::uint8_t>(y + 1u),
-                 static_cast<std::uint8_t>(kRowW - 2u),
-                 static_cast<std::uint8_t>(kRowH - 2u),
-                 static_cast<std::uint8_t>(kRad - 1u), kFill);
-    w.text_big(16, static_cast<std::uint8_t>(y + 12u), sdp::align::LEFT, 2u, 0u,
-               label, 1u);
-    w.text_big(224, static_cast<std::uint8_t>(y + 12u), sdp::align::RIGHT, 2u,
-               value_pal, value, 1u);
+    w.rect_round_stroke(kRowX, y, kRowW, kRowH, kRad, chrome);
+    w.text_big(16, static_cast<std::uint8_t>(y + kTextY), sdp::align::LEFT, 2u,
+               0u, label, 1u);
+    w.text_big(224, static_cast<std::uint8_t>(y + kTextY), sdp::align::RIGHT,
+               2u, value_pal, value, 1u);
     w.b(sdp::op::END_ELEM);
   };
 
   row(local::kSettingRaise, 0u, "Raise wake",
       st.settings.tilt_enabled ? "On" : "Off",
-      st.settings.tilt_enabled ? 1u : 2u);
+      st.settings.tilt_enabled ? kPalOn : kPalOff);
 
   char secs[8];
   if (st.settings.wake_seconds == 0u) {
@@ -682,20 +692,20 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
       secs[l + 1u] = '\0';
     }
   }
-  row(local::kSettingTimeout, 1u, "Timeout", secs, 0u);
+  row(local::kSettingTimeout, 1u, "Timeout", secs, kPalVar);
 
   row(local::kSettingSteps, 2u, "Show steps",
       st.settings.face_show_steps ? "On" : "Off",
-      st.settings.face_show_steps ? 1u : 2u);
+      st.settings.face_show_steps ? kPalOn : kPalOff);
 
   row(local::kSettingDiag, 3u, "Face diag",
       st.settings.face_show_diag ? "On" : "Off",
-      st.settings.face_show_diag ? 1u : 2u);
+      st.settings.face_show_diag ? kPalOn : kPalOff);
 
   // Master gate: On starts continuous measuring; BPM shows on the face.
   row(local::kSettingHr, 4u, "Heart rate",
       st.settings.hr_enabled ? "On" : "Off",
-      st.settings.hr_enabled ? 1u : 2u);
+      st.settings.hr_enabled ? kPalOn : kPalOff);
 
   w.b(sdp::op::COMMIT);
   w.b(0x00u);
@@ -733,13 +743,15 @@ std::size_t build_alert(W& w, const ViewModel& vm) {
 //
 // Three centred lines at scale 2: the 5x7 advances 6, so scale 2 is 12 px per
 // character and 20 characters is the widest line that fits the 240 px panel.
-std::size_t build_disconnected(W& w, const ViewModel&) {
+std::size_t build_disconnected(W& w, const ViewModel& vm) {
   constexpr std::uint8_t kFont5x7 = 1u;
+  const std::uint16_t chrome =
+      vm.state != nullptr ? vm.state->settings.ui_chrome : 0xFFFFu;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0xFFFFu);
+  w.u16(chrome);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x01u);
   w.u16(0xFD20u);  // amber — this is a prompt, not an error
@@ -785,7 +797,7 @@ std::size_t build_diag_banner(std::uint8_t* out, std::size_t cap,
   // Two lines at y=16 and 28 (raise campaign). Clock starts at 56.
   constexpr std::uint8_t kTop = 16u;
   constexpr std::uint8_t kHeight = 24u;
-  constexpr std::uint16_t kDim = 0x8410u;
+  const std::uint16_t kDim = st.settings.face_dim;
 
   w.fill(0, kTop, 240, kHeight, 0x0000u);
   // Palette 1 must be set even though the face sets it too: this list is
@@ -818,7 +830,8 @@ std::size_t build_diag_banner(std::uint8_t* out, std::size_t cap,
 // The digits occupy y 56..95 and nothing else on the face changes when the
 // minute does, so this is the same band trick the diag lines and the OTA
 // banner already use — no CLEAR, so untouched tiles are culled (N-18).
-std::size_t build_clock_band(std::uint8_t* out, std::size_t cap) {
+std::size_t build_clock_band(std::uint8_t* out, std::size_t cap,
+                             std::uint16_t face_bright) {
   if (out == nullptr || cap < 8u) {
     return 0u;
   }
@@ -833,7 +846,7 @@ std::size_t build_clock_band(std::uint8_t* out, std::size_t cap) {
   w.fill(0, kY, 240, kH, 0x0000u);
   w.b(sdp::op::SET_PALETTE);
   w.b(0x00u);
-  w.u16(0xFFFFu);
+  w.u16(face_bright);
 
   const clock::Civil c = clock::civil_now();
   char tbuf[8];

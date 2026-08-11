@@ -42,6 +42,15 @@ struct Settings {
    */
   std::uint8_t hr_enabled = 0u;
   /**
+   * Theme colours (RGB565). Synced via SETTINGS_SYNC v3.
+   * ui_chrome: non-face button outlines + button/label text.
+   * face_bright: time + battery fill.
+   * face_dim: date, steps/HR, battery %, version/diag, battery track.
+   */
+  std::uint16_t ui_chrome = 0xFFFFu;
+  std::uint16_t face_bright = 0xFFFFu;
+  std::uint16_t face_dim = 0x8410u;
+  /**
    * Sync revision, persisted with the values it stamps.
    *
    * Held here rather than only in Core because it has to survive a reboot. Kept
@@ -87,8 +96,8 @@ constexpr std::uint16_t kNotifScrollDown = 91u;
 /** How many app-name rows fit beside the scroll arrows. */
 constexpr std::uint8_t kNotifPageRows = 4u;
 
-// Bumped 10 Aug 2026 ('SLTV' -> 'SLTW'): hr_enabled added.
-constexpr std::uint32_t kSettingsMagic = 0x534C5457u;  // 'SLTW'
+// Bumped 11 Aug 2026 ('SLTW' -> 'SLTX'): theme RGB565 fields added.
+constexpr std::uint32_t kSettingsMagic = 0x534C5458u;  // 'SLTX'
 
 struct State {
   Screen screen = Screen::Face;

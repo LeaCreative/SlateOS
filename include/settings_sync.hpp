@@ -15,9 +15,9 @@
 namespace slate {
 namespace settings_sync {
 
-constexpr std::uint8_t kWireVersion = 2u;
-/** op + version + u32 revision + tilt + wake + steps + diag + hr. */
-constexpr std::size_t kPayloadBytes = 11u;
+constexpr std::uint8_t kWireVersion = 3u;
+/** op + version + u32 revision + tilt + wake + steps + diag + hr + 3×u16 RGB565. */
+constexpr std::size_t kPayloadBytes = 17u;
 
 /**
  * The synced subset of local::Settings.
@@ -38,6 +38,9 @@ struct Payload {
    * continuously and shows BPM on the watch face.
    */
   std::uint8_t hr_enabled = 0u;
+  std::uint16_t ui_chrome = 0xFFFFu;
+  std::uint16_t face_bright = 0xFFFFu;
+  std::uint16_t face_dim = 0x8410u;
 };
 
 /** Writes exactly [kPayloadBytes]. Returns 0 if `cap` is too small. */

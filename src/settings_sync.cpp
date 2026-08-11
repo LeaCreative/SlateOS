@@ -20,6 +20,12 @@ std::size_t encode(const Payload& p, std::uint8_t* out, std::size_t cap) {
   out[8] = p.face_show_steps ? 1u : 0u;
   out[9] = p.face_show_diag ? 1u : 0u;
   out[10] = p.hr_enabled ? 1u : 0u;
+  out[11] = static_cast<std::uint8_t>(p.ui_chrome & 0xFFu);
+  out[12] = static_cast<std::uint8_t>((p.ui_chrome >> 8) & 0xFFu);
+  out[13] = static_cast<std::uint8_t>(p.face_bright & 0xFFu);
+  out[14] = static_cast<std::uint8_t>((p.face_bright >> 8) & 0xFFu);
+  out[15] = static_cast<std::uint8_t>(p.face_dim & 0xFFu);
+  out[16] = static_cast<std::uint8_t>((p.face_dim >> 8) & 0xFFu);
   return kPayloadBytes;
 }
 
@@ -45,6 +51,12 @@ bool decode(const std::uint8_t* msg, std::size_t len, Payload* out) {
   out->face_show_steps = msg[8] ? 1u : 0u;
   out->face_show_diag = msg[9] ? 1u : 0u;
   out->hr_enabled = msg[10] ? 1u : 0u;
+  out->ui_chrome = static_cast<std::uint16_t>(msg[11]) |
+                   (static_cast<std::uint16_t>(msg[12]) << 8);
+  out->face_bright = static_cast<std::uint16_t>(msg[13]) |
+                     (static_cast<std::uint16_t>(msg[14]) << 8);
+  out->face_dim = static_cast<std::uint16_t>(msg[15]) |
+                  (static_cast<std::uint16_t>(msg[16]) << 8);
   return true;
 }
 
@@ -52,7 +64,8 @@ bool differs(const Payload& a, const Payload& b) {
   return a.tilt_enabled != b.tilt_enabled || a.wake_seconds != b.wake_seconds ||
          a.face_show_steps != b.face_show_steps ||
          a.face_show_diag != b.face_show_diag ||
-         a.hr_enabled != b.hr_enabled;
+         a.hr_enabled != b.hr_enabled || a.ui_chrome != b.ui_chrome ||
+         a.face_bright != b.face_bright || a.face_dim != b.face_dim;
 }
 
 bool should_apply(const Payload& current, const Payload& incoming,
@@ -94,6 +107,9 @@ void apply_to(const Payload& p, local::Settings* s) {
   s->face_show_steps = p.face_show_steps ? 1u : 0u;
   s->face_show_diag = p.face_show_diag ? 1u : 0u;
   s->hr_enabled = p.hr_enabled ? 1u : 0u;
+  s->ui_chrome = p.ui_chrome;
+  s->face_bright = p.face_bright;
+  s->face_dim = p.face_dim;
 }
 
 Payload from(const local::Settings& s, std::uint32_t revision) {
@@ -104,6 +120,9 @@ Payload from(const local::Settings& s, std::uint32_t revision) {
   p.face_show_steps = s.face_show_steps ? 1u : 0u;
   p.face_show_diag = s.face_show_diag ? 1u : 0u;
   p.hr_enabled = s.hr_enabled ? 1u : 0u;
+  p.ui_chrome = s.ui_chrome;
+  p.face_bright = s.face_bright;
+  p.face_dim = s.face_dim;
   return p;
 }
 

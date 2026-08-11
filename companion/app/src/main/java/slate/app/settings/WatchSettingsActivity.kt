@@ -3,7 +3,11 @@ package slate.app.settings
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -15,9 +19,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -25,11 +32,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import slate.session.WatchSettings
@@ -146,6 +158,38 @@ fun WatchSettingsScreen(store: WatchSettingsStore) {
             )
         }
 
+        SettingCard {
+            Text("Appearance", fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                "Colours sync to the watch. Status glyphs and the OTA banner " +
+                    "stay green/amber.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            ThemeColorRow(
+                title = "Buttons and Text",
+                subtitle = "Outlines and text on Settings, Notifications, Apps",
+                rgb565 = settings.uiChrome,
+                onPick = { c -> store.edit { it.copy(uiChrome = c) } },
+            )
+            Spacer(Modifier.height(10.dp))
+            ThemeColorRow(
+                title = "Face bright",
+                subtitle = "Time digits and battery fill",
+                rgb565 = settings.faceBright,
+                onPick = { c -> store.edit { it.copy(faceBright = c) } },
+            )
+            Spacer(Modifier.height(10.dp))
+            ThemeColorRow(
+                title = "Face dim",
+                subtitle = "Date, steps, HR, battery %, track, diagnostics",
+                rgb565 = settings.faceDim,
+                onPick = { c -> store.edit { it.copy(faceDim = c) } },
+            )
+        }
+
         Text(
             text = syncStatusLine(pending, settings.revision),
             style = MaterialTheme.typography.bodySmall,
@@ -170,6 +214,109 @@ private fun SettingCard(content: @Composable ColumnScope.() -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) { content() }
     }
 }
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ThemeColorRow(
+    title: String,
+    subtitle: String,
+    rgb565: Int,
+    onPick: (Int) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.Medium)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
+                .background(
+                    Color(WatchUiTheme.rgb565ToArgb(rgb565)),
+                    RoundedCornerShape(8.dp),
+                )
+                .clickable { open = true },
+        )
+    }
+    if (open) {
+        AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text(title) },
+            text = {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    THEME_PRESETS.forEach { preset ->
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .border(
+                                    width = if (preset == rgb565) 2.dp else 1.dp,
+                                    color = if (preset == rgb565) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.outline
+                                    },
+                                    shape = RoundedCornerShape(6.dp),
+                                )
+                                .background(
+                                    Color(WatchUiTheme.rgb565ToArgb(preset)),
+                                    RoundedCornerShape(6.dp),
+                                )
+                                .clickable {
+                                    onPick(preset)
+                                    open = false
+                                },
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { open = false }) { Text("Close") }
+            },
+        )
+    }
+}
+
+/** RGB565 presets: greys first, then light/dark pairs per hue (adjacent in the grid). */
+private val THEME_PRESETS: List<Int> = listOf(
+    // Greyscale
+    0xFFFF, // white
+    0xC618, // light grey
+    0x8410, // mid grey (default face dim)
+    0x4208, // dark grey
+    // Red
+    0xFC10, // light
+    0xF800, // dark
+    // Orange (amber + deep orange)
+    0xFD20, // light
+    0xFC00, // dark
+    // Yellow
+    0xFFE0, // light
+    0xC600, // dark
+    // Green
+    0x07E0, // light
+    0x0400, // dark
+    // Cyan
+    0x07FF, // light
+    0x0410, // dark
+    // Blue
+    0x64BF, // light
+    0x001F, // dark
+    // Magenta
+    0xF81F, // light
+    0xA010, // dark
+)
 
 /**
  * Label and switch on one line.

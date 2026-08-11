@@ -37,7 +37,7 @@ NLS access is **not** a runtime permission. `requestPermissions()` cannot grant 
 
 Kotlin `NotificationsApp` INTERRUPT focus is **disabled**; the shade is local.
 
-Local list rows show the notification **title** (same field as Kotlin NotificationsApp).
+Local list rows use outline buttons (ui_chrome theme) with the notification **title**.
 
 Detail shows `...` while waiting for BODY; if the body never arrives (unknown key / link), it falls through to **No text** after a few seconds.
 

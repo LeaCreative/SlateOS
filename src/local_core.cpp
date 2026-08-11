@@ -310,7 +310,8 @@ void Core::show_clock_band() {
   // here is what stops a later "nothing changed" from skipping the paint that
   // puts the real screen back.
   forget_pushed_digest();
-  const std::size_t n = ui::build_clock_band(dl_buf_, sizeof(dl_buf_));
+  const std::size_t n = ui::build_clock_band(
+      dl_buf_, sizeof(dl_buf_), local_state().settings.face_bright);
   if (n > 0u) {
     hooks_.push_list(dl_buf_, n, hooks_.ctx);
   }

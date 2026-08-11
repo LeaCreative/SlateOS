@@ -57,6 +57,9 @@ void test_round_trip() {
   expect("show steps survives", out.face_show_steps == in.face_show_steps);
   expect("show diag survives", out.face_show_diag == in.face_show_diag);
   expect("hr_enabled survives", out.hr_enabled == in.hr_enabled);
+  expect("ui_chrome survives", out.ui_chrome == in.ui_chrome);
+  expect("face_bright survives", out.face_bright == in.face_bright);
+  expect("face_dim survives", out.face_dim == in.face_dim);
 }
 
 void test_decode_rejects_rubbish() {
@@ -161,11 +164,15 @@ void test_from_settings_round_trips() {
   s.face_show_steps = 1u;
   s.face_show_diag = 0u;
   s.hr_enabled = 1u;
+  s.ui_chrome = 0xF800u;
+  s.face_bright = 0x07E0u;
+  s.face_dim = 0x001Fu;
   const Payload p = ss::from(s, 12u);
   expect("from() captures the synced fields",
          p.revision == 12u && p.tilt_enabled == 0u && p.wake_seconds == 35u &&
              p.face_show_steps == 1u && p.face_show_diag == 0u &&
-             p.hr_enabled == 1u);
+             p.hr_enabled == 1u && p.ui_chrome == 0xF800u &&
+             p.face_bright == 0x07E0u && p.face_dim == 0x001Fu);
 }
 
 }  // namespace

@@ -27,6 +27,7 @@
 | **Open TestApp** | Kotlin transport probe (black + white touch rect) |
 | **Open Notifications** | Debug-only Kotlin list (primary UX is the watch shade) |
 | **Watch launcher (on watch)** | Swipe face right→left; tap a JS app; swipe left→right to close |
+| **Watch settings → Appearance** | Three colour pickers: button chrome, face bright, face dim (SETTINGS_SYNC v3) |
 | **Bundled JS apps** | timer, navigation, camera, vibrate, location, map (seeded into repo) |
 
 Focus stack empty → watch **local face**. New notifications no longer steal

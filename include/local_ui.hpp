@@ -36,7 +36,8 @@ std::size_t build_ota_banner(std::uint8_t* out, std::size_t cap,
  * HH:MM only, as a band (y 56..95), for the once-a-minute rollover.
  * Emits no CLEAR, so untouched tiles are culled.
  */
-std::size_t build_clock_band(std::uint8_t* out, std::size_t cap);
+std::size_t build_clock_band(std::uint8_t* out, std::size_t cap,
+                             std::uint16_t face_bright);
 
 #if SLATE_DIAG_OVERLAY
 /**

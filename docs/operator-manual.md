@@ -29,6 +29,8 @@ There is one physical control: the **side button**, plus touch swipes.
 | Phone sub-app, swipe **left** | Back (detail→list→close app); not launcher |
 | Side button | Always returns toward the **Face** (from Notifs, detail, Settings, Call, Alert). Does **not** open Notifs from the Face |
 
+Settings / Notifications / Apps share **outline** buttons (rounded stroke, chrome colour from companion Appearance). Face **bright** / **dim** colours theme the time+battery fill vs date/metrics/track; status glyphs stay green.
+
 With **Heart rate** On in Settings, BPM appears on the face next to steps
 (continuous measure while enabled).
 

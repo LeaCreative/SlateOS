@@ -10,13 +10,18 @@ import slate.generated.SdpWire
  * their own point of view, which is what stops them overwriting each other
  * forever when the user has edited on both sides.
  *
- * Wire v2: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds]
+ * Wire v3: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds]
  *          [showSteps][showDiag][hrEnabled]
+ *          [uiChrome:u16 LE][faceBright:u16 LE][faceDim:u16 LE]
  */
 object WatchSettings {
     const val OP: Int = SdpWire.ControlOp.SETTINGS_SYNC
-    const val WIRE_VERSION: Int = 2
-    const val PAYLOAD_BYTES: Int = 11
+    const val WIRE_VERSION: Int = 3
+    const val PAYLOAD_BYTES: Int = 17
+
+    const val DEFAULT_UI_CHROME: Int = 0xFFFF
+    const val DEFAULT_FACE_BRIGHT: Int = 0xFFFF
+    const val DEFAULT_FACE_DIM: Int = 0x8410
 
     /** Display-timeout choices, in the order the watch's own row cycles them. */
     val WAKE_SECONDS_CHOICES: List<Int> = listOf(10, 20, 30, 60, 120, 0)
@@ -31,6 +36,8 @@ object WatchSettings {
      *
      * `hrEnabled` is a master gate: Off keeps the HRS3300 asleep; On allows
      * on-demand measurement (not continuous heart rate).
+     *
+     * Theme colours are RGB565 (same packing as SDP RGB ops).
      */
     data class Payload(
         val revision: Long = 0L,
@@ -42,6 +49,12 @@ object WatchSettings {
         val showDiag: Boolean = true,
         /** Heart-rate sensor master enable. */
         val hrEnabled: Boolean = false,
+        /** Button outlines + button/label text (non-face screens). */
+        val uiChrome: Int = DEFAULT_UI_CHROME,
+        /** Face time + battery fill. */
+        val faceBright: Int = DEFAULT_FACE_BRIGHT,
+        /** Face date, steps/HR, %, version/diag, battery track. */
+        val faceDim: Int = DEFAULT_FACE_DIM,
     )
 
     fun encode(p: Payload): ByteArray {
@@ -57,6 +70,9 @@ object WatchSettings {
         out[8] = if (p.showSteps) 1 else 0
         out[9] = if (p.showDiag) 1 else 0
         out[10] = if (p.hrEnabled) 1 else 0
+        putU16Le(out, 11, p.uiChrome)
+        putU16Le(out, 13, p.faceBright)
+        putU16Le(out, 15, p.faceDim)
         return out
     }
 
@@ -78,6 +94,9 @@ object WatchSettings {
             showSteps = (msg[8].toInt() and 0xFF) != 0,
             showDiag = (msg[9].toInt() and 0xFF) != 0,
             hrEnabled = (msg[10].toInt() and 0xFF) != 0,
+            uiChrome = getU16Le(msg, 11),
+            faceBright = getU16Le(msg, 13),
+            faceDim = getU16Le(msg, 15),
         )
     }
 
@@ -87,7 +106,10 @@ object WatchSettings {
             a.wakeSeconds != b.wakeSeconds ||
             a.showSteps != b.showSteps ||
             a.showDiag != b.showDiag ||
-            a.hrEnabled != b.hrEnabled
+            a.hrEnabled != b.hrEnabled ||
+            a.uiChrome != b.uiChrome ||
+            a.faceBright != b.faceBright ||
+            a.faceDim != b.faceDim
 
     /**
      * Should [incoming] replace [current]?
@@ -122,4 +144,12 @@ object WatchSettings {
         // outrank a current one and silently resurrect old settings.
         return if (base >= 0xFFFFFFFFL) 0xFFFFFFFFL else base + 1L
     }
+
+    private fun putU16Le(out: ByteArray, off: Int, v: Int) {
+        out[off] = (v and 0xFF).toByte()
+        out[off + 1] = ((v shr 8) and 0xFF).toByte()
+    }
+
+    private fun getU16Le(msg: ByteArray, off: Int): Int =
+        (msg[off].toInt() and 0xFF) or ((msg[off + 1].toInt() and 0xFF) shl 8)
 }

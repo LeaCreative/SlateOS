@@ -2,6 +2,7 @@ package slate.app.apps
 
 import org.json.JSONArray
 import org.json.JSONObject
+import slate.app.settings.WatchUiTheme
 import slate.dsl.displayList
 import slate.generated.SdpWire
 import slate.host.AppManifest
@@ -11,14 +12,12 @@ import slate.host.KotlinSlateApp
 import slate.host.PriorityClass
 import slate.host.RefreshPolicy
 import slate.wire.Align
-import slate.wire.Colors
 import slate.wire.Style
 import slate.wire.pal
 import slate.wire.rgb
 
 /**
- * Notifications sub-app — scrollable list + detail + actions.
- * Uses TEXT_SCALED for arm's-length legibility (compare with local shade).
+ * Notifications sub-app — outline rows matching local Notifications / Settings.
  */
 class NotificationsApp : KotlinSlateApp() {
     override val manifest = AppManifest(
@@ -38,7 +37,7 @@ class NotificationsApp : KotlinSlateApp() {
         val title: String,
         val text: String,
         val monogram: Char,
-        val actions: List<Pair<String, String>>, // id to title
+        val actions: List<Pair<String, String>>,
     )
 
     override fun onFocus(out: MutableList<HostOutbound>) {
@@ -154,34 +153,26 @@ class NotificationsApp : KotlinSlateApp() {
     }
 
     private fun buildList(): ByteArray = displayList {
-        palette(0, Colors.BLACK)
-        palette(1, Colors.WHITE)
-        palette(2, rgb(0x4208))
+        val chrome = WatchUiTheme.uiChrome
+        palette(0, rgb(0x0000))
+        palette(1, rgb(chrome))
         clear(pal(0))
-        // Font id 1 (5×7) @ scale 2 — same family as local NOTIFS shade.
         textScaled(
             font = 1, x = 120, y = 8, align = Align.CENTER,
             color = pal(1), scale = 2, text = "Notifications",
         )
-        val rowH = 48
+        val rowH = 44
+        val pitch = 48
         val visible = items.take(24)
-        val contentH = (visible.size * rowH).coerceAtLeast(1)
+        val contentH = (visible.size * pitch).coerceAtLeast(1)
         scrollRegion(y = 40, h = 196, contentH = contentH) {
             visible.forEachIndexed { i, row ->
-                val y = 40 + i * rowH
-                element(id = ID_ROW0 + i, x = 4, y = y, w = 232, h = rowH - 4) {
-                    rectRound(4, y, 232, rowH - 4, 6, pal(2), Style.FILL)
+                val y = i * pitch
+                element(id = ID_ROW0 + i, x = 8, y = y, w = 224, h = rowH) {
+                    rectRound(8, y, 224, rowH, 8, pal(1), Style.STROKE)
                     textScaled(
-                        font = 1, x = 16, y = y + 6, align = Align.LEFT,
-                        color = pal(1), scale = 2, text = row.monogram.toString(),
-                    )
-                    textScaled(
-                        font = 1, x = 44, y = y + 4, align = Align.LEFT,
-                        color = pal(1), scale = 2, text = row.title.take(12),
-                    )
-                    textScaled(
-                        font = 1, x = 44, y = y + 26, align = Align.LEFT,
-                        color = pal(1), scale = 2, text = row.text.take(14),
+                        font = 1, x = 16, y = y + 15, align = Align.LEFT,
+                        color = pal(1), scale = 2, text = row.title.take(16),
                     )
                 }
             }
@@ -190,20 +181,14 @@ class NotificationsApp : KotlinSlateApp() {
     }
 
     private fun buildDetail(row: Row): ByteArray = displayList {
-        palette(0, Colors.BLACK)
-        palette(1, Colors.WHITE)
-        palette(2, rgb(0x2104))
-        palette(3, rgb(0x07E0))
+        val chrome = WatchUiTheme.uiChrome
+        palette(0, rgb(0x0000))
+        palette(1, rgb(chrome))
         clear(pal(0))
         textScaled(
             font = 1, x = 16, y = 12, align = Align.LEFT,
-            color = pal(1), scale = 2, text = row.monogram.toString(),
+            color = pal(1), scale = 2, text = row.title.take(16),
         )
-        textScaled(
-            font = 1, x = 44, y = 12, align = Align.LEFT,
-            color = pal(1), scale = 2, text = row.title.take(14),
-        )
-        // Body: wrap into short lines at scale 2.
         val body = row.text.take(72)
         var line = 0
         var off = 0
@@ -220,17 +205,17 @@ class NotificationsApp : KotlinSlateApp() {
         var x = 8
         val y = 160
         element(id = ID_DISMISS, x = x, y = y, w = 70, h = 36) {
-            rectRound(x, y, 70, 36, 6, pal(2), Style.FILL)
+            rectRound(x, y, 70, 36, 8, pal(1), Style.STROKE)
             textScaled(
-                font = 1, x = x + 35, y = y + 8, align = Align.CENTER,
+                font = 1, x = x + 35, y = y + 11, align = Align.CENTER,
                 color = pal(1), scale = 2, text = "Del",
             )
         }
         x += 78
         element(id = ID_SNOOZE, x = x, y = y, w = 70, h = 36) {
-            rectRound(x, y, 70, 36, 6, pal(2), Style.FILL)
+            rectRound(x, y, 70, 36, 8, pal(1), Style.STROKE)
             textScaled(
-                font = 1, x = x + 35, y = y + 8, align = Align.CENTER,
+                font = 1, x = x + 35, y = y + 11, align = Align.CENTER,
                 color = pal(1), scale = 2, text = "Zzz",
             )
         }
@@ -240,10 +225,10 @@ class NotificationsApp : KotlinSlateApp() {
                 val ax = 8 + i * 116
                 val ay = 200
                 element(id = ID_ACTION0 + i, x = ax, y = ay, w = 108, h = 32) {
-                    rectRound(ax, ay, 108, 32, 6, pal(3), Style.FILL)
+                    rectRound(ax, ay, 108, 32, 8, pal(1), Style.STROKE)
                     textScaled(
-                        font = 1, x = ax + 54, y = ay + 6, align = Align.CENTER,
-                        color = pal(0), scale = 2, text = act.second.take(8),
+                        font = 1, x = ax + 54, y = ay + 9, align = Align.CENTER,
+                        color = pal(1), scale = 2, text = act.second.take(8),
                     )
                 }
             }

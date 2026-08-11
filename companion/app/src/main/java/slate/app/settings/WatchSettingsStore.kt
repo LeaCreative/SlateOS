@@ -23,7 +23,7 @@ class WatchSettingsStore(context: Context) {
     private val sp = context.applicationContext
         .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    private val _settings = MutableStateFlow(load())
+    private val _settings = MutableStateFlow(load().also { WatchUiTheme.apply(it) })
     val settings: StateFlow<WatchSettings.Payload> = _settings.asStateFlow()
 
     private val _pendingSend = MutableStateFlow(sp.getBoolean(KEY_DIRTY, false))
@@ -58,6 +58,7 @@ class WatchSettingsStore(context: Context) {
         if (rev > highestSeenRevision) highestSeenRevision = rev
         _pendingSend.value = true
         persist(stamped, dirty = true)
+        WatchUiTheme.apply(stamped)
         // Published last: the link collects this flow and sends on change, and
         // it must not observe the new value before the dirty flag that authorises
         // sending it.
@@ -86,6 +87,7 @@ class WatchSettingsStore(context: Context) {
         }
         _pendingSend.value = false
         persist(incoming, dirty = false)
+        WatchUiTheme.apply(incoming)
         _settings.value = incoming
         return true
     }
@@ -114,6 +116,9 @@ class WatchSettingsStore(context: Context) {
         showSteps = sp.getBoolean(KEY_STEPS, true),
         showDiag = sp.getBoolean(KEY_DIAG, true),
         hrEnabled = sp.getBoolean(KEY_HR, false),
+        uiChrome = sp.getInt(KEY_UI_CHROME, WatchSettings.DEFAULT_UI_CHROME),
+        faceBright = sp.getInt(KEY_FACE_BRIGHT, WatchSettings.DEFAULT_FACE_BRIGHT),
+        faceDim = sp.getInt(KEY_FACE_DIM, WatchSettings.DEFAULT_FACE_DIM),
     )
 
     private fun persist(p: WatchSettings.Payload, dirty: Boolean) {
@@ -124,6 +129,9 @@ class WatchSettingsStore(context: Context) {
             .putBoolean(KEY_STEPS, p.showSteps)
             .putBoolean(KEY_DIAG, p.showDiag)
             .putBoolean(KEY_HR, p.hrEnabled)
+            .putInt(KEY_UI_CHROME, p.uiChrome)
+            .putInt(KEY_FACE_BRIGHT, p.faceBright)
+            .putInt(KEY_FACE_DIM, p.faceDim)
             .putLong(KEY_HIGHEST_SEEN, highestSeenRevision)
             .putBoolean(KEY_DIRTY, dirty)
             .apply()
@@ -138,6 +146,9 @@ class WatchSettingsStore(context: Context) {
         private const val KEY_STEPS = "show_steps"
         private const val KEY_DIAG = "show_diag"
         private const val KEY_HR = "hr_enabled"
+        private const val KEY_UI_CHROME = "ui_chrome"
+        private const val KEY_FACE_BRIGHT = "face_bright"
+        private const val KEY_FACE_DIM = "face_dim"
         private const val KEY_DIRTY = "dirty"
 
         @Volatile
