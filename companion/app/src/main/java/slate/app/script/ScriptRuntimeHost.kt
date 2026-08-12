@@ -116,7 +116,7 @@ class ScriptRuntimeHost(
                 val detail = "permission denied"
                 scope.launch {
                     when {
-                        adapter == "news" && command == "list" ->
+                        adapter == "news" && (command == "list" || command == "page") ->
                             compositor.dispatchSystemEvent(
                                 appId,
                                 "news",

@@ -52,6 +52,22 @@ class RssParserTest {
     }
 
     @Test
+    fun contentEncodedCdataSurvivesStrip() {
+        val xml = """
+            <rss><channel><item>
+              <title>Sonos Ace</title>
+              <guid>g1</guid>
+              <content:encoded><![CDATA[<p>Sonos could launch the &#34;Ace Ultra&#34; headphones.</p>]]></content:encoded>
+            </item></channel></rss>
+        """.trimIndent()
+        val items = RssParser.parse(xml)
+        assertEquals(1, items.size)
+        assertTrue(items[0].body.contains("Ace Ultra"), items[0].body)
+        assertTrue(!items[0].body.contains("CDATA"), items[0].body)
+        assertTrue(!items[0].body.contains("<"), items[0].body)
+    }
+
+    @Test
     fun respectsLimit() {
         val sb = StringBuilder("<rss><channel>")
         repeat(12) { i ->

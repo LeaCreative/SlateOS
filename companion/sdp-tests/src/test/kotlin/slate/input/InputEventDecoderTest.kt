@@ -82,6 +82,20 @@ class InputEventDecoderTest {
     }
 
     @Test
+    fun scrollPos() {
+        val ev = InputEventDecoder.decode(
+            byteArrayOf(
+                SdpWire.InputOp.SCROLL_POS.toByte(),
+                0,
+                0x30, 0x00, // offset 48
+            ),
+        )!!
+        assertEquals(SdpWire.InputOp.SCROLL_POS, ev.op)
+        assertEquals(0, ev.elemId)
+        assertEquals(48, ev.distance)
+    }
+
+    @Test
     fun truncatedReturnsNull() {
         assertNull(InputEventDecoder.decode(byteArrayOf()))
         assertNull(InputEventDecoder.decode(byteArrayOf(SdpWire.InputOp.TAP.toByte(), 1)))

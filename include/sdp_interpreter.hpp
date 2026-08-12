@@ -36,6 +36,8 @@ public:
   std::size_t hit_count() const { return hit_count_; }
 
   bool has_retained() const { return retained_len_ > 0u; }
+  /** True only when the retained list declared SCROLL_REGION. */
+  bool have_scroll() const { return have_scroll_; }
   std::uint16_t retain_ttl_s() const { return retain_ttl_s_; }
 
 private:

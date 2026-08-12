@@ -25,6 +25,12 @@ object InputEventDecoder {
                 if (msg.size < 2) return null
                 HostInbound.Input(op = op, action = msg[1].toInt() and 0xFF)
             }
+            SdpWire.InputOp.SCROLL_POS -> {
+                if (msg.size < 4) return null
+                val region = msg[1].toInt() and 0xFF
+                val offset = u16Le(msg, 2)
+                HostInbound.Input(op = op, elemId = region, distance = offset)
+            }
             SdpWire.InputOp.BACK,
             SdpWire.InputOp.SESSION_END,
             -> HostInbound.Input(op = op, reason = if (msg.size > 1) msg[1].toInt() and 0xFF else 0)

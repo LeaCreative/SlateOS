@@ -1,7 +1,7 @@
 {
   "id": "slate.news",
   "name": "News JS",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "entry": "main.js",
   "minProtocolVersion": 1,
   "minHostVersion": "0.1",

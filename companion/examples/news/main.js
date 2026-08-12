@@ -23,6 +23,10 @@
   var ROW_X = 8;
   var ROW_W = 224;
   var ROW_Y0 = 40;
+  // Font 1 (5x7) at scale 2 ≈ 12 px/glyph; ~17 fit in the row. ASCII "..."
+  // only — U+2026 is not in the watch font, so titles looked clipped with no
+  // ellipsis.
+  var TITLE_CHARS = 16;
 
   var mode = 'loading'; // loading | list | article | error | need_url | empty
   var detail = '';
@@ -39,10 +43,12 @@
     return String(raw).trim();
   }
 
+  /** Fit to n glyphs using ASCII "..." (watch fonts are ASCII-only). */
   function trunc(s, n) {
     s = String(s || '');
     if (s.length <= n) return s;
-    return s.substring(0, n - 1) + '\u2026';
+    if (n <= 3) return s.substring(0, n);
+    return s.substring(0, n - 3) + '...';
   }
 
   function statusScreen(title, sub) {
@@ -70,7 +76,7 @@
       for (i = 0; i < VISIBLE; i++) {
         (function (idx, top, hitId) {
           if (idx >= items.length) return;
-          var label = trunc(items[idx].title, 22);
+          var label = trunc(items[idx].title, TITLE_CHARS);
           b.element(hitId, ROW_X, top, ROW_W, ROW_H, function () {
             b.rectRound(ROW_X, top, ROW_W, ROW_H, 8, slate.PAL(1), 1);
             b.textScaled(1, ROW_X + 10, top + 14, 'LEFT', slate.PAL(1), 2, label);
@@ -97,7 +103,7 @@
       b.textScaled(1, 8, 6, 'LEFT', slate.PAL(2), 1, meta);
       var li;
       for (li = 0; li < lines.length && li < 8; li++) {
-        b.textScaled(1, 8, 24 + li * 24, 'LEFT', slate.PAL(1), 2, trunc(lines[li], 22));
+        b.textScaled(1, 8, 24 + li * 24, 'LEFT', slate.PAL(1), 2, trunc(lines[li], 16));
       }
       b.commit();
     });
@@ -187,12 +193,12 @@
         articleId = items[idx].id;
         articlePage = 0;
         mode = 'article';
-        articleText = '…';
-        return [
-          slate.news.page(articleId, 0),
-          { type: 'pushDisplayList', displayListBase64: statusScreen('Loading', 'Article') },
-          { type: 'inputHandled' }
-        ];
+        articleText = '...';
+        // Article layout with ellipsis — host delivers body on the same input
+        // turn (no separate Loading screen that can stick if the event races).
+        return [slate.news.page(articleId, 0)].concat(pushScreen()).concat(
+          [{ type: 'inputHandled' }]
+        );
       }
     }
     return [{ type: 'inputUnhandled' }];

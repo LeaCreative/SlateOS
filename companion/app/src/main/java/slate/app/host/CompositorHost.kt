@@ -193,6 +193,8 @@ class CompositorHost(
 
     private var newsAdapter: NewsAdapter? = null
     private var newsSubscriberId: String? = null
+    /** news.page JSON — delivered after input dispatch so it cannot race a push. */
+    private var pendingInlineNewsEvent: Pair<String, String>? = null
 
     private var mediaAdapter: slate.app.media.MediaAdapter? = null
     private var mediaSubscriberId: String? = null
@@ -202,6 +204,9 @@ class CompositorHost(
 
     private var weatherAdapter: slate.app.weather.WeatherAdapter? = null
     private var weatherSubscriberId: String? = null
+
+    /** Last SCROLL_POS offset from the watch (firmware scroll steal on old builds). */
+    private var lastScrollOffset: Int = -1
 
     /** Last display list pushed, for duplicate coalescing. */
     private var lastPushDigest: Int = 0
@@ -653,6 +658,29 @@ class CompositorHost(
         }
         val input = InputEventDecoder.decode(msg) ?: return
         scope.launch {
+            // Firmware without have_scroll() steals UP/DOWN as SCROLL_POS for any
+            // retained list. Phone paging apps never see SWIPE — translate offset
+            // deltas back into swipe directions for the focused app.
+            if (input.op == SdpWire.InputOp.SCROLL_POS) {
+                val offset = input.distance
+                val prev = lastScrollOffset
+                lastScrollOffset = offset
+                if (prev >= 0 && offset != prev) {
+                    val dir = if (offset > prev) {
+                        SdpWire.SwipeDir.UP
+                    } else {
+                        SdpWire.SwipeDir.DOWN
+                    }
+                    LinkLog.i("SCROLL_POS $prev->$offset — synthetic swipe dir=$dir")
+                    compositor.dispatchInput(
+                        HostInbound.Input(op = SdpWire.InputOp.SWIPE, dir = dir),
+                    )
+                    flushPendingInlineNewsEvent()
+                }
+                launcher.takePendingLaunch()?.let { launchFromLauncher(it) }
+                return@launch
+            }
+            lastScrollOffset = -1
             // Swipe right-to-left:
             //   • Face (no focused app) / launcher → open or re-focus launcher
             //   • Any other focused sub-app → BACK (detail→list→relinquish)
@@ -680,6 +708,7 @@ class CompositorHost(
                 LinkLog.i("swipe dir=${input.dir} — passed to focused app")
             }
             compositor.dispatchInput(input)
+            flushPendingInlineNewsEvent()
             // A tapped row cannot focus another app itself — sub-apps have no
             // such authority — so it parks the id and the host acts on it.
             launcher.takePendingLaunch()?.let { launchFromLauncher(it) }
@@ -1071,7 +1100,9 @@ class CompositorHost(
                     LinkLog.w("news.page with no active list for $appId")
                     return
                 }
-                newsAdapter?.page(id, page)
+                val json = newsAdapter?.page(id, page) ?: return
+                pendingInlineNewsEvent = appId to json
+                LinkLog.i("news.page for $appId id=${id.take(40)} p=$page")
             }
             "stop" -> {
                 if (newsSubscriberId == appId || newsSubscriberId == null) {
@@ -1086,6 +1117,14 @@ class CompositorHost(
         newsAdapter?.stop()
         newsAdapter = null
         newsSubscriberId = null
+        pendingInlineNewsEvent = null
+    }
+
+    private suspend fun flushPendingInlineNewsEvent() {
+        val pending = pendingInlineNewsEvent
+        if (pending == null) return
+        pendingInlineNewsEvent = null
+        compositor.dispatchSystemEvent(pending.first, "news", pending.second)
     }
 
     private fun handleMediaAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {

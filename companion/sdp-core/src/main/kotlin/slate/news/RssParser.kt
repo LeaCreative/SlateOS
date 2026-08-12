@@ -60,7 +60,9 @@ object RssParser {
         return NewsItem(
             id = id.take(120),
             title = title.take(80),
-            body = HtmlStrip.toPlain(bodyRaw),
+            // Must unwrap CDATA before tag-strip — otherwise `<![CDATA[…]]>` is
+            // one giant "tag" match and the article body becomes empty.
+            body = textOf(bodyRaw),
         )
     }
 
@@ -77,6 +79,8 @@ object RssParser {
 object HtmlStrip {
     private val TAG = Regex("(?is)<[^>]+>")
     private val WS = Regex("\\s+")
+    private val NUM_ENTITY = Regex("&#(\\d+);")
+    private val HEX_ENTITY = Regex("&#x([0-9a-fA-F]+);")
 
     fun toPlain(html: String): String {
         var s = html
@@ -85,8 +89,15 @@ object HtmlStrip {
             .replace("&lt;", "<", ignoreCase = true)
             .replace("&gt;", ">", ignoreCase = true)
             .replace("&quot;", "\"", ignoreCase = true)
+            .replace("&#34;", "\"", ignoreCase = true)
             .replace("&#39;", "'", ignoreCase = true)
             .replace("&apos;", "'", ignoreCase = true)
+        s = NUM_ENTITY.replace(s) { m ->
+            m.groupValues[1].toIntOrNull()?.toChar()?.toString() ?: " "
+        }
+        s = HEX_ENTITY.replace(s) { m ->
+            m.groupValues[1].toIntOrNull(16)?.toChar()?.toString() ?: " "
+        }
         s = TAG.replace(s, " ")
         s = WS.replace(s, " ").trim()
         return s

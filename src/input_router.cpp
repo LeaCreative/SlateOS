@@ -121,8 +121,11 @@ void InputRouter::on_event(const input::Event& ev) {
         return;
       }
 
-      // Local scroll ownership — zero RTT.
-      if (interp_ != nullptr && interp_->has_retained()) {
+      // Local scroll ownership — zero RTT. Only when the list actually
+      // declared SCROLL_REGION: otherwise UP/DOWN must reach the phone
+      // (launcher paging, news article pages, …). Stealing them for every
+      // retained list left those gestures as silent SCROLL_POS events.
+      if (interp_ != nullptr && interp_->has_retained() && interp_->have_scroll()) {
         std::uint16_t off = interp_->scroll_offset();
         if (dir == sdp::swipe_dir::UP) {
           off = static_cast<std::uint16_t>(off + 24u);

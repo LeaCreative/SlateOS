@@ -79,27 +79,28 @@ class NewsAdapter(
         }
     }
 
-    fun page(id: String, page: Int) {
+    /**
+     * Returns the page JSON for the compositor to deliver synchronously after
+     * input handling. Async [onEvent] is only used for network list fetch.
+     */
+    fun page(id: String, page: Int): String {
         val item = items.firstOrNull { it.id == id }
         if (item == null) {
-            emit(
-                JSONObject()
-                    .put("type", "status")
-                    .put("state", "error")
-                    .put("detail", "unknown article"),
-            )
-            return
+            return JSONObject()
+                .put("type", "status")
+                .put("state", "error")
+                .put("detail", "unknown article")
+                .toString()
         }
         val pages = pageCache.getOrPut(id) { ArticlePager.pages(item.body) }
         val idx = page.coerceIn(0, pages.lastIndex)
-        emit(
-            JSONObject()
-                .put("type", "page")
-                .put("id", id)
-                .put("page", idx)
-                .put("pageCount", pages.size)
-                .put("text", pages[idx]),
-        )
+        return JSONObject()
+            .put("type", "page")
+            .put("id", id)
+            .put("page", idx)
+            .put("pageCount", pages.size)
+            .put("text", pages[idx])
+            .toString()
     }
 
     fun stop() {
