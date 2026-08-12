@@ -27,10 +27,24 @@ data class NotifItem(
     val actions: List<NotifAction>,
 ) {
     val category: NotifIconCategory get() = icon.category
+
+    /** Fields that affect the watch stub / vibe decision (ignore whenMs churn). */
+    fun sameForWatch(other: NotifItem): Boolean =
+        key == other.key &&
+            packageName == other.packageName &&
+            title == other.title &&
+            text == other.text &&
+            ongoing == other.ongoing &&
+            clearable == other.clearable &&
+            icon == other.icon
 }
 
 sealed class NotifChange {
-    data class Upserted(val item: NotifItem) : NotifChange()
+    /**
+     * @param silent true for NLS reconnect / shade restore — watch retains
+     * without wake/haptic (FLAG_SILENT). Live posts stay loud.
+     */
+    data class Upserted(val item: NotifItem, val silent: Boolean = false) : NotifChange()
     data class Removed(val key: String) : NotifChange()
     data object Cleared : NotifChange()
 }

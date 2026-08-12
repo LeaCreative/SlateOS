@@ -28,6 +28,12 @@ new inserts to `StubUpdate` UX. Companion **`0.8.2-p62` / versionCode 63**
 (installed). **Firmware ready:** `build/dfu/slate-dfu.zip` — SHA-256 prefix
 `431656156A13` (includes settings row Y fix + FLAG_SILENT). Flash via SDP OTA.
 
+**NLS thrash (2026-08-12):** logs showed `NLS connected` every few seconds, each
+flooding `ch=4` stubs → repeated vibe with no new phone notifs. Companion
+**`0.8.2-p65` / 66**: `onListenerConnected` upserts `silent=true`, skips emit when
+`sameForWatch` unchanged, 15s debounce. Still needs FLAG_SILENT firmware on
+watch for silent inserts that *do* emit (first after empty store / content change).
+
 ### Settings row overlap (u8 Y wrap)
 
 Eight settings rows at pitch 48 put content Y at 288/336, which truncated in

@@ -22,11 +22,17 @@ object NotifStore {
     /** PendingIntent keys: notifKey → (actionId → runnable). Filled by listener. */
     private val actionHandlers = ConcurrentHashMap<String, ConcurrentHashMap<String, () -> Unit>>()
 
-    fun upsert(item: NotifItem) {
+    fun upsert(item: NotifItem, silent: Boolean = false) {
+        val prev = items[item.key]
         items[item.key] = item
         trim()
         publish()
-        _changes.tryEmit(NotifChange.Upserted(item))
+        // NLS reconnect re-posts every active notif; skip no-op emits so the
+        // bridge does not flood the watch (and vibrate) with identical stubs.
+        if (prev != null && prev.sameForWatch(item)) {
+            return
+        }
+        _changes.tryEmit(NotifChange.Upserted(item, silent = silent))
     }
 
     fun remove(key: String) {

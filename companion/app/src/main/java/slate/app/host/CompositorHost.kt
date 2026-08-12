@@ -954,13 +954,15 @@ class CompositorHost(
                         // Call-category ongoing posts: CallMonitor owns the
                         // CALL_ALERT path when telephony is available; still
                         // mirror a stub so the shade lists it, but never
-                        // auto-INTERRUPT.
+                        // auto-INTERRUPT. NLS resync must stay silent.
                         gatt.sendMessage(
                             SdpFrame.CHAN_SYSTEM,
-                            encodeStub(n),
+                            encodeStub(n, silent = change.silent),
                         )
                         pushNotifSnapshotToApp()
-                        maybeCallFallback(n)
+                        if (!change.silent) {
+                            maybeCallFallback(n)
+                        }
                     }
                     is NotifChange.Removed -> {
                         watchClearedKeys.remove(change.key)

@@ -19,13 +19,24 @@ import slate.notif.NotifIconMapper
  */
 class SlateNotificationListener : NotificationListenerService() {
 
+    @Volatile
+    private var lastConnectedResyncMs: Long = 0L
+
     override fun onListenerConnected() {
         // Keep this path cheap. Force-stop respawns this process via NLS; any
         // heavy work here would make "Force stop" look broken and freeze the
         // UI again before the operator can open MainActivity / start OTA.
         LinkLog.i("NLS connected")
+        val now = System.currentTimeMillis()
+        // OEMs reconnect NLS repeatedly; each pass used to UPSERT the whole
+        // shade as "new" and buzz the watch. Debounce + silent ingest below.
+        if (now - lastConnectedResyncMs < RESYNC_DEBOUNCE_MS) {
+            LinkLog.i("NLS connected — skip resync (debounced)")
+            return
+        }
+        lastConnectedResyncMs = now
         try {
-            activeNotifications?.forEach { ingest(it, isRemoval = false) }
+            activeNotifications?.forEach { ingest(it, isRemoval = false, fromResync = true) }
         } catch (t: Throwable) {
             LinkLog.e("NLS activeNotifications", t)
         }
@@ -33,15 +44,19 @@ class SlateNotificationListener : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         if (sbn == null) return
-        ingest(sbn, isRemoval = false)
+        ingest(sbn, isRemoval = false, fromResync = false)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         if (sbn == null) return
-        ingest(sbn, isRemoval = true)
+        ingest(sbn, isRemoval = true, fromResync = false)
     }
 
-    private fun ingest(sbn: StatusBarNotification, isRemoval: Boolean) {
+    private fun ingest(
+        sbn: StatusBarNotification,
+        isRemoval: Boolean,
+        fromResync: Boolean,
+    ) {
         val key = sbn.key ?: return
         if (sbn.packageName == packageName) return // ignore our own FGS notif
 
@@ -100,7 +115,7 @@ class SlateNotificationListener : NotificationListenerService() {
             actions = actions.map { it.first },
         )
         NotifStore.registerActions(key, actions.associate { it.first.id to it.second })
-        NotifStore.upsert(item)
+        NotifStore.upsert(item, silent = fromResync)
     }
 
     private fun resolveAppLabel(packageName: String): String {
@@ -178,5 +193,8 @@ class SlateNotificationListener : NotificationListenerService() {
                 ),
             )
         }
+
+        /** Ignore rapid NLS reconnect storms from OEM battery managers. */
+        private const val RESYNC_DEBOUNCE_MS = 15_000L
     }
 }

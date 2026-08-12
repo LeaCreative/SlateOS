@@ -29,7 +29,7 @@ NLS access is **not** a runtime permission. `requestPermissions()` cannot grant 
 | Moment | Behaviour |
 |--------|-----------|
 | New stub arrives | Wake + **DOUBLE** haptic (two short pulses); amber glyph on face status bar. Rapid live UPSERTs coalesce to **one** DOUBLE within ~2.5 s |
-| Reconnect bulk sync | Same UPSERT op with **FLAG_SILENT** — shade restored, **no** wake/haptic (live `NotifChange.Upserted` stays loud) |
+| Reconnect / NLS resync | Same UPSERT with **FLAG_SILENT** — shade restored, **no** wake/haptic. Live posts stay loud. NLS `onListenerConnected` also silent + skip unchanged `sameForWatch` + 15s debounce (OEM reconnect storms) |
 | Swipe **down** on face | Open Notifications shade (title buttons) |
 | Tap a row | Watch sends INPUT `NOTIF_REQ` (0xE2); companion replies SYSTEM `BODY`; detail screen |
 | Leave detail (button / swipe left to list / swipe up) | Stub **removed on watch only** (phone notification untouched) |

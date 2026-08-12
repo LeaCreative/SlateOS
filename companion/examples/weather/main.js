@@ -1,11 +1,12 @@
 /**
- * Weather JS — current conditions from the phone (Open-Meteo).
+ * Weather JS — current conditions + sea level / tides near the phone.
  *
- * Draws: temperature, short label, precip/wind lines; loading/error screens.
- * Does:  onFocus calls slate.weather.fetch() (last-known GPS if available);
- *        BACK stops. Events: onEvent('weather', json).
- * Perms: weather — host HTTP + optional last location; no http in the isolate.
- * Budget: a few text ops; no loops.
+ * Draws: temperature, label, precip, wind, sea level, next high/low tide.
+ * Does:  onFocus calls slate.weather.fetch() using the phone GPS; BACK stops.
+ *        Events: onEvent('weather', json) with snapshot fields including
+ *        seaLevelM / nextHighTime / nextHighM / nextLowTime / nextLowM.
+ * Perms: weather — host Open-Meteo forecast + marine; location via host GPS.
+ * Budget: text only; no loops over data in JS.
  *
  * Downloaded JavaScript only — never dex/JAR/.so.
  */
@@ -17,12 +18,21 @@
   var label = '';
   var precip = '';
   var wind = '';
+  var sea = '';
+  var high = '';
+  var low = '';
   var detail = '';
 
   function trunc(s, n) {
     s = String(s || '');
     if (s.length <= n) return s;
-    return s.substring(0, n - 1) + '\u2026';
+    return s.substring(0, n - 1) + '...';
+  }
+
+  function fmtM(v) {
+    if (v == null || typeof v !== 'number' || !isFinite(v)) return '?';
+    var x = Math.round(v * 100) / 100;
+    return String(x);
   }
 
   function statusScreen(t, sub) {
@@ -44,17 +54,20 @@
       b.palette(1, 0xffff);
       b.palette(2, 0x8410);
       b.clear(slate.PAL(0));
-      b.textScaled(1, 120, 10, 'CENTER', slate.PAL(2), 1, 'Weather');
-      b.textScaled(1, 120, 70, 'CENTER', slate.PAL(1), 4, trunc(t, 6));
-      b.textScaled(1, 120, 130, 'CENTER', slate.PAL(1), 2, trunc(label, 16));
-      b.textScaled(1, 120, 170, 'CENTER', slate.PAL(2), 1, trunc(precip, 22));
-      b.textScaled(1, 120, 198, 'CENTER', slate.PAL(2), 1, trunc(wind, 22));
+      b.textScaled(1, 120, 4, 'CENTER', slate.PAL(2), 1, 'Weather');
+      b.textScaled(1, 120, 48, 'CENTER', slate.PAL(1), 4, trunc(t, 6));
+      b.textScaled(1, 120, 100, 'CENTER', slate.PAL(1), 2, trunc(label, 16));
+      b.textScaled(1, 120, 128, 'CENTER', slate.PAL(2), 1, trunc(precip, 22));
+      b.textScaled(1, 120, 148, 'CENTER', slate.PAL(2), 1, trunc(wind, 22));
+      b.textScaled(1, 120, 172, 'CENTER', slate.PAL(2), 1, trunc(sea, 22));
+      b.textScaled(1, 120, 192, 'CENTER', slate.PAL(2), 1, trunc(high, 22));
+      b.textScaled(1, 120, 212, 'CENTER', slate.PAL(2), 1, trunc(low, 22));
       b.commit();
     });
   }
 
   function screen() {
-    if (mode === 'loading') return statusScreen('Weather', 'Fetching…');
+    if (mode === 'loading') return statusScreen('Weather', 'Fetching...');
     if (mode === 'error') return statusScreen('Weather failed', detail || 'Check location');
     return face();
   }
@@ -65,6 +78,9 @@
 
   global.onFocus = function () {
     mode = 'loading';
+    sea = '';
+    high = '';
+    low = '';
     return [slate.weather.fetch()].concat(pushScreen());
   };
 
@@ -103,6 +119,27 @@
       label = payload.label || '';
       precip = 'Rain ' + (payload.precipMm != null ? payload.precipMm : '?') + ' mm';
       wind = 'Wind ' + (payload.windMps != null ? payload.windMps : '?') + ' m/s';
+      if (payload.seaLevelM != null && isFinite(payload.seaLevelM)) {
+        sea = 'Sea ' + fmtM(payload.seaLevelM) + ' m';
+      } else {
+        sea = 'Sea n/a';
+      }
+      if (payload.nextHighTime) {
+        high = 'High ' + payload.nextHighTime;
+        if (payload.nextHighM != null && isFinite(payload.nextHighM)) {
+          high += ' ' + fmtM(payload.nextHighM) + 'm';
+        }
+      } else {
+        high = 'High n/a';
+      }
+      if (payload.nextLowTime) {
+        low = 'Low ' + payload.nextLowTime;
+        if (payload.nextLowM != null && isFinite(payload.nextLowM)) {
+          low += ' ' + fmtM(payload.nextLowM) + 'm';
+        }
+      } else {
+        low = 'Low n/a';
+      }
       return pushScreen();
     }
     return [];

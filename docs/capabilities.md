@@ -36,7 +36,7 @@
 - **Face:** time, date, optional steps, battery, link cue, trial amber bar, version/diag overlay.
 - **Settings** (swipe face **left→right**): raise-to-wake + Soft/Normal/Hard sensitivity, shake-to-wake (default Off) + sensitivity, display timeout (incl. never), show steps, face diag, HR. Bidirectional `SETTINGS_SYNC` v4 (0x21) with phone; persisted (`SLTY`).
 - **Swipe policy:** settings **right→left** → face (not launcher); launcher **left→right** → close (not settings); face **right→left** → launcher when linked.
-- **Notifs shade** (swipe down from face): SYSTEM ch4 stubs (notification titles); body on demand via INPUT `NOTIF_REQ` + SYSTEM `BODY`. Amber status glyph while stubs remain. Live stubs wake + DOUBLE haptic; **reconnect bulk sync uses FLAG_SILENT** (no wake/haptic — needs matching firmware).
+- **Notifs shade** (swipe down from face): SYSTEM ch4 stubs (notification titles); body on demand via INPUT `NOTIF_REQ` + SYSTEM `BODY`. Amber status glyph while stubs remain. Live stubs wake + DOUBLE haptic; **reconnect bulk sync and NLS resync use FLAG_SILENT** (no wake/haptic — needs matching firmware). Companion also skips unchanged NLS re-ingests and debounces NLS reconnect storms (`0.8.2-p65`).
 - Display sleep (default **20 s**, configurable); wake on button, double-tap, **raise-to-wake**, optional **shake-to-wake**, charger edge, alerts.
 - Offline launcher swipe → “not connected”.
 - Haptics via FreeRTOS timer motor driver.

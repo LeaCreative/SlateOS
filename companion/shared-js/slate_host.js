@@ -276,9 +276,10 @@
     }
   };
   /**
-   * Weather — host Open-Meteo snapshot. Optional lat/lon; else last-known GPS.
+   * Weather — host Open-Meteo snapshot (+ marine sea/tides). Optional lat/lon; else phone GPS.
    * Events: onEvent('weather', json)
-   *   { type: 'snapshot', tempC, weatherCode, label, precipMm, windMps, lat, lon }
+   *   { type: 'snapshot', tempC, weatherCode, label, precipMm, windMps, lat, lon,
+   *     seaLevelM?, nextHighTime?, nextHighM?, nextLowTime?, nextLowM? }
    *   { type: 'status', state: 'loading'|'error', detail? }
    */
   slate.weather = {

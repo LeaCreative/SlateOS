@@ -228,7 +228,7 @@ binding ceiling as Official for every permission they declare.
 | `slate.news` | `news` | `news` | RSS/Atom list + text pages |
 | `slate.media` | `media` | `media` | Now-playing + play/pause/skip (needs NLS) |
 | `slate.http` | `http` | `http` | GET/POST; **requires** `http.allowedHosts` |
-| `slate.weather` | `weather` | `weather` | Open-Meteo snapshot; optional lat/lon |
+| `slate.weather` | `weather` | `weather` | Open-Meteo snapshot + marine sea/tides; phone GPS |
 
 ### 8.1 `slate.media`
 
@@ -266,11 +266,12 @@ Host must match `allowedHosts` exactly (no wildcards). Prefer typed adapters
 ### 8.3 `slate.weather`
 
 ```js
-slate.weather.fetch()                    // last-known GPS if available
+slate.weather.fetch()                    // phone GPS (fresh when possible)
 slate.weather.fetch({ lat: 48.85, lon: 2.35 })
 slate.weather.stop()
 // onEvent('weather', …):
-//   { type: 'snapshot', tempC, weatherCode, label, precipMm, windMps, lat, lon }
+//   { type: 'snapshot', tempC, weatherCode, label, precipMm, windMps, lat, lon,
+//     seaLevelM?, nextHighTime?, nextHighM?, nextLowTime?, nextLowM? }
 //   { type: 'status', state: 'loading'|'error', detail? }
 ```
 
