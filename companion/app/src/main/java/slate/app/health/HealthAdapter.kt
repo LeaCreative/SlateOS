@@ -19,42 +19,51 @@ class HealthAdapter(
 
     fun fetch() {
         job?.cancel()
-        emit(JSONObject().put("type", "status").put("state", "loading"))
+        // Do not emit "loading" here — it races ahead of watch() snapshots and
+        // can leave the JS UI stuck on Reading... after a denied HC read.
         job = scope.launch {
-            when (writer.availability()) {
-                "unavailable", "update_required" -> {
+            when (val result = writer.readTodayStepsAndHr()) {
+                is HealthConnectWriter.ReadResult.Unavailable -> {
                     emit(
                         JSONObject()
                             .put("type", "status")
                             .put("state", "hc_unavailable")
-                            .put("detail", writer.availability()),
+                            .put("detail", result.detail),
                     )
-                    return@launch
                 }
-            }
-            try {
-                val (steps, hr) = writer.readTodayStepsAndHr()
-                val o = JSONObject()
-                    .put("type", "snapshot")
-                    .put("source", "hc")
-                if (steps != null) o.put("stepsToday", steps) else o.put("stepsToday", JSONObject.NULL)
-                if (hr != null) o.put("hrBpm", hr) else o.put("hrBpm", JSONObject.NULL)
-                emit(o)
-            } catch (t: SecurityException) {
-                emit(
-                    JSONObject()
-                        .put("type", "status")
-                        .put("state", "denied")
-                        .put("detail", "HC permission"),
-                )
-            } catch (t: Throwable) {
-                LinkLog.w("health.fetch: ${t.message}")
-                emit(
-                    JSONObject()
-                        .put("type", "status")
-                        .put("state", "error")
-                        .put("detail", (t.message ?: "read").take(80)),
-                )
+                is HealthConnectWriter.ReadResult.Denied -> {
+                    LinkLog.i("health.fetch denied — grant HC in Phone bridges")
+                    emit(
+                        JSONObject()
+                            .put("type", "status")
+                            .put("state", "denied")
+                            .put("detail", "Grant Health Connect in Phone bridges"),
+                    )
+                }
+                is HealthConnectWriter.ReadResult.Error -> {
+                    emit(
+                        JSONObject()
+                            .put("type", "status")
+                            .put("state", "error")
+                            .put("detail", result.detail),
+                    )
+                }
+                is HealthConnectWriter.ReadResult.Ok -> {
+                    val o = JSONObject()
+                        .put("type", "snapshot")
+                        .put("source", "hc")
+                    if (result.stepsToday != null) {
+                        o.put("stepsToday", result.stepsToday)
+                    } else {
+                        o.put("stepsToday", JSONObject.NULL)
+                    }
+                    if (result.hrBpm != null) {
+                        o.put("hrBpm", result.hrBpm)
+                    } else {
+                        o.put("hrBpm", JSONObject.NULL)
+                    }
+                    emit(o)
+                }
             }
         }
     }

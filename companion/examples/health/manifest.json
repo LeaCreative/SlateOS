@@ -1,7 +1,7 @@
 {
   "id": "slate.health",
   "name": "Health JS",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "entry": "main.js",
   "minProtocolVersion": 1,
   "minHostVersion": "0.1",

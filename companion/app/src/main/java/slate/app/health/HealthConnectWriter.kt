@@ -20,6 +20,13 @@ import java.time.ZonedDateTime
  */
 class HealthConnectWriter(private val context: Context) {
 
+    sealed class ReadResult {
+        data class Ok(val stepsToday: Long?, val hrBpm: Long?) : ReadResult()
+        data object Denied : ReadResult()
+        data class Unavailable(val detail: String) : ReadResult()
+        data class Error(val detail: String) : ReadResult()
+    }
+
     fun availability(): String {
         val status = HealthConnectClient.getSdkStatus(context)
         return when (status) {
@@ -36,6 +43,17 @@ class HealthConnectWriter(private val context: Context) {
         } catch (t: Throwable) {
             LinkLog.w("HC client: ${t.message}")
             null
+        }
+    }
+
+    suspend fun hasReadPermissions(): Boolean {
+        val client = clientOrNull() ?: return false
+        return try {
+            val granted = client.permissionController.getGrantedPermissions()
+            READ_PERMISSIONS.all { it in granted }
+        } catch (t: Throwable) {
+            LinkLog.w("HC getGrantedPermissions: ${t.message}")
+            false
         }
     }
 
@@ -95,21 +113,39 @@ class HealthConnectWriter(private val context: Context) {
         }
     }
 
-    suspend fun readTodayStepsAndHr(): Pair<Long?, Long?> {
-        val client = clientOrNull() ?: return null to null
+    suspend fun readTodayStepsAndHr(): ReadResult {
+        when (val avail = availability()) {
+            "unavailable", "update_required" -> return ReadResult.Unavailable(avail)
+        }
+        val client = clientOrNull() ?: return ReadResult.Unavailable("no client")
+        if (!hasReadPermissions()) {
+            return ReadResult.Denied
+        }
         val zone = ZoneId.systemDefault()
         val start = ZonedDateTime.now(zone).toLocalDate().atStartOfDay(zone).toInstant()
         val end = Instant.now()
         val filter = TimeRangeFilter.between(start, end)
         var steps: Long? = null
         var hr: Long? = null
+        var denied = false
         try {
             val stepResp = client.readRecords(
                 ReadRecordsRequest(StepsRecord::class, timeRangeFilter = filter),
             )
             steps = stepResp.records.sumOf { it.count }
-        } catch (t: Throwable) {
+        } catch (t: SecurityException) {
             LinkLog.w("HC read steps: ${t.message}")
+            denied = true
+        } catch (t: Throwable) {
+            if (t.message?.contains("SecurityException") == true ||
+                t.message?.contains("READ_STEPS") == true
+            ) {
+                LinkLog.w("HC read steps: ${t.message}")
+                denied = true
+            } else {
+                LinkLog.w("HC read steps: ${t.message}")
+                return ReadResult.Error((t.message ?: "steps").take(80))
+            }
         }
         try {
             val hrResp = client.readRecords(
@@ -119,10 +155,24 @@ class HealthConnectWriter(private val context: Context) {
             if (samples.isNotEmpty()) {
                 hr = samples.last().beatsPerMinute
             }
-        } catch (t: Throwable) {
+        } catch (t: SecurityException) {
             LinkLog.w("HC read HR: ${t.message}")
+            denied = true
+        } catch (t: Throwable) {
+            if (t.message?.contains("SecurityException") == true ||
+                t.message?.contains("READ_HEART_RATE") == true
+            ) {
+                LinkLog.w("HC read HR: ${t.message}")
+                denied = true
+            } else {
+                LinkLog.w("HC read HR: ${t.message}")
+                // Keep steps if we got them.
+            }
         }
-        return steps to hr
+        if (denied && steps == null && hr == null) {
+            return ReadResult.Denied
+        }
+        return ReadResult.Ok(stepsToday = steps, hrBpm = hr)
     }
 
     companion object {

@@ -7,9 +7,12 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.health.connect.client.PermissionController
+import com.google.android.material.button.MaterialButton
 import slate.app.SlateActivity
 import slate.app.health.HealthConnectWriter
+import slate.app.link.LinkLog
 import slate.app.ui.SimpleViews
 
 /** Phone-only bridge prefs: alarm backend + Health Connect sync. */
@@ -17,10 +20,24 @@ class PhoneBridgesActivity : SlateActivity() {
     private lateinit var prefs: HostPrefs
     private lateinit var alarmStatus: TextView
     private lateinit var hcStatus: TextView
+    private lateinit var hcSyncButton: MaterialButton
 
     private val requestHcPermissions = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract(),
-    ) {
+    ) { granted ->
+        LinkLog.i("HC grant result size=${granted.size}")
+        val need = HealthConnectWriter.ALL_PERMISSIONS
+        val ok = granted.containsAll(need)
+        Toast.makeText(
+            this,
+            when {
+                ok -> "Health Connect permissions granted"
+                granted.isEmpty() ->
+                    "HC returned no grants — open Health Connect and enable Slate"
+                else -> "Partial HC grant (${granted.size}/${need.size})"
+            },
+            Toast.LENGTH_LONG,
+        ).show()
         refresh()
     }
 
@@ -61,22 +78,31 @@ class PhoneBridgesActivity : SlateActivity() {
         )
 
         hcStatus = SimpleViews.text(this, "", 14f, false).also { root.addView(it) }
-        root.addView(
-            SimpleViews.button(this, "Health Connect sync: On") {
-                prefs.healthConnectSync = true
-                refresh()
-            },
-        )
-        root.addView(
-            SimpleViews.button(this, "Health Connect sync: Off") {
-                prefs.healthConnectSync = false
-                refresh()
-            },
-        )
+        // One toggle — previously two On/Off buttons for the same boolean.
+        hcSyncButton = SimpleViews.button(this, "") {
+            prefs.healthConnectSync = !prefs.healthConnectSync
+            refresh()
+        }.also { root.addView(it) }
         root.addView(
             SimpleViews.button(this, "Grant Health Connect permissions") {
-                runCatching {
+                val avail = HealthConnectWriter(this).availability()
+                if (avail != "available") {
+                    Toast.makeText(
+                        this,
+                        "Health Connect not available ($avail)",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    return@button
+                }
+                try {
                     requestHcPermissions.launch(HealthConnectWriter.ALL_PERMISSIONS)
+                } catch (t: Throwable) {
+                    LinkLog.w("HC grant launch failed: ${t.message}")
+                    Toast.makeText(
+                        this,
+                        "Could not open HC permissions: ${t.message}",
+                        Toast.LENGTH_LONG,
+                    ).show()
                 }
             },
         )
@@ -92,6 +118,11 @@ class PhoneBridgesActivity : SlateActivity() {
                     }
                 }
                 runCatching { startActivity(intent) }
+                    .onFailure { t ->
+                        LinkLog.w("Open HC failed: ${t.message}")
+                        Toast.makeText(this, "Could not open Health Connect", Toast.LENGTH_LONG)
+                            .show()
+                    }
             },
         )
 
@@ -111,7 +142,10 @@ class PhoneBridgesActivity : SlateActivity() {
     private fun refresh() {
         alarmStatus.text = "Alarm backend: ${prefs.alarmBackend}"
         val hc = HealthConnectWriter(this).availability()
-        hcStatus.text =
-            "HC sync: ${if (prefs.healthConnectSync) "on" else "off"} ($hc)"
+        val syncOn = prefs.healthConnectSync
+        hcStatus.text = "HC sync: ${if (syncOn) "on" else "off"} ($hc)"
+        hcSyncButton.text =
+            if (syncOn) "Health Connect sync: On (tap to turn off)"
+            else "Health Connect sync: Off (tap to turn on)"
     }
 }

@@ -2,7 +2,7 @@
  * Health JS — today steps / HR from Health Connect + live watch buffer.
  *
  * Draws: stepsToday and hrBpm from HC fetch; optional watch snapshot.
- * Does:  onFocus fetch + watch; BACK stops.
+ * Does:  onFocus watch then fetch; BACK stops.
  * Perms: health.read — HC aggregates. Watch→HC write is a companion bridge.
  * Budget: text only.
  *
@@ -54,7 +54,7 @@
 
   function screen() {
     if (mode === 'loading') return statusScreen('Health', 'Reading...');
-    if (mode === 'denied') return statusScreen('Need HC', detail || 'Grant Health Connect');
+    if (mode === 'denied') return statusScreen('Need HC', detail || 'Phone bridges');
     if (mode === 'hc_unavailable') return statusScreen('No HC', detail || 'Install Health Connect');
     if (mode === 'error') return statusScreen('Health failed', detail);
     return face();
@@ -66,8 +66,12 @@
 
   global.onFocus = function () {
     mode = 'loading';
+    steps = null;
+    hr = null;
+    source = '';
     detail = '';
-    return push().concat([slate.health.fetch({ range: 'today' }), slate.health.watch()]);
+    // Watch first so we never wait solely on HC; fetch may return denied.
+    return push().concat([slate.health.watch(), slate.health.fetch({ range: 'today' })]);
   };
 
   global.onBlur = function () {
@@ -80,13 +84,23 @@
     try { o = typeof data === 'string' ? JSON.parse(data) : data; } catch (e) { return []; }
     if (!o || !o.type) return [];
     if (o.type === 'status') {
+      // Never regress from a painted snapshot back to Reading...
+      if (o.state === 'loading' && mode === 'ok') return [];
+      // Denied with no watch data yet — show grant hint. If we already have
+      // watch numbers, keep the face and stash the hint in detail.
+      if (o.state === 'denied' && (steps != null || hr != null || source === 'watch')) {
+        detail = o.detail || 'Grant HC in Phone bridges';
+        source = source || 'watch';
+        mode = 'ok';
+        return push();
+      }
       mode = o.state || 'error';
       detail = o.detail || '';
       return push();
     }
     if (o.type === 'snapshot') {
       mode = 'ok';
-      source = o.source || '';
+      source = o.source || source || '';
       if (o.stepsToday != null) steps = o.stepsToday;
       if (o.hrBpm != null) hr = o.hrBpm;
       return push();
