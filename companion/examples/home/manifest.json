@@ -1,0 +1,39 @@
+{
+  "id": "slate.home",
+  "name": "Home JS",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["home", "storage"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.home", "slate.store", "slate.log"],
+  "settings": [
+    {
+      "key": "baseUrl",
+      "label": "Home Assistant URL",
+      "type": "string",
+      "default": "http://homeassistant.local:8123",
+      "max": 512,
+      "help": "HA server URL (not the phone app). Example: http://192.168.0.10:8123"
+    },
+    {
+      "key": "token",
+      "label": "Long-lived access token",
+      "type": "string",
+      "default": "",
+      "max": 512,
+      "help": "Create under HA profile → Long-lived access tokens."
+    },
+    {
+      "key": "entities",
+      "label": "Entity IDs",
+      "type": "string",
+      "default": "light.kitchen",
+      "max": 512,
+      "help": "Comma-separated entity_ids to show (max 8), e.g. light.kitchen,light.desk"
+    }
+  ]
+}

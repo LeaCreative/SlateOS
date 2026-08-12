@@ -84,7 +84,7 @@ class PermissionsActivity : SlateActivity() {
             },
         )
         root.addView(
-            SimpleViews.button(this, "Grant sub-app permissions (location, camera)") {
+            SimpleViews.button(this, "Grant sub-app permissions (location, camera, calendar)") {
                 val wanted = mutableListOf<String>()
                 if (!LinkForegroundService.hasLocationPermission(this)) {
                     wanted += Manifest.permission.ACCESS_COARSE_LOCATION
@@ -94,6 +94,11 @@ class PermissionsActivity : SlateActivity() {
                     != PackageManager.PERMISSION_GRANTED
                 ) {
                     wanted += Manifest.permission.CAMERA
+                }
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CALENDAR)
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+                    wanted += Manifest.permission.READ_CALENDAR
                 }
                 if (wanted.isEmpty()) {
                     LinkForegroundService.refreshForegroundServiceType(this)

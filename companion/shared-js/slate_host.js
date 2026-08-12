@@ -295,6 +295,98 @@
       return { type: 'adapter', adapter: 'weather', command: 'stop', payload: '{}' };
     }
   };
+  /**
+   * Calendar — next events from the phone CalendarContract.
+   * Events: onEvent('calendar', json)
+   *   { type: 'events', items: [{ id, title, startMs, endMs, allDay, location? }] }
+   *   { type: 'status', state: 'loading'|'denied'|'error', detail? }
+   */
+  slate.calendar = {
+    fetch: function (opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'calendar', command: 'fetch',
+        payload: JSON.stringify({
+          limit: (opts.limit == null ? 5 : opts.limit) | 0
+        }) };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'calendar', command: 'stop', payload: '{}' };
+    }
+  };
+  /**
+   * Alarms — schedule on the phone (Clock intent or exact AlarmManager).
+   * Events: onEvent('alarms', json)
+   *   { type: 'scheduled', id, whenMs, backend }
+   *   { type: 'list', items: [...] }
+   *   { type: 'status', state: 'denied'|'error'|'need_exact_perm', detail? }
+   */
+  slate.alarms = {
+    set: function (opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'alarms', command: 'set',
+        payload: JSON.stringify({
+          whenMs: opts.whenMs == null ? 0 : +opts.whenMs,
+          label: String(opts.label || ''),
+          id: String(opts.id || '')
+        }) };
+    },
+    cancel: function (opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'alarms', command: 'cancel',
+        payload: JSON.stringify({ id: String(opts.id || '') }) };
+    },
+    list: function () {
+      return { type: 'adapter', adapter: 'alarms', command: 'list', payload: '{}' };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'alarms', command: 'stop', payload: '{}' };
+    }
+  };
+  /**
+   * Home — Home Assistant REST (not the HA phone app). Settings: baseUrl, token, entities.
+   * Events: onEvent('home', json)
+   *   { type: 'states', entities: [{ id, name, state, domain, brightness? }] }
+   *   { type: 'status', state: 'loading'|'denied'|'error', detail? }
+   */
+  slate.home = {
+    refresh: function () {
+      return { type: 'adapter', adapter: 'home', command: 'refresh', payload: '{}' };
+    },
+    toggle: function (entityId) {
+      return { type: 'adapter', adapter: 'home', command: 'toggle',
+        payload: JSON.stringify({ entityId: String(entityId || '') }) };
+    },
+    set: function (entityId, opts) {
+      opts = opts || {};
+      var payload = { entityId: String(entityId || '') };
+      if (opts.brightness != null) payload.brightness = opts.brightness | 0;
+      return { type: 'adapter', adapter: 'home', command: 'set',
+        payload: JSON.stringify(payload) };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'home', command: 'stop', payload: '{}' };
+    }
+  };
+  /**
+   * Health — read Health Connect aggregates; watch live vitals via host buffer.
+   * Host also writes watch steps/BPM into HC (bridge; not a script write API).
+   * Events: onEvent('health', json)
+   *   { type: 'snapshot', stepsToday, hrBpm?, source: 'hc'|'watch', detail? }
+   *   { type: 'status', state: 'loading'|'denied'|'error'|'hc_unavailable', detail? }
+   */
+  slate.health = {
+    fetch: function (opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'health', command: 'fetch',
+        payload: JSON.stringify({ range: String(opts.range || 'today') }) };
+    },
+    watch: function () {
+      return { type: 'adapter', adapter: 'health', command: 'watch', payload: '{}' };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'health', command: 'stop', payload: '{}' };
+    }
+  };
   /** Navigation — host adapter; maneuvers arrive as onEvent('nav', …). */
   slate.nav = {
     subscribe: function () {

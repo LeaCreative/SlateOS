@@ -15,7 +15,7 @@
 | Piece | Identity |
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
-| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`BA6BD6327017`**; nav chrome + paged settings + FLAG_SILENT |
+| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`08986117C2BA`**; CONTROL VITALS 0xE2 + prior nav chrome / FLAG_SILENT |
 | Companion APK | **`slate.app.debug`** — see `companion/app/build.gradle.kts` for versionName / versionCode |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
@@ -97,6 +97,7 @@
 | News (`slate.news`) | Host RSS/Atom adapter; JS UI |
 | Media (`slate.media`) | Now-playing + transport (NLS) |
 | Weather (`slate.weather`) | Open-Meteo snapshot; JS UI |
+| Calendar / Alarms / Home / Health | Working (p66) — CalendarContract; Clock/exact alarms; HA REST; HC read + VITALS write |
 | Health | Permission gate only — **no adapter yet** |
 
 ### OTA UI

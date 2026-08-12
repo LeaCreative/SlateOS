@@ -40,6 +40,10 @@ class BundledSubAppConformanceTest {
         Demo(ScriptResources.MEDIA_MANIFEST, "slate.media"),
         Demo(ScriptResources.WEATHER_MANIFEST, "slate.weather"),
         Demo(ScriptResources.HTTPDEMO_MANIFEST, "slate.httpdemo"),
+        Demo(ScriptResources.CALENDAR_MANIFEST, "slate.calendar"),
+        Demo(ScriptResources.ALARMS_MANIFEST, "slate.alarms"),
+        Demo(ScriptResources.HOME_MANIFEST, "slate.home"),
+        Demo(ScriptResources.HEALTH_MANIFEST, "slate.health"),
     )
 
     private val entryScripts = mapOf(
@@ -53,6 +57,10 @@ class BundledSubAppConformanceTest {
         ScriptResources.MEDIA_MANIFEST to ScriptResources.MEDIA_MAIN,
         ScriptResources.WEATHER_MANIFEST to ScriptResources.WEATHER_MAIN,
         ScriptResources.HTTPDEMO_MANIFEST to ScriptResources.HTTPDEMO_MAIN,
+        ScriptResources.CALENDAR_MANIFEST to ScriptResources.CALENDAR_MAIN,
+        ScriptResources.ALARMS_MANIFEST to ScriptResources.ALARMS_MAIN,
+        ScriptResources.HOME_MANIFEST to ScriptResources.HOME_MAIN,
+        ScriptResources.HEALTH_MANIFEST to ScriptResources.HEALTH_MAIN,
     )
 
     private fun parse(res: String): PackageManifest =
@@ -138,6 +146,10 @@ class BundledSubAppConformanceTest {
             ScriptResources.MEDIA_MAIN,
             ScriptResources.WEATHER_MAIN,
             ScriptResources.HTTPDEMO_MAIN,
+            ScriptResources.CALENDAR_MAIN,
+            ScriptResources.ALARMS_MAIN,
+            ScriptResources.HOME_MAIN,
+            ScriptResources.HEALTH_MAIN,
         )
         for (res in mains) {
             val js = ScriptResources.read(res)

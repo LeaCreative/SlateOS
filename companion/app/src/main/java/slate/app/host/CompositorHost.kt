@@ -204,6 +204,15 @@ class CompositorHost(
 
     private var weatherAdapter: slate.app.weather.WeatherAdapter? = null
     private var weatherSubscriberId: String? = null
+    private var calendarAdapter: slate.app.calendar.CalendarAdapter? = null
+    private var calendarSubscriberId: String? = null
+    private var alarmsAdapter: slate.app.alarms.AlarmsAdapter? = null
+    private var alarmsSubscriberId: String? = null
+    private var homeAdapter: slate.app.home.HomeAdapter? = null
+    private var homeSubscriberId: String? = null
+    private var healthAdapter: slate.app.health.HealthAdapter? = null
+    private var healthSubscriberId: String? = null
+    private val vitalsIngest by lazy { slate.app.health.VitalsIngest(context, scope) }
 
     /** Last SCROLL_POS offset from the watch (firmware scroll steal on old builds). */
     private var lastScrollOffset: Int = -1
@@ -406,6 +415,7 @@ class CompositorHost(
     private fun onControlMessage(msg: ByteArray) {
         val wasReady = session.state == SessionClient.State.Ready
         onSettingsSync(msg)
+        onVitals(msg)
         val result = session.onControlMessage(msg)
         for (out in result.outbound) {
             gatt.sendMessage(SdpFrame.CHAN_CONTROL, out)
@@ -530,6 +540,12 @@ class CompositorHost(
             // where it stands; if we are genuinely ahead, push so it converges.
             sendSettingsSync()
         }
+    }
+
+    private fun onVitals(msg: ByteArray) {
+        val snap = slate.session.Vitals.parse(msg) ?: return
+        LinkLog.i("vitals ← watch steps=${snap.steps} bpm=${snap.bpm}")
+        vitalsIngest.onVitals(snap)
     }
 
     /**
@@ -1070,6 +1086,10 @@ class CompositorHost(
             "media" -> handleMediaAdapter(appId, cmd)
             "http" -> handleHttpAdapter(appId, cmd)
             "weather" -> handleWeatherAdapter(appId, cmd)
+            "calendar" -> handleCalendarAdapter(appId, cmd)
+            "alarms" -> handleAlarmsAdapter(appId, cmd)
+            "home" -> handleHomeAdapter(appId, cmd)
+            "health" -> handleHealthAdapter(appId, cmd)
             else -> Unit
         }
     }
@@ -1243,6 +1263,137 @@ class CompositorHost(
         weatherAdapter?.stop()
         weatherAdapter = null
         weatherSubscriberId = null
+    }
+
+    private fun handleCalendarAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        when (cmd.command) {
+            "fetch" -> {
+                val limit = try {
+                    JSONObject(cmd.payloadJson).optInt("limit", 5)
+                } catch (_: Throwable) {
+                    5
+                }
+                if (calendarAdapter == null || calendarSubscriberId != appId) {
+                    stopCalendar()
+                    calendarSubscriberId = appId
+                    calendarAdapter = slate.app.calendar.CalendarAdapter(context, scope) { json ->
+                        val target = calendarSubscriberId ?: return@CalendarAdapter
+                        scope.launch { compositor.dispatchSystemEvent(target, "calendar", json) }
+                    }
+                }
+                calendarAdapter?.fetch(limit)
+                LinkLog.i("calendar.fetch for $appId")
+            }
+            "stop" -> {
+                if (calendarSubscriberId == appId || calendarSubscriberId == null) {
+                    stopCalendar()
+                }
+            }
+        }
+    }
+
+    private fun stopCalendar() {
+        calendarAdapter?.stop()
+        calendarAdapter = null
+        calendarSubscriberId = null
+    }
+
+    private fun handleAlarmsAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        if (alarmsAdapter == null || alarmsSubscriberId != appId) {
+            alarmsSubscriberId = appId
+            alarmsAdapter = slate.app.alarms.AlarmsAdapter(context) { json ->
+                val target = alarmsSubscriberId ?: return@AlarmsAdapter
+                scope.launch { compositor.dispatchSystemEvent(target, "alarms", json) }
+            }
+        }
+        val o = try {
+            JSONObject(cmd.payloadJson)
+        } catch (_: Throwable) {
+            JSONObject()
+        }
+        when (cmd.command) {
+            "set" -> {
+                alarmsAdapter?.set(
+                    whenMs = o.optLong("whenMs", 0L),
+                    label = o.optString("label", ""),
+                    idIn = o.optString("id", ""),
+                )
+            }
+            "cancel" -> alarmsAdapter?.cancel(o.optString("id", ""))
+            "list" -> alarmsAdapter?.list()
+            "stop" -> {
+                if (alarmsSubscriberId == appId || alarmsSubscriberId == null) {
+                    alarmsAdapter?.stop()
+                    alarmsAdapter = null
+                    alarmsSubscriberId = null
+                }
+            }
+        }
+    }
+
+    private fun handleHomeAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        if (homeAdapter == null || homeSubscriberId != appId) {
+            stopHome()
+            homeSubscriberId = appId
+            homeAdapter = slate.app.home.HomeAdapter(context, appId, scope) { json ->
+                val target = homeSubscriberId ?: return@HomeAdapter
+                scope.launch { compositor.dispatchSystemEvent(target, "home", json) }
+            }
+        }
+        val o = try {
+            JSONObject(cmd.payloadJson)
+        } catch (_: Throwable) {
+            JSONObject()
+        }
+        when (cmd.command) {
+            "refresh" -> homeAdapter?.refresh()
+            "toggle" -> homeAdapter?.toggle(o.optString("entityId", ""))
+            "set" -> {
+                val brightness = if (o.has("brightness") && !o.isNull("brightness")) {
+                    o.optInt("brightness")
+                } else {
+                    null
+                }
+                homeAdapter?.set(o.optString("entityId", ""), brightness)
+            }
+            "stop" -> {
+                if (homeSubscriberId == appId || homeSubscriberId == null) {
+                    stopHome()
+                }
+            }
+        }
+    }
+
+    private fun stopHome() {
+        homeAdapter?.stop()
+        homeAdapter = null
+        homeSubscriberId = null
+    }
+
+    private fun handleHealthAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        if (healthAdapter == null || healthSubscriberId != appId) {
+            stopHealth()
+            healthSubscriberId = appId
+            healthAdapter = slate.app.health.HealthAdapter(context, scope, vitalsIngest) { json ->
+                val target = healthSubscriberId ?: return@HealthAdapter
+                scope.launch { compositor.dispatchSystemEvent(target, "health", json) }
+            }
+        }
+        when (cmd.command) {
+            "fetch" -> healthAdapter?.fetch()
+            "watch" -> healthAdapter?.watch()
+            "stop" -> {
+                if (healthSubscriberId == appId || healthSubscriberId == null) {
+                    stopHealth()
+                }
+            }
+        }
+    }
+
+    private fun stopHealth() {
+        healthAdapter?.stop()
+        healthAdapter = null
+        healthSubscriberId = null
     }
 
     /**

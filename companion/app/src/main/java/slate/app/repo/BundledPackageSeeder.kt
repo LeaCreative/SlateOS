@@ -95,6 +95,30 @@ object BundledPackageSeeder {
             ScriptResources.HTTPDEMO_MAIN,
             setOf(ScriptPermission.Http, ScriptPermission.Storage),
         ),
+        Bundled(
+            "slate.calendar",
+            ScriptResources.CALENDAR_MANIFEST,
+            ScriptResources.CALENDAR_MAIN,
+            setOf(ScriptPermission.Calendar),
+        ),
+        Bundled(
+            "slate.alarms",
+            ScriptResources.ALARMS_MANIFEST,
+            ScriptResources.ALARMS_MAIN,
+            setOf(ScriptPermission.Alarms, ScriptPermission.Storage),
+        ),
+        Bundled(
+            "slate.home",
+            ScriptResources.HOME_MANIFEST,
+            ScriptResources.HOME_MAIN,
+            setOf(ScriptPermission.Home, ScriptPermission.Storage),
+        ),
+        Bundled(
+            "slate.health",
+            ScriptResources.HEALTH_MANIFEST,
+            ScriptResources.HEALTH_MAIN,
+            setOf(ScriptPermission.HealthRead),
+        ),
     )
 
     fun ensureOfficialDemos(context: Context): Int {

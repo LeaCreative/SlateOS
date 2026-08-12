@@ -1,0 +1,13 @@
+{
+  "id": "slate.calendar",
+  "name": "Calendar JS",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["calendar"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.calendar", "slate.log"]
+}

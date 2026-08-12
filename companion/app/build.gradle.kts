@@ -16,8 +16,8 @@ android {
         // It sat at 1 through roughly fifteen installs, which made the version
         // display useless for the one thing it exists for â€” telling two builds
         // apart. versionName tracks features; versionCode tracks the install.
-        versionCode = 66
-        versionName = "0.8.2-p65"
+        versionCode = 68
+        versionName = "0.8.2-p67"
     }
 
     buildTypes {
@@ -51,6 +51,8 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("com.google.android.material:material:1.12.0")
+    // 1.1.0 stable wants compileSdk 36 + AGP 8.9; stay on alpha that fits SDK 35.
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.camera:camera-core:1.4.0")

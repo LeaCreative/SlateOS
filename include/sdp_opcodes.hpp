@@ -238,6 +238,12 @@ constexpr std::uint8_t SETTINGS_SYNC  = 0x21u;  // either direction
 constexpr std::uint8_t CONFIRM_STATUS_REQUEST = 0xE0u;  // phone → watch
 constexpr std::uint8_t CONFIRM_STATUS         = 0xE1u;  // watch → phone
 // CONFIRM_STATUS payload: [op][needs_confirm:u8][dwell_ms_remaining:u32 LE]
+/**
+ * Watch → phone vitals for Health Connect (0xE2 CONTROL extension).
+ * Payload: [op][steps:u32 LE][bpm:u8][pad:u8]  (7 bytes). Cadence is host-
+ * friendly (change≤1/min, else ≤5 min keepalive) — not every PPG sample.
+ */
+constexpr std::uint8_t VITALS                 = 0xE2u;  // watch → phone
 }  // namespace control_op
 
 constexpr std::uint16_t kProtocolVersion = 1u;

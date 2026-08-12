@@ -1,0 +1,13 @@
+{
+  "id": "slate.health",
+  "name": "Health JS",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["health.read"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.health", "slate.log"]
+}

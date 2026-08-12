@@ -168,6 +168,11 @@ class MainActivity : SlateActivity() {
             },
         )
         root.addView(
+            SimpleViews.button(this, "Phone bridges") {
+                startActivity(Intent(this, slate.app.settings.PhoneBridgesActivity::class.java))
+            },
+        )
+        root.addView(
             SimpleViews.button(this, "Sub-app repository") {
                 startActivity(Intent(this, RepoActivity::class.java))
             },

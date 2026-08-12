@@ -52,6 +52,7 @@ class BindingSurface(
                         }
                         "notifications", "media", "location", "health", "haptic",
                         "nav", "camera", "phone", "map", "news", "weather",
+                        "calendar", "alarms", "home",
                         -> {
                             val perm = when (m.adapter) {
                                 "notifications" -> ScriptPermission.Notifications
@@ -64,6 +65,9 @@ class BindingSurface(
                                 "map" -> ScriptPermission.Location
                                 "news" -> ScriptPermission.News
                                 "weather" -> ScriptPermission.Weather
+                                "calendar" -> ScriptPermission.Calendar
+                                "alarms" -> ScriptPermission.Alarms
+                                "home" -> ScriptPermission.Home
                                 else -> null
                             }
                             if (perm != null && !effective(perm)) {

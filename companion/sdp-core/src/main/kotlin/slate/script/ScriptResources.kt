@@ -28,6 +28,14 @@ object ScriptResources {
     const val WEATHER_MANIFEST = "/slate/subapps/weather/manifest.json"
     const val HTTPDEMO_MAIN = "/slate/subapps/httpdemo/main.js"
     const val HTTPDEMO_MANIFEST = "/slate/subapps/httpdemo/manifest.json"
+    const val CALENDAR_MAIN = "/slate/subapps/calendar/main.js"
+    const val CALENDAR_MANIFEST = "/slate/subapps/calendar/manifest.json"
+    const val ALARMS_MAIN = "/slate/subapps/alarms/main.js"
+    const val ALARMS_MANIFEST = "/slate/subapps/alarms/manifest.json"
+    const val HOME_MAIN = "/slate/subapps/home/main.js"
+    const val HOME_MANIFEST = "/slate/subapps/home/manifest.json"
+    const val HEALTH_MAIN = "/slate/subapps/health/main.js"
+    const val HEALTH_MANIFEST = "/slate/subapps/health/manifest.json"
 
     fun read(path: String): String {
         val stream = ScriptResources::class.java.getResourceAsStream(path)

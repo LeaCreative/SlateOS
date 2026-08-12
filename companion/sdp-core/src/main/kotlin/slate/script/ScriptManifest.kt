@@ -30,6 +30,12 @@ enum class ScriptPermission(val id: String) {
      * phone; the isolate receives a small typed JSON snapshot.
      */
     Weather("weather"),
+    /** Next calendar events via CalendarContract. */
+    Calendar("calendar"),
+    /** Schedule phone alarms (Clock intent or exact AlarmManager). */
+    Alarms("alarms"),
+    /** Home Assistant REST entity control (toggle / brightness). */
+    Home("home"),
     ;
 
     companion object {

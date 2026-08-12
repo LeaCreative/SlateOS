@@ -156,6 +156,46 @@ class ScriptRuntimeHost(
                                     .put("detail", detail)
                                     .toString(),
                             )
+                        adapter == "calendar" && command == "fetch" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "calendar",
+                                JSONObject()
+                                    .put("type", "status")
+                                    .put("state", "error")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
+                        adapter == "alarms" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "alarms",
+                                JSONObject()
+                                    .put("type", "status")
+                                    .put("state", "denied")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
+                        adapter == "home" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "home",
+                                JSONObject()
+                                    .put("type", "status")
+                                    .put("state", "denied")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
+                        adapter == "health" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "health",
+                                JSONObject()
+                                    .put("type", "status")
+                                    .put("state", "denied")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
                     }
                 }
             },

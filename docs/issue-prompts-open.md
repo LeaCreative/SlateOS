@@ -1839,16 +1839,16 @@ receives small JSON events and draws. No raw Android objects in the isolate.
 | 1 | `slate.media` | **Done** (p55+) | Now-playing + play/pause/skip via MediaSession (NLS) |
 | 2 | `slate.http` | **Done** (p55+) | GET/POST; `http.allowedHosts`; size/timeout caps |
 | 3 | `slate.weather` | **Done** (p55+) | Typed snapshot (Open-Meteo); host fetch |
-| 4 | `slate.calendar` | Open | Next N events from CalendarContract |
+| 4 | `slate.calendar` | **Done** (p66) | Next N events from CalendarContract |
 | 5 | `slate.notifications` (JS) | Open | List/action surface for JS (Kotlin shade exists) |
 | 6 | `slate.battery` / device | Open | Phone battery %, charging |
 | 7 | `slate.clipboard` | Open | Read/write short text |
 | 8 | `slate.share` / intents | Open | `openUrl`, dial, geo, share text |
-| 9 | `slate.alarms` | Open | Schedule phone AlarmManager from watch UI |
+| 9 | `slate.alarms` | **Done** (p66) | Clock intent + exact AlarmManager (Phone bridges) |
 | 10 | `slate.contacts` (search) | Open | Capped name lookup → dial/deep link |
-| 11 | `slate.health` | Open | Health Connect aggregates (steps/HR/sleep) |
+| 11 | `slate.health` | **Done** (p66) | HC read + watch VITALS write (steps/BPM) |
 | 12 | `slate.translate` / TTS | Open | Short phrase translate or speak on phone |
-| 13 | `slate.home` / IoT | Deferred | Prefer community packages on `slate.http` first |
+| 13 | `slate.home` / IoT | **Done** (p66) HA REST | HA server toggle/slider; Matter still deferred |
 
 **Avoid:** generic “any Intent / any Android API”; dumping large blobs into the
 isolate (paginate like news).

@@ -71,10 +71,13 @@ before it did.
 | `slate.media` | `media` | yes | Now-playing + transport; needs Notification Listener |
 | `slate.http` | `http` (+ `allowedHosts`) | yes | Host GET/POST; response capped ~64 KiB |
 | `slate.weather` | `weather` | yes | Open-Meteo snapshot; optional lat/lon |
+| `slate.calendar` | `calendar` | yes | Next events (CalendarContract) |
+| `slate.alarms` | `alarms` | yes | Clock intent or exact AlarmManager |
+| `slate.home` | `home` | yes | Home Assistant REST |
 | `slate.nav` | `navigation` | yes | Bound to one app id host-side |
 | `slate.camera` | `camera` | yes | Bound to one app id host-side |
 | `slate.notifications` | `notifications` | partial | Host handles `action`; no JS read binding yet |
-| `slate.health` | `health.read` | no | Permission and gate only |
+| `slate.health` | `health.read` | yes | HC read; companion writes watch steps/BPM via VITALS |
 
 ### Location (`slate.location`)
 

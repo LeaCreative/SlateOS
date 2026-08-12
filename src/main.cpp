@@ -422,6 +422,42 @@ static void send_settings_sync() {
   (void)g_link.send_message(sdp::frame::kChanControl, buf, n);
 }
 
+/** CONTROL VITALS 0xE2 — day steps + last BPM for phone Health Connect. */
+static std::uint32_t g_last_vitals_ms = 0u;
+static std::uint32_t g_last_vitals_steps = 0xFFFFFFFFu;
+
+static void maybe_send_vitals(std::uint32_t now_ms) {
+  const slate::session::State sess = g_session.state();
+  const bool linked = sess == slate::session::State::Ready ||
+                      sess == slate::session::State::Active ||
+                      sess == slate::session::State::Idle;
+  if (!linked) {
+    return;
+  }
+  const std::uint32_t steps = g_core.local_state().steps;
+  const std::uint8_t bpm = g_core.local_state().hr_bpm;
+  const bool first = g_last_vitals_ms == 0u;
+  const bool changed = steps != g_last_vitals_steps;
+  const bool due_change =
+      changed && (now_ms - g_last_vitals_ms >= 60u * 1000u);
+  const bool due_keep = (now_ms - g_last_vitals_ms >= 5u * 60u * 1000u);
+  if (!first && !due_change && !due_keep) {
+    return;
+  }
+  std::uint8_t buf[7];
+  buf[0] = sdp::control_op::VITALS;
+  buf[1] = static_cast<std::uint8_t>(steps & 0xFFu);
+  buf[2] = static_cast<std::uint8_t>((steps >> 8) & 0xFFu);
+  buf[3] = static_cast<std::uint8_t>((steps >> 16) & 0xFFu);
+  buf[4] = static_cast<std::uint8_t>((steps >> 24) & 0xFFu);
+  buf[5] = bpm;
+  buf[6] = 0u;
+  if (g_link.send_message(sdp::frame::kChanControl, buf, sizeof(buf))) {
+    g_last_vitals_ms = now_ms;
+    g_last_vitals_steps = steps;
+  }
+}
+
 /**
  * Resolve a tap against the locally-drawn screen; true if the watch consumed it.
  *
@@ -788,6 +824,7 @@ static void app_loop() {
         g_core.take_settings_dirty()) {
       send_settings_sync();
     }
+    maybe_send_vitals(t);
     if (trial && slate::boot::tick_confirm(ble::central_connected(), t)) {
       trial = false;
       g_core.local_state().trial_image = 0u;

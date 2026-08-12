@@ -1,0 +1,23 @@
+{
+  "id": "slate.alarms",
+  "name": "Alarms JS",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["alarms", "storage"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.alarms", "slate.store", "slate.log"],
+  "settings": [
+    {
+      "key": "label",
+      "label": "Alarm label",
+      "type": "string",
+      "default": "Slate",
+      "max": 32,
+      "help": "Message shown in the Clock app or notification."
+    }
+  ]
+}

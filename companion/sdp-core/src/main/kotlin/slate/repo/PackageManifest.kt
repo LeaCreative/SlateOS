@@ -68,6 +68,9 @@ object HostCapabilities {
         "slate.map",
         "slate.news",
         "slate.weather",
+        "slate.calendar",
+        "slate.alarms",
+        "slate.home",
         /**
          * Buzzing the handset has been bindable since 6 Aug but had no token
          * here, so `examples/vibrate` could not declare the one capability it

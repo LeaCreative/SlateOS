@@ -229,6 +229,10 @@ binding ceiling as Official for every permission they declare.
 | `slate.media` | `media` | `media` | Now-playing + play/pause/skip (needs NLS) |
 | `slate.http` | `http` | `http` | GET/POST; **requires** `http.allowedHosts` |
 | `slate.weather` | `weather` | `weather` | Open-Meteo snapshot + marine sea/tides; phone GPS |
+| `slate.calendar` | `calendar` | `calendar` | Next events from CalendarContract |
+| `slate.alarms` | `alarms` | `alarms` | Phone Clock intent or exact AlarmManager (HostPrefs) |
+| `slate.home` | `home` | `home` | Home Assistant REST toggle/brightness (server URL + token) |
+| `slate.health` | `health.read` | `health` | HC aggregates; companion bridge writes watch steps/BPM |
 
 ### 8.1 `slate.media`
 
@@ -277,9 +281,22 @@ slate.weather.stop()
 
 ### 8.4 Planned (see `docs/issue-prompts-open.md` I-17)
 
-Calendar, JS notifications list/actions, phone battery, clipboard, share/
-intents, alarms, contacts search, Health Connect, translate/TTS. Home/IoT
-deferred — use `slate.http` from community packages first.
+JS notifications list/actions, phone battery, clipboard, share/intents,
+contacts search, translate/TTS. Matter / generic IoT still deferred — HA is
+`slate.home` (server REST).
+
+### 8.5 `slate.calendar` / `slate.alarms` / `slate.home` / `slate.health`
+
+```js
+slate.calendar.fetch({ limit: 5 })
+slate.alarms.set({ whenMs, label })  // backend: Phone bridges → clock|exact
+slate.home.refresh() / toggle(id) / set(id, { brightness })
+slate.health.fetch({ range: 'today' }) / watch()
+```
+
+Home talks to the HA **server**, not the HA phone app. Health Connect write of
+watch steps/BPM is a companion bridge (CONTROL VITALS + batch insert); Google
+Fit reads via HC.
 
 ---
 
