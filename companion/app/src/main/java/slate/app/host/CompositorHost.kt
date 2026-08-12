@@ -519,7 +519,9 @@ class CompositorHost(
         if (watchSettings.onRemote(incoming)) {
             LinkLog.i(
                 "settings ← watch (rev ${incoming.revision}): " +
-                    "raise=${incoming.tiltEnabled} timeout=${incoming.wakeSeconds}s " +
+                    "raise=${incoming.tiltEnabled} raiseSens=${incoming.raiseSensitivity} " +
+                        "shake=${incoming.shakeEnabled} shakeSens=${incoming.shakeSensitivity} " +
+                        "timeout=${incoming.wakeSeconds}s " +
                         "steps=${incoming.showSteps} diag=${incoming.showDiag} " +
                         "hr=${incoming.hrEnabled}",
             )
@@ -544,6 +546,8 @@ class CompositorHost(
         val p = pending ?: watchSettings.current()
         LinkLog.i(
             "settings → watch (rev ${p.revision}): raise=${p.tiltEnabled} " +
+                "raiseSens=${p.raiseSensitivity} shake=${p.shakeEnabled} " +
+                "shakeSens=${p.shakeSensitivity} " +
                 "timeout=${p.wakeSeconds}s steps=${p.showSteps} diag=${p.showDiag} " +
                 "hr=${p.hrEnabled}",
         )
@@ -976,7 +980,10 @@ class CompositorHost(
         }
     }
 
-    private fun encodeStub(n: slate.app.notif.NotifItem): ByteArray {
+    private fun encodeStub(
+        n: slate.app.notif.NotifItem,
+        silent: Boolean = false,
+    ): ByteArray {
         return SystemNotifCodec.encodeUpsert(
             key = n.key,
             category = n.icon.category.atlasId,
@@ -986,6 +993,7 @@ class CompositorHost(
             whenEpochSec = n.whenMs / 1000L,
             ongoing = n.ongoing,
             clearable = n.clearable,
+            silent = silent,
         )
     }
 
@@ -1011,9 +1019,11 @@ class CompositorHost(
     }
 
     private fun syncAllToSystemChannel() {
+        // Reconnect / Ready shade restore — silent so the watch does not treat
+        // every retained stub as a brand-new alert (wake + DOUBLE haptic).
         for (n in NotifStore.snapshot.value) {
             if (n.key in watchClearedKeys) continue
-            gatt.sendMessage(SdpFrame.CHAN_SYSTEM, encodeStub(n))
+            gatt.sendMessage(SdpFrame.CHAN_SYSTEM, encodeStub(n, silent = true))
         }
     }
 

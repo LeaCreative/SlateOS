@@ -34,6 +34,26 @@ class NotifCodecTest {
     }
 
     @Test
+    fun upsert_silent_flag() {
+        val bytes = SystemNotifCodec.encodeUpsert(
+            key = "k",
+            category = 0,
+            monogram = 'A',
+            title = "t",
+            whenEpochSec = 1L,
+            ongoing = false,
+            clearable = true,
+            silent = true,
+        )
+        val keyLen = bytes[1].toInt() and 0xFF
+        val flags = bytes[2 + keyLen].toInt() and 0xFF
+        assertEquals(
+            SystemNotifCodec.FLAG_CLEARABLE or SystemNotifCodec.FLAG_SILENT,
+            flags,
+        )
+    }
+
+    @Test
     fun body_and_call_ops() {
         val body = SystemNotifCodec.encodeBody("k1", "Hello body")
         assertEquals(SystemNotifCodec.OP_BODY, body[0].toInt() and 0xFF)

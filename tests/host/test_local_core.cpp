@@ -277,6 +277,19 @@ static void test_notif_store() {
   expect("title", store.entries[0].title_len == 2u);
   expect("when", store.entries[0].when_sec == 42u);
 
+  // Silent UPSERT of a new key retains the stub without StubNew (no haptic path).
+  slate::notif::clear(&store);
+  msg[7] = static_cast<std::uint8_t>(slate::notif::kFlagClearable |
+                                     slate::notif::kFlagSilent);
+  expect("silent new",
+         slate::notif::on_system_message(&store, msg, n) ==
+             slate::notif::Ingest::StubUpdate);
+  expect("silent count", store.count == 1u);
+  expect("silent flag stripped",
+         (store.entries[0].flags & slate::notif::kFlagSilent) == 0u);
+  expect("clearable kept",
+         (store.entries[0].flags & slate::notif::kFlagClearable) != 0u);
+
   slate::notif::mark_all_stale(&store, true);
   expect("stale", store.entries[0].stale == 1u);
 
@@ -415,7 +428,10 @@ static void test_settings_taps_reach_their_setting() {
       rects[n_rects++] = r;
     }
   }
-  expect("five touchable rows on screen", n_rects == 5u);
+  expect("four touchable rows on page 0", n_rects == 4u);
+  for (std::size_t i = 1u; i < n_rects; ++i) {
+    expect("settings hit Y increases", rects[i].y > rects[i - 1u].y);
+  }
 
   for (std::size_t i = 0u; i < n_rects; ++i) {
     const input::HitRect& r = rects[i];
@@ -433,27 +449,49 @@ static void test_settings_taps_reach_their_setting() {
         expect("raise row toggles raise-to-wake",
                after.tilt_enabled != before.tilt_enabled);
         break;
-      case slate::local::kSettingTimeout:
-        expect("timeout row changes the timeout",
-               after.wake_seconds != before.wake_seconds);
+      case slate::local::kSettingRaiseSens:
+        expect("raise sens cycles",
+               after.raise_sensitivity != before.raise_sensitivity);
         break;
-      case slate::local::kSettingSteps:
-        expect("steps row toggles the step display",
-               after.face_show_steps != before.face_show_steps);
+      case slate::local::kSettingShake:
+        expect("shake row toggles shake-to-wake",
+               after.shake_enabled != before.shake_enabled);
         break;
-      case slate::local::kSettingDiag:
-        expect("diag row toggles face diag",
-               after.face_show_diag != before.face_show_diag);
-        break;
-      case slate::local::kSettingHr:
-        expect("hr row toggles heart rate gate",
-               after.hr_enabled != before.hr_enabled);
+      case slate::local::kSettingShakeSens:
+        expect("shake sens cycles",
+               after.shake_sensitivity != before.shake_sensitivity);
         break;
       default:
         expect("no unexpected touchable element", false);
         break;
     }
   }
+
+  expect("finger-up pages forward", core.on_settings_swipe(/*next=*/true));
+  expect("on page 1",
+         core.local_state().settings_sel == slate::local::kSettingsPageRows);
+  n_rects = 0u;
+  for (std::size_t i = 0u; i + 8u <= g_last_list_len && n_rects < 8u; ++i) {
+    if (g_last_list[i] != sdp::op::BEGIN_ELEM) {
+      continue;
+    }
+    input::HitRect r;
+    r.id = static_cast<std::uint16_t>(g_last_list[i + 1u] |
+                                      (g_last_list[i + 2u] << 8));
+    r.x = g_last_list[i + 3u];
+    r.y = g_last_list[i + 4u];
+    r.w = g_last_list[i + 5u];
+    r.h = g_last_list[i + 6u];
+    r.flags = g_last_list[i + 7u];
+    if ((r.flags & sdp::elem_flags::EMIT_TOUCH) != 0u) {
+      rects[n_rects++] = r;
+    }
+  }
+  expect("four touchable rows on page 1", n_rects == 4u);
+  expect("timeout row toggles",
+         core.on_tap_elem(slate::local::kSettingTimeout));
+  expect("finger-down pages back", core.on_settings_swipe(/*next=*/false));
+  expect("back on page 0", core.local_state().settings_sel == 0u);
 
   // A tap on empty space must NOT be swallowed: on a local screen an
   // unclaimed tap still belongs to the router, and before this the watch

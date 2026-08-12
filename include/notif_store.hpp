@@ -20,6 +20,8 @@ constexpr std::uint8_t kOpCallEnd = 0x07u;
 
 constexpr std::uint8_t kFlagOngoing = 1u << 0;
 constexpr std::uint8_t kFlagClearable = 1u << 1;
+/** Phone bulk-sync / reconnect: retain stub without wake or haptic. */
+constexpr std::uint8_t kFlagSilent = 1u << 2;
 
 /** Stub rows only (no resident body). Bodies live in Core's detail buffer. */
 constexpr std::uint8_t kMaxEntries = 24u;

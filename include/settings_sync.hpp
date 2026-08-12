@@ -15,16 +15,18 @@
 namespace slate {
 namespace settings_sync {
 
-constexpr std::uint8_t kWireVersion = 3u;
-/** op + version + u32 revision + tilt + wake + steps + diag + hr + 3×u16 RGB565. */
-constexpr std::size_t kPayloadBytes = 17u;
+constexpr std::uint8_t kWireVersion = 4u;
+/**
+ * op + version + u32 revision + tilt + wake + steps + diag + hr + 3×u16 RGB565
+ * + raise_sens + shake_enabled + shake_sens.
+ */
+constexpr std::size_t kPayloadBytes = 20u;
 
 /**
  * The synced subset of local::Settings.
  *
- * `tilt_sensitivity` is deliberately absent: it configured the any-motion
- * threshold, which raise-to-wake replaced, so it now does nothing. Syncing a
- * control that has no effect would be worse than not offering it.
+ * Legacy `tilt_sensitivity` (BMA any-motion) is deliberately absent: it does
+ * nothing for raise/shake. Raise and shake each have Soft/Normal/Hard.
  */
 struct Payload {
   std::uint32_t revision = 0u;
@@ -41,6 +43,11 @@ struct Payload {
   std::uint16_t ui_chrome = 0xFFFFu;
   std::uint16_t face_bright = 0xFFFFu;
   std::uint16_t face_dim = 0x8410u;
+  /** Soft=0 / Normal=1 / Hard=2. */
+  std::uint8_t raise_sensitivity = 1u;
+  std::uint8_t shake_enabled = 0u;
+  /** Soft=0 / Normal=1 / Hard=2. */
+  std::uint8_t shake_sensitivity = 1u;
 };
 
 /** Writes exactly [kPayloadBytes]. Returns 0 if `cap` is too small. */

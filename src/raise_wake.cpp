@@ -109,6 +109,29 @@ void RaiseDetector::reset() {
   filled_ = 0u;
 }
 
+RaiseProfile raise_profile(Sensitivity s) {
+  RaiseProfile p;
+  switch (s) {
+    case Sensitivity::Soft:
+      // Easier: looser arm-level and look gates, smaller roll.
+      p.x_mean_thresh = 512;
+      p.y_mean_thresh = 0;
+      p.roll_degrees_thresh = -30;
+      break;
+    case Sensitivity::Hard:
+      // Harder: tighter gates, larger roll.
+      p.x_mean_thresh = 256;
+      p.y_mean_thresh = -128;
+      p.roll_degrees_thresh = -60;
+      break;
+    case Sensitivity::Normal:
+    default:
+      // InfiniTime ShouldRaiseWake() verbatim.
+      break;
+  }
+  return p;
+}
+
 void RaiseDetector::update(std::int16_t x, std::int16_t y, std::int16_t z) {
   idx_ = (idx_ + 1u) % kHistory;
   x_[idx_] = x;
@@ -161,26 +184,27 @@ std::uint8_t RaiseDetector::reject_code() const {
   if (filled_ < kHistory) {
     return 1u;
   }
+  const RaiseProfile p = raise_profile(sens_);
   const Stats s = stats();
 
   // Arm not level: this is a reach or a swing, not a look at the watch.
   const std::int16_t ax = s.x_mean < 0 ? static_cast<std::int16_t>(-s.x_mean) : s.x_mean;
-  if (ax > kXMeanThreshold) {
+  if (ax > p.x_mean_thresh) {
     return 2u;
   }
   // Variance above the threshold means the samples carry real acceleration, so
   // they are not a gravity vector and the roll below would be meaningless.
-  if (s.y_var > kVarianceThreshold) {
+  if (s.y_var > p.variance_thresh) {
     return 3u;
   }
-  if (s.y_mean < kYMeanFaceDownThreshold && s.z_var > kVarianceThreshold) {
+  if (s.y_mean < p.y_mean_face_down && s.z_var > p.variance_thresh) {
     return 4u;
   }
-  if (s.y_mean > kYMeanThreshold) {
+  if (s.y_mean > p.y_mean_thresh) {
     return 5u;
   }
   if (!(degrees_rolled(s.y_mean, s.z_mean, s.prev_y_mean, s.prev_z_mean) <
-        kRollDegreesThreshold)) {
+        p.roll_degrees_thresh)) {
     return 6u;
   }
   return 0u;

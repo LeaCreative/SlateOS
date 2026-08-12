@@ -19,19 +19,35 @@
 namespace slate {
 namespace motion {
 
+/** Soft / Normal / Hard — one byte on the SETTINGS_SYNC wire. */
+enum class Sensitivity : std::uint8_t {
+  Soft = 0,
+  Normal = 1,
+  Hard = 2,
+};
+
+inline Sensitivity clamp_sensitivity(std::uint8_t v) {
+  if (v > static_cast<std::uint8_t>(Sensitivity::Hard)) {
+    return Sensitivity::Normal;
+  }
+  return static_cast<Sensitivity>(v);
+}
+
 /**
- * Thresholds, taken verbatim from InfiniTime's ShouldRaiseWake().
+ * Thresholds for one sensitivity preset.
  *
- * Units are accelerometer counts at +/-2g, where 1g is about 1024. They are not
- * arbitrary: xThresh rejects an arm that is not level, varianceThresh rejects
- * samples carrying real acceleration rather than gravity, and rollDegrees is the
- * actual gesture.
+ * Units are accelerometer counts at +/-2g, where 1g is about 1024. Normal
+ * matches InfiniTime's ShouldRaiseWake() verbatim.
  */
-constexpr std::int32_t kVarianceThreshold = 56 * 56;
-constexpr std::int16_t kXMeanThreshold = 384;
-constexpr std::int16_t kYMeanThreshold = -64;
-constexpr std::int16_t kYMeanFaceDownThreshold = -724;
-constexpr std::int16_t kRollDegreesThreshold = -45;
+struct RaiseProfile {
+  std::int32_t variance_thresh = 56 * 56;
+  std::int16_t x_mean_thresh = 384;
+  std::int16_t y_mean_thresh = -64;
+  std::int16_t y_mean_face_down = -724;
+  std::int16_t roll_degrees_thresh = -45;
+};
+
+RaiseProfile raise_profile(Sensitivity s);
 
 /** Degrees, -90..90. `v` is scaled so that 1g maps to 32767. */
 std::int16_t asin_degrees(std::int32_t v);
@@ -60,6 +76,9 @@ public:
 
   void reset();
 
+  void set_sensitivity(Sensitivity s) { sens_ = s; }
+  Sensitivity sensitivity() const { return sens_; }
+
   /** Push one sample. Call at a steady cadence; the maths assumes even spacing. */
   void update(std::int16_t x, std::int16_t y, std::int16_t z);
 
@@ -79,7 +98,7 @@ public:
    * Why [should_raise_wake] is false, or 0 when it would fire.
    *
    * 0 fire, 1 filling, 2 |x| (arm not level), 3 y variance, 4 face-down
-   * z variance, 5 y_mean too high (not looking), 6 roll short of −45°.
+   * z variance, 5 y_mean too high (not looking), 6 roll short of threshold.
    * Latched onto the face diag overlay so a sealed watch can say which
    * threshold rejected the gesture.
    */
@@ -95,6 +114,7 @@ private:
   std::int16_t z_[kHistory] = {};
   std::size_t idx_ = 0u;
   std::size_t filled_ = 0u;
+  Sensitivity sens_ = Sensitivity::Normal;
 };
 
 }  // namespace motion

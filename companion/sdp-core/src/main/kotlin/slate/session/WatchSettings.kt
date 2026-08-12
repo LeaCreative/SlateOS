@@ -10,29 +10,43 @@ import slate.generated.SdpWire
  * their own point of view, which is what stops them overwriting each other
  * forever when the user has edited on both sides.
  *
- * Wire v3: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds]
+ * Wire v4: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds]
  *          [showSteps][showDiag][hrEnabled]
  *          [uiChrome:u16 LE][faceBright:u16 LE][faceDim:u16 LE]
+ *          [raiseSensitivity][shakeEnabled][shakeSensitivity]
  */
 object WatchSettings {
     const val OP: Int = SdpWire.ControlOp.SETTINGS_SYNC
-    const val WIRE_VERSION: Int = 3
-    const val PAYLOAD_BYTES: Int = 17
+    const val WIRE_VERSION: Int = 4
+    const val PAYLOAD_BYTES: Int = 20
 
     const val DEFAULT_UI_CHROME: Int = 0xFFFF
     const val DEFAULT_FACE_BRIGHT: Int = 0xFFFF
     const val DEFAULT_FACE_DIM: Int = 0x8410
 
+    /** Soft=0 / Normal=1 / Hard=2. */
+    const val SENS_SOFT: Int = 0
+    const val SENS_NORMAL: Int = 1
+    const val SENS_HARD: Int = 2
+
     /** Display-timeout choices, in the order the watch's own row cycles them. */
     val WAKE_SECONDS_CHOICES: List<Int> = listOf(10, 20, 30, 60, 120, 0)
+
+    val SENSITIVITY_CHOICES: List<Int> = listOf(SENS_SOFT, SENS_NORMAL, SENS_HARD)
+
+    fun sensitivityLabel(v: Int): String = when (clampSens(v)) {
+        SENS_SOFT -> "Soft"
+        SENS_HARD -> "Hard"
+        else -> "Normal"
+    }
+
+    fun clampSens(v: Int): Int = if (v in 0..2) v else SENS_NORMAL
 
     /**
      * The synced subset of the watch's settings.
      *
-     * `tiltSensitivity` is deliberately absent, matching the firmware: it
-     * configured the any-motion threshold that raise-to-wake replaced, so it no
-     * longer does anything. Offering a control with no effect would be worse
-     * than not offering it.
+     * Legacy BMA any-motion `tiltSensitivity` is not synced. Raise and shake
+     * each have Soft/Normal/Hard. Shake defaults Off (InfiniTime parity).
      *
      * `hrEnabled` is a master gate: Off keeps the HRS3300 asleep; On allows
      * on-demand measurement (not continuous heart rate).
@@ -55,6 +69,9 @@ object WatchSettings {
         val faceBright: Int = DEFAULT_FACE_BRIGHT,
         /** Face date, steps/HR, %, version/diag, battery track. */
         val faceDim: Int = DEFAULT_FACE_DIM,
+        val raiseSensitivity: Int = SENS_NORMAL,
+        val shakeEnabled: Boolean = false,
+        val shakeSensitivity: Int = SENS_NORMAL,
     )
 
     fun encode(p: Payload): ByteArray {
@@ -73,6 +90,9 @@ object WatchSettings {
         putU16Le(out, 11, p.uiChrome)
         putU16Le(out, 13, p.faceBright)
         putU16Le(out, 15, p.faceDim)
+        out[17] = clampSens(p.raiseSensitivity).toByte()
+        out[18] = if (p.shakeEnabled) 1 else 0
+        out[19] = clampSens(p.shakeSensitivity).toByte()
         return out
     }
 
@@ -97,6 +117,9 @@ object WatchSettings {
             uiChrome = getU16Le(msg, 11),
             faceBright = getU16Le(msg, 13),
             faceDim = getU16Le(msg, 15),
+            raiseSensitivity = clampSens(msg[17].toInt() and 0xFF),
+            shakeEnabled = (msg[18].toInt() and 0xFF) != 0,
+            shakeSensitivity = clampSens(msg[19].toInt() and 0xFF),
         )
     }
 
@@ -109,7 +132,10 @@ object WatchSettings {
             a.hrEnabled != b.hrEnabled ||
             a.uiChrome != b.uiChrome ||
             a.faceBright != b.faceBright ||
-            a.faceDim != b.faceDim
+            a.faceDim != b.faceDim ||
+            a.raiseSensitivity != b.raiseSensitivity ||
+            a.shakeEnabled != b.shakeEnabled ||
+            a.shakeSensitivity != b.shakeSensitivity
 
     /**
      * Should [incoming] replace [current]?

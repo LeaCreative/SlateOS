@@ -23,7 +23,17 @@ enum class Screen : std::uint8_t {
 
 struct Settings {
   std::uint8_t tilt_enabled = 1u;
-  std::uint8_t tilt_sensitivity = 3u;  // 0=soft … 7=hard (any-motion threshold)
+  /** Soft=0 / Normal=1 / Hard=2 — raise-to-wake profile (not BMA any-motion). */
+  std::uint8_t raise_sensitivity = 1u;
+  /** Shake-to-wake master gate (InfiniTime-style; default Off). */
+  std::uint8_t shake_enabled = 0u;
+  /** Soft=0 / Normal=1 / Hard=2 — maps to shake speed threshold. */
+  std::uint8_t shake_sensitivity = 1u;
+  /**
+   * Legacy any-motion nibble; unused by raise/shake. Kept so persisted blobs
+   * and host tests that touch it still compile.
+   */
+  std::uint8_t tilt_sensitivity = 3u;
   /**
    * Seconds of inactivity before the display sleeps. 0 disables sleeping;
    * Core clamps the rest to 5..120.
@@ -42,7 +52,7 @@ struct Settings {
    */
   std::uint8_t hr_enabled = 0u;
   /**
-   * Theme colours (RGB565). Synced via SETTINGS_SYNC v3.
+   * Theme colours (RGB565). Synced via SETTINGS_SYNC v4.
    * ui_chrome: non-face button outlines + button/label text.
    * face_bright: time + battery fill.
    * face_dim: date, steps/HR, battery %, version/diag, battery track.
@@ -88,6 +98,20 @@ constexpr std::uint16_t kSettingTimeout = 2u;
 constexpr std::uint16_t kSettingSteps = 3u;
 constexpr std::uint16_t kSettingDiag = 4u;
 constexpr std::uint16_t kSettingHr = 5u;
+constexpr std::uint16_t kSettingRaiseSens = 6u;
+constexpr std::uint16_t kSettingShake = 7u;
+constexpr std::uint16_t kSettingShakeSens = 8u;
+
+/** Same page size as the notification shade / launcher. */
+constexpr std::uint8_t kSettingsPageRows = 4u;
+constexpr std::uint8_t kSettingsRowCount = 8u;
+
+/** Horizontal section strip: Settings | Face | Launcher (left → right). */
+enum class SectionId : std::uint8_t {
+  Settings = 0u,
+  Face = 1u,
+  Launcher = 2u,
+};
 
 /** Notif list row element ids: kNotifRowBase .. kNotifRowBase + visible - 1. */
 constexpr std::uint16_t kNotifRowBase = 100u;
@@ -96,8 +120,8 @@ constexpr std::uint16_t kNotifScrollDown = 91u;
 /** How many app-name rows fit beside the scroll arrows. */
 constexpr std::uint8_t kNotifPageRows = 4u;
 
-// Bumped 11 Aug 2026 ('SLTW' -> 'SLTX'): theme RGB565 fields added.
-constexpr std::uint32_t kSettingsMagic = 0x534C5458u;  // 'SLTX'
+// Bumped 12 Aug 2026 ('SLTX' -> 'SLTY'): raise/shake sensitivity + shake enable.
+constexpr std::uint32_t kSettingsMagic = 0x534C5459u;  // 'SLTY'
 
 struct State {
   Screen screen = Screen::Face;

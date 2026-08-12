@@ -111,6 +111,7 @@ set(SLATE_APP_SOURCES
   src/alarm_sched.cpp
   src/bma42x.cpp
   src/raise_wake.cpp
+  src/shake_wake.cpp
   src/hrs3300.cpp
   src/ppg.cpp
   src/hr_controller.cpp

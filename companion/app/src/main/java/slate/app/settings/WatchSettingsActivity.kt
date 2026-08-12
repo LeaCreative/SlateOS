@@ -98,6 +98,46 @@ fun WatchSettingsScreen(store: WatchSettingsStore) {
                 checked = settings.tiltEnabled,
                 onCheckedChange = { on -> store.edit { it.copy(tiltEnabled = on) } },
             )
+            if (settings.tiltEnabled) {
+                Spacer(Modifier.height(10.dp))
+                Text("Raise sensitivity", fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "Soft wakes on a smaller wrist roll; Hard needs a clearer raise.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                SensitivityChips(
+                    selected = settings.raiseSensitivity,
+                    onSelect = { s -> store.edit { it.copy(raiseSensitivity = s) } },
+                )
+            }
+        }
+
+        SettingCard {
+            ToggleRow(
+                title = "Shake to wake",
+                subtitle = "A wrist flick or jolt lights the screen " +
+                    "(InfiniTime-style; separate from raise).",
+                checked = settings.shakeEnabled,
+                onCheckedChange = { on -> store.edit { it.copy(shakeEnabled = on) } },
+            )
+            if (settings.shakeEnabled) {
+                Spacer(Modifier.height(10.dp))
+                Text("Shake sensitivity", fontWeight = FontWeight.Medium)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "Soft wakes on a lighter flick; Hard needs a sharper shake.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                SensitivityChips(
+                    selected = settings.shakeSensitivity,
+                    onSelect = { s -> store.edit { it.copy(shakeSensitivity = s) } },
+                )
+            }
         }
 
         SettingCard {
@@ -374,6 +414,24 @@ private fun TimeoutChips(selected: Int, onSelect: (Int) -> Unit) {
                 selected = selected == secs,
                 onClick = { onSelect(secs) },
                 label = { Text(timeoutLabel(secs)) },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SensitivityChips(selected: Int, onSelect: (Int) -> Unit) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        WatchSettings.SENSITIVITY_CHOICES.forEach { level ->
+            FilterChip(
+                selected = WatchSettings.clampSens(selected) == level,
+                onClick = { onSelect(level) },
+                label = { Text(WatchSettings.sensitivityLabel(level)) },
             )
         }
     }

@@ -72,6 +72,11 @@
       b.palette(2, 0x8410);
       b.clear(slate.PAL(0));
       b.textScaled(1, 120, 10, 'CENTER', slate.PAL(1), 2, 'News JS');
+      // Empty 1 px sentinel so older FW can move scroll offset / emit SCROLL_POS
+      // for list paging; rows stay outside so they do not visually scroll.
+      if (items.length > VISIBLE) {
+        b.scrollRegion(0, 1, 240);
+      }
       var i;
       for (i = 0; i < VISIBLE; i++) {
         (function (idx, top, hitId) {
@@ -161,25 +166,26 @@
       ];
     }
 
-    // Swipe: UP=0 DOWN=1 (LEFT becomes BACK on the host for this app).
+    // Swipe: UP=0 DOWN=1. Content-scroll: finger up → next page / next article
+    // screen; finger down → previous. (LEFT becomes BACK on the host for this app.)
     if (ev.op === 0x03) {
       var dir = ev.dir | 0;
       if (mode === 'article') {
-        if (dir === 0 && articlePage > 0) {
-          return [slate.news.page(articleId, articlePage - 1), { type: 'inputHandled' }];
-        }
-        if (dir === 1 && articlePage + 1 < articlePageCount) {
+        if (dir === 0 && articlePage + 1 < articlePageCount) {
           return [slate.news.page(articleId, articlePage + 1), { type: 'inputHandled' }];
+        }
+        if (dir === 1 && articlePage > 0) {
+          return [slate.news.page(articleId, articlePage - 1), { type: 'inputHandled' }];
         }
         return [{ type: 'inputHandled' }];
       }
       if (mode === 'list' && items.length > VISIBLE) {
-        if (dir === 0 && listOffset > 0) {
-          listOffset = Math.max(0, listOffset - VISIBLE);
+        if (dir === 0 && listOffset + VISIBLE < items.length) {
+          listOffset = Math.min(items.length - VISIBLE, listOffset + VISIBLE);
           return pushScreen().concat([{ type: 'inputHandled' }]);
         }
-        if (dir === 1 && listOffset + VISIBLE < items.length) {
-          listOffset = Math.min(items.length - VISIBLE, listOffset + VISIBLE);
+        if (dir === 1 && listOffset > 0) {
+          listOffset = Math.max(0, listOffset - VISIBLE);
           return pushScreen().concat([{ type: 'inputHandled' }]);
         }
         return [{ type: 'inputHandled' }];

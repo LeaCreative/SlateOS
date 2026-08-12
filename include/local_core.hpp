@@ -6,6 +6,7 @@
 #include "notif_store.hpp"
 #include "raise_wake.hpp"
 #include "settings_sync.hpp"
+#include "shake_wake.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -213,9 +214,16 @@ public:
   /** Open the settings screen (swipe left-to-right from the face). */
   void show_settings() {
     wake_display();
+    local_state().settings_sel = 0u;
     local_state().screen = local::Screen::Settings;
     show_current();
   }
+
+  /**
+   * Page the settings list. `next` is content-scroll: finger up → next page.
+   * Returns true when Settings owned the gesture (even if already at an edge).
+   */
+  bool on_settings_swipe(bool next);
 
   /** Leave settings (or any local screen) back to the watch face. */
   void show_face() {
@@ -261,7 +269,7 @@ private:
   bool detail_pending_ = false;  // waiting for BODY after NOTIF_REQ
   std::uint32_t detail_req_ms_ = 0u;
   std::uint32_t call_until_ms_ = 0u;
-  /** Last StubNew DOUBLE — coalesce reconnect/burst UPSERTs into one vibe. */
+  /** Last StubNew DOUBLE — coalesce rapid live UPSERTs into one vibe. */
   std::uint32_t last_stub_haptic_ms_ = 0u;
 
   static constexpr std::uint32_t kStubHapticCoalesceMs = 2500u;
@@ -324,10 +332,11 @@ private:
   std::uint32_t last_adc_ms_ = 0u;
 
   /**
-   * Raise-to-wake. Polled only while asleep, so it costs nothing when the
-   * screen is already on.
+   * Raise-to-wake and shake-to-wake. Polled only while asleep, so they cost
+   * nothing when the screen is already on.
    */
   motion::RaiseDetector raise_{};
+  motion::ShakeDetector shake_{};
   std::uint32_t last_raise_ms_ = 0u;
 
   /**

@@ -119,6 +119,13 @@ class WatchSettingsStore(context: Context) {
         uiChrome = sp.getInt(KEY_UI_CHROME, WatchSettings.DEFAULT_UI_CHROME),
         faceBright = sp.getInt(KEY_FACE_BRIGHT, WatchSettings.DEFAULT_FACE_BRIGHT),
         faceDim = sp.getInt(KEY_FACE_DIM, WatchSettings.DEFAULT_FACE_DIM),
+        raiseSensitivity = WatchSettings.clampSens(
+            sp.getInt(KEY_RAISE_SENS, WatchSettings.SENS_NORMAL),
+        ),
+        shakeEnabled = sp.getBoolean(KEY_SHAKE, false),
+        shakeSensitivity = WatchSettings.clampSens(
+            sp.getInt(KEY_SHAKE_SENS, WatchSettings.SENS_NORMAL),
+        ),
     )
 
     private fun persist(p: WatchSettings.Payload, dirty: Boolean) {
@@ -132,6 +139,9 @@ class WatchSettingsStore(context: Context) {
             .putInt(KEY_UI_CHROME, p.uiChrome)
             .putInt(KEY_FACE_BRIGHT, p.faceBright)
             .putInt(KEY_FACE_DIM, p.faceDim)
+            .putInt(KEY_RAISE_SENS, WatchSettings.clampSens(p.raiseSensitivity))
+            .putBoolean(KEY_SHAKE, p.shakeEnabled)
+            .putInt(KEY_SHAKE_SENS, WatchSettings.clampSens(p.shakeSensitivity))
             .putLong(KEY_HIGHEST_SEEN, highestSeenRevision)
             .putBoolean(KEY_DIRTY, dirty)
             .apply()
@@ -149,6 +159,9 @@ class WatchSettingsStore(context: Context) {
         private const val KEY_UI_CHROME = "ui_chrome"
         private const val KEY_FACE_BRIGHT = "face_bright"
         private const val KEY_FACE_DIM = "face_dim"
+        private const val KEY_RAISE_SENS = "raise_sensitivity"
+        private const val KEY_SHAKE = "shake_enabled"
+        private const val KEY_SHAKE_SENS = "shake_sensitivity"
         private const val KEY_DIRTY = "dirty"
 
         @Volatile

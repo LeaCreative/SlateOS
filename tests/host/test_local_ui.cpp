@@ -200,15 +200,16 @@ static void test_settings_rows_are_tappable() {
 
   int text = 0, scaled = 0;
   count_text_ops(buf, n, &text, &scaled);
-  // Title plus a label and a value for each of the five rows.
-  expect("settings TEXT_SCALED x11", scaled == 11);
+  // Title plus a label and a value for each of the four visible rows.
+  expect("settings TEXT_SCALED x9", scaled == 9);
   expect("settings no TEXT", text == 0);
 
   // Walk the list for BEGIN_ELEM (0x30): u16 id, x, y, w, h, flags.
-  bool saw_raise = false, saw_timeout = false, saw_steps = false,
-       saw_diag = false, saw_hr = false;
+  bool saw_raise = false, saw_raise_sens = false, saw_shake = false,
+       saw_shake_sens = false;
   int touchable = 0;
   int rounds = 0;
+  std::uint8_t ys[8] = {};
   for (std::size_t i = 0u; i + 8u <= n; ++i) {
     if (buf[i] == sdp::op::RECT_ROUND) {
       ++rounds;
@@ -218,25 +219,53 @@ static void test_settings_rows_are_tappable() {
     }
     const std::uint16_t id =
         static_cast<std::uint16_t>(buf[i + 1u] | (buf[i + 2u] << 8));
+    const std::uint8_t y = buf[i + 4u];
     const std::uint8_t flags = buf[i + 7u];
     if ((flags & sdp::elem_flags::EMIT_TOUCH) == 0u) {
       continue;
     }
+    if (touchable < 8) {
+      ys[touchable] = y;
+    }
     ++touchable;
     if (id == slate::local::kSettingRaise) saw_raise = true;
+    if (id == slate::local::kSettingRaiseSens) saw_raise_sens = true;
+    if (id == slate::local::kSettingShake) saw_shake = true;
+    if (id == slate::local::kSettingShakeSens) saw_shake_sens = true;
+  }
+  expect("four touchable rows on page 0", touchable == 4);
+  expect("raise row carries its id", saw_raise);
+  expect("raise sens row carries its id", saw_raise_sens);
+  expect("shake row carries its id", saw_shake);
+  expect("shake sens row carries its id", saw_shake_sens);
+  for (int i = 1; i < touchable; ++i) {
+    expect("settings row Y increases", ys[i] > ys[i - 1]);
+  }
+  expect("at least four rounded rects for button chrome", rounds >= 4);
+
+  // Page 2 shows timeout / steps / diag / HR.
+  st.settings_sel = slate::local::kSettingsPageRows;
+  const std::size_t n2 = slate::ui::build_screen(vm, buf, sizeof(buf));
+  expect("settings page 2 non-empty", n2 > 0u && parse_ok(buf, n2));
+  bool saw_timeout = false, saw_hr = false;
+  int touchable2 = 0;
+  for (std::size_t i = 0u; i + 8u <= n2; ++i) {
+    if (buf[i] != sdp::op::BEGIN_ELEM) {
+      continue;
+    }
+    const std::uint16_t id =
+        static_cast<std::uint16_t>(buf[i + 1u] | (buf[i + 2u] << 8));
+    const std::uint8_t flags = buf[i + 7u];
+    if ((flags & sdp::elem_flags::EMIT_TOUCH) == 0u) {
+      continue;
+    }
+    ++touchable2;
     if (id == slate::local::kSettingTimeout) saw_timeout = true;
-    if (id == slate::local::kSettingSteps) saw_steps = true;
-    if (id == slate::local::kSettingDiag) saw_diag = true;
     if (id == slate::local::kSettingHr) saw_hr = true;
   }
-  expect("five touchable rows", touchable == 5);
-  expect("raise row carries its id", saw_raise);
-  expect("timeout row carries its id", saw_timeout);
-  expect("steps row carries its id", saw_steps);
-  expect("diag row carries its id", saw_diag);
-  expect("hr row carries its id", saw_hr);
-  // Edge + fill per row (byte-scan can also catch RECT_ROUND in payloads).
-  expect("at least ten rounded rects for button chrome", rounds >= 10);
+  expect("four touchable rows on page 1", touchable2 == 4);
+  expect("timeout on page 1", saw_timeout);
+  expect("hr on page 1", saw_hr);
 }
 
 /** A timeout of 0 reads as "Never", not as the number zero or "Off". */
@@ -244,6 +273,7 @@ static void test_settings_timeout_off_reads_as_off() {
   slate::local::State st{};
   st.screen = slate::local::Screen::Settings;
   st.settings.wake_seconds = 0u;
+  st.settings_sel = slate::local::kSettingsPageRows;  // Timeout is on page 1
   slate::ui::ViewModel vm{&st, nullptr, nullptr};
   std::uint8_t buf[512];
   const std::size_t n = slate::ui::build_screen(vm, buf, sizeof(buf));

@@ -113,6 +113,32 @@ void Core::on_link_down() {
   paint_pending_ = true;
 }
 
+bool Core::on_settings_swipe(bool next) {
+  if (local_state().screen != local::Screen::Settings) {
+    return false;
+  }
+  wake_display();
+  std::uint8_t start = local_state().settings_sel;
+  if (start >= local::kSettingsRowCount) {
+    start = 0u;
+  }
+  start = static_cast<std::uint8_t>(
+      (start / local::kSettingsPageRows) * local::kSettingsPageRows);
+  if (next) {
+    const std::uint8_t nxt =
+        static_cast<std::uint8_t>(start + local::kSettingsPageRows);
+    if (nxt < local::kSettingsRowCount) {
+      local_state().settings_sel = nxt;
+      show_current();
+    }
+  } else if (start >= local::kSettingsPageRows) {
+    local_state().settings_sel =
+        static_cast<std::uint8_t>(start - local::kSettingsPageRows);
+    show_current();
+  }
+  return true;
+}
+
 bool Core::take_paint_pending() {
   const bool p = paint_pending_;
   paint_pending_ = false;
@@ -171,7 +197,8 @@ void Core::on_system_message(const std::uint8_t* msg, std::size_t len) {
       return;
     case notif::Ingest::StubNew: {
       const bool on_call = local_state().screen == local::Screen::Call;
-      // Coalesce: reconnect / burst UPSERTs share one DOUBLE, not one per stub.
+      // Coalesce: rapid live UPSERTs share one DOUBLE, not one per stub.
+      // Reconnect bulk sync uses FLAG_SILENT → StubUpdate (no haptic here).
       if (!on_call && hooks_.haptic != nullptr) {
         const std::uint32_t now = last_tick_ms_;
         const bool due = last_stub_haptic_ms_ == 0u ||
@@ -511,10 +538,10 @@ void Core::poll_alarms() {
 }
 
 /**
- * Raise-to-wake, from polled acceleration.
+ * Raise-to-wake and shake-to-wake, from polled acceleration.
  *
  * Runs only while asleep. Awake, the screen is already lit and the samples buy
- * nothing but an I2C transfer every 100 ms — and the detector is deliberately
+ * nothing but an I2C transfer every 100 ms — and the detectors are deliberately
  * fed nothing in that state, so waking always starts from a clean history
  * rather than one full of whatever the wrist did while the user was reading.
  *
@@ -526,13 +553,22 @@ void Core::poll_raise(std::uint32_t now_ms) {
   if (bma_ == nullptr || !bma_->ok()) {
     return;
   }
-  if (!local_state().settings.tilt_enabled) {
+  const bool raise_on = local_state().settings.tilt_enabled != 0u;
+  const bool shake_on = local_state().settings.shake_enabled != 0u;
+  raise_.set_sensitivity(
+      motion::clamp_sensitivity(local_state().settings.raise_sensitivity));
+  shake_.set_sensitivity(
+      motion::clamp_sensitivity(local_state().settings.shake_sensitivity));
+
+  if (!raise_on && !shake_on) {
     raise_.reset();
+    shake_.reset();
     return;
   }
   if (power_ != Power::Sleeping) {
     // Awake: keep the history empty so the next sleep starts cold.
     raise_.reset();
+    shake_.reset();
     // Still sample accel for the diag overlay so a sealed watch can show the
     // mount-frame orientation without sleeping (axis-swap / dead-sensor check).
     if (local_state().settings.face_show_diag &&
@@ -562,26 +598,48 @@ void Core::poll_raise(std::uint32_t now_ms) {
   if (local_state().diag_raise_samples < 0xFFFFu) {
     ++local_state().diag_raise_samples;
   }
-  raise_.update(x, y, z);
-  const std::uint8_t rej = raise_.reject_code();
-  if (rej != 1u) {
-    // Latch every evaluation once the history is full — "filling" alone is
-    // not informative after the first 800 ms of sleep.
-    local_state().diag_raise_reject = rej;
-  }
-  if (rej == 0u) {
-    // Clear before waking: the samples that fired are spent, and leaving them
-    // would let the next sleep re-fire on stale history.
+
+  bool woke = false;
+  if (raise_on) {
+    raise_.update(x, y, z);
+    const std::uint8_t rej = raise_.reject_code();
+    if (rej != 1u) {
+      // Latch every evaluation once the history is full — "filling" alone is
+      // not informative after the first 800 ms of sleep.
+      local_state().diag_raise_reject = rej;
+    }
+    if (rej == 0u) {
+      raise_.reset();
+      shake_.reset();
+      if (local_state().diag_raise_fires < 0xFFu) {
+        ++local_state().diag_raise_fires;
+      }
+      wake_display(1u);
+      woke = true;
+    }
+  } else {
     raise_.reset();
-    if (local_state().diag_raise_fires < 0xFFu) {
-      ++local_state().diag_raise_fires;
+  }
+
+  if (!woke && shake_on) {
+    shake_.update(x, y, z);
+    if (shake_.should_shake_wake()) {
+      raise_.reset();
+      shake_.reset();
+      if (local_state().diag_raise_fires < 0xFFu) {
+        ++local_state().diag_raise_fires;
+      }
+      wake_display(6u);  // 6 = shake (diag overlay)
+      woke = true;
     }
-    wake_display(1u);
-    if (local_state().screen == local::Screen::Face ||
-        local_state().screen == local::Screen::Disconnected) {
-      // Coalesced with any other repaint this tick — see Core::tick.
-      mark_paint_pending();
-    }
+  } else if (!shake_on) {
+    shake_.reset();
+  }
+
+  if (woke && (local_state().screen == local::Screen::Face ||
+               local_state().screen == local::Screen::Disconnected)) {
+    // Coalesced with any other repaint this tick — see Core::tick.
+    mark_paint_pending();
   }
 }
 
@@ -783,6 +841,28 @@ bool Core::on_tap_elem(std::uint16_t elem_id) {
       local_state().settings.tilt_enabled =
           local_state().settings.tilt_enabled ? 0u : 1u;
       break;
+    case local::kSettingRaiseSens: {
+      std::uint8_t s = local_state().settings.raise_sensitivity;
+      if (s > 2u) {
+        s = 1u;
+      }
+      local_state().settings.raise_sensitivity =
+          static_cast<std::uint8_t>((s + 1u) % 3u);
+      break;
+    }
+    case local::kSettingShake:
+      local_state().settings.shake_enabled =
+          local_state().settings.shake_enabled ? 0u : 1u;
+      break;
+    case local::kSettingShakeSens: {
+      std::uint8_t s = local_state().settings.shake_sensitivity;
+      if (s > 2u) {
+        s = 1u;
+      }
+      local_state().settings.shake_sensitivity =
+          static_cast<std::uint8_t>((s + 1u) % 3u);
+      break;
+    }
     case local::kSettingTimeout: {
       static constexpr std::uint8_t kChoices[] = {10u, 20u, 30u, 60u, 120u, 0u};
       const std::uint8_t current = local_state().settings.wake_seconds;

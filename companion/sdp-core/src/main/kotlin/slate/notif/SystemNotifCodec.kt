@@ -17,6 +17,8 @@ object SystemNotifCodec {
 
     const val FLAG_ONGOING: Int = 1 shl 0
     const val FLAG_CLEARABLE: Int = 1 shl 1
+    /** Bulk reconnect sync — watch retains without wake/haptic. */
+    const val FLAG_SILENT: Int = 1 shl 2
 
     const val INPUT_NOTIF_REQ: Int = 0xE2
 
@@ -29,6 +31,7 @@ object SystemNotifCodec {
         whenEpochSec: Long,
         ongoing: Boolean,
         clearable: Boolean,
+        silent: Boolean = false,
     ): ByteArray {
         val keyB = utf8(key, 64)
         val titleB = utf8(title, 48)
@@ -36,6 +39,7 @@ object SystemNotifCodec {
         var flags = 0
         if (ongoing) flags = flags or FLAG_ONGOING
         if (clearable) flags = flags or FLAG_CLEARABLE
+        if (silent) flags = flags or FLAG_SILENT
         val out = ArrayList<Byte>(8 + keyB.size + titleB.size + textB.size)
         out += OP_UPSERT.toByte()
         out += keyB.size.toByte()

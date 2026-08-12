@@ -105,6 +105,14 @@ target_include_directories(test_raise_wake PRIVATE "${SLATE_ROOT}/include")
 target_compile_options(test_raise_wake PRIVATE -Wall -Wextra -Wpedantic)
 slate_host_test(test_raise_wake raise_wake)
 
+add_executable(test_shake_wake
+  test_shake_wake.cpp
+  "${SLATE_ROOT}/src/shake_wake.cpp"
+)
+target_include_directories(test_shake_wake PRIVATE "${SLATE_ROOT}/include")
+target_compile_options(test_shake_wake PRIVATE -Wall -Wextra -Wpedantic)
+slate_host_test(test_shake_wake shake_wake)
+
 add_executable(test_band_push_tiles
   test_band_push_tiles.cpp
   "${SLATE_ROOT}/src/sdp_interpreter.cpp"
@@ -201,6 +209,7 @@ add_executable(test_local_core
   "${SLATE_ROOT}/src/local_core.cpp"
   "${SLATE_ROOT}/src/bma42x.cpp"
   "${SLATE_ROOT}/src/raise_wake.cpp"
+  "${SLATE_ROOT}/src/shake_wake.cpp"
   "${SLATE_ROOT}/src/settings_sync.cpp"
   "${SLATE_ROOT}/third_party/bosch/bma_config.cpp"
 )

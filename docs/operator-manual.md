@@ -268,7 +268,8 @@ list (swipe up/down). Rows, top to bottom:
 
 | Row | Setting |
 |-----|---------|
-| Raise wake | On/Off |
+| Raise wake | On/Off + Soft/Normal/Hard |
+| Shake wake | On/Off (default Off) + Soft/Normal/Hard |
 | Timeout | 10s … Never |
 | Show steps | On/Off |
 | Face diag | On/Off |

@@ -4,6 +4,13 @@
 
 namespace slate {
 namespace settings_sync {
+namespace {
+
+std::uint8_t clamp_sens(std::uint8_t v) {
+  return (v > 2u) ? 1u : v;
+}
+
+}  // namespace
 
 std::size_t encode(const Payload& p, std::uint8_t* out, std::size_t cap) {
   if (out == nullptr || cap < kPayloadBytes) {
@@ -26,6 +33,9 @@ std::size_t encode(const Payload& p, std::uint8_t* out, std::size_t cap) {
   out[14] = static_cast<std::uint8_t>((p.face_bright >> 8) & 0xFFu);
   out[15] = static_cast<std::uint8_t>(p.face_dim & 0xFFu);
   out[16] = static_cast<std::uint8_t>((p.face_dim >> 8) & 0xFFu);
+  out[17] = clamp_sens(p.raise_sensitivity);
+  out[18] = p.shake_enabled ? 1u : 0u;
+  out[19] = clamp_sens(p.shake_sensitivity);
   return kPayloadBytes;
 }
 
@@ -57,6 +67,9 @@ bool decode(const std::uint8_t* msg, std::size_t len, Payload* out) {
                      (static_cast<std::uint16_t>(msg[14]) << 8);
   out->face_dim = static_cast<std::uint16_t>(msg[15]) |
                   (static_cast<std::uint16_t>(msg[16]) << 8);
+  out->raise_sensitivity = clamp_sens(msg[17]);
+  out->shake_enabled = msg[18] ? 1u : 0u;
+  out->shake_sensitivity = clamp_sens(msg[19]);
   return true;
 }
 
@@ -65,7 +78,10 @@ bool differs(const Payload& a, const Payload& b) {
          a.face_show_steps != b.face_show_steps ||
          a.face_show_diag != b.face_show_diag ||
          a.hr_enabled != b.hr_enabled || a.ui_chrome != b.ui_chrome ||
-         a.face_bright != b.face_bright || a.face_dim != b.face_dim;
+         a.face_bright != b.face_bright || a.face_dim != b.face_dim ||
+         a.raise_sensitivity != b.raise_sensitivity ||
+         a.shake_enabled != b.shake_enabled ||
+         a.shake_sensitivity != b.shake_sensitivity;
 }
 
 bool should_apply(const Payload& current, const Payload& incoming,
@@ -110,6 +126,9 @@ void apply_to(const Payload& p, local::Settings* s) {
   s->ui_chrome = p.ui_chrome;
   s->face_bright = p.face_bright;
   s->face_dim = p.face_dim;
+  s->raise_sensitivity = clamp_sens(p.raise_sensitivity);
+  s->shake_enabled = p.shake_enabled ? 1u : 0u;
+  s->shake_sensitivity = clamp_sens(p.shake_sensitivity);
 }
 
 Payload from(const local::Settings& s, std::uint32_t revision) {
@@ -123,6 +142,9 @@ Payload from(const local::Settings& s, std::uint32_t revision) {
   p.ui_chrome = s.ui_chrome;
   p.face_bright = s.face_bright;
   p.face_dim = s.face_dim;
+  p.raise_sensitivity = clamp_sens(s.raise_sensitivity);
+  p.shake_enabled = s.shake_enabled ? 1u : 0u;
+  p.shake_sensitivity = clamp_sens(s.shake_sensitivity);
   return p;
 }
 

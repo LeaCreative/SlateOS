@@ -15,7 +15,7 @@
 | Piece | Identity |
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
-| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`9421B271FDC3`** (stamp ~14:38); ACC_CONF `0x28`, ScreenBlock 256 B, swipe routing |
+| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`BA6BD6327017`**; nav chrome + paged settings + FLAG_SILENT |
 | Companion APK | **`slate.app.debug`** — see `companion/app/build.gradle.kts` for versionName / versionCode |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
@@ -34,16 +34,16 @@
 
 ### Local resilient core
 - **Face:** time, date, optional steps, battery, link cue, trial amber bar, version/diag overlay.
-- **Settings** (swipe face **left→right**): raise-to-wake, display timeout (incl. never), show steps. Bidirectional `SETTINGS_SYNC` (0x21) with phone; persisted (`SLTU`).
+- **Settings** (swipe face **left→right**): raise-to-wake + Soft/Normal/Hard sensitivity, shake-to-wake (default Off) + sensitivity, display timeout (incl. never), show steps, face diag, HR. Bidirectional `SETTINGS_SYNC` v4 (0x21) with phone; persisted (`SLTY`).
 - **Swipe policy:** settings **right→left** → face (not launcher); launcher **left→right** → close (not settings); face **right→left** → launcher when linked.
-- **Notifs shade** (swipe down from face): SYSTEM ch4 stubs (notification titles); body on demand via INPUT `NOTIF_REQ` + SYSTEM `BODY`. Amber status glyph while stubs remain.
-- Display sleep (default **20 s**, configurable); wake on button, double-tap, **raise-to-wake**, charger edge, alerts.
+- **Notifs shade** (swipe down from face): SYSTEM ch4 stubs (notification titles); body on demand via INPUT `NOTIF_REQ` + SYSTEM `BODY`. Amber status glyph while stubs remain. Live stubs wake + DOUBLE haptic; **reconnect bulk sync uses FLAG_SILENT** (no wake/haptic — needs matching firmware).
+- Display sleep (default **20 s**, configurable); wake on button, double-tap, **raise-to-wake**, optional **shake-to-wake**, charger edge, alerts.
 - Offline launcher swipe → “not connected”.
 - Haptics via FreeRTOS timer motor driver.
 
 ### Sensors / power
 - BMA421/425: Bosch feature upload, pedometer enable (full-block R/W), ACC_CONF **`0x28`** (InfiniTime CIC_AVG), axis swap for mount frame.
-- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60). False-wake on typing / arms-down walk: none observed.
+- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60). False-wake on typing / arms-down walk: none observed. Shake-to-wake mirrors InfiniTime EMA (needs DFU for this build).
 - Battery SAADC InfiniTime-matched curve + charge pin; BAS.
 - HRS3300 **gated by settings** — `hr_enabled` (default Off). On-demand measure
   from local Heart Rate screen or GATT HRS CCCD; asleep otherwise.

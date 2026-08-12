@@ -7,7 +7,32 @@
 
 ---
 
-## Current state (10 Aug 2026)
+## Current state (12 Aug 2026)
+
+### Nav chrome + paged settings (12 Aug)
+
+Settings: **4 rows/page**, swipe up/down to page (no arrows; same direction as
+launcher). Top **section bars** (Settings | Face | Launcher) on face, settings,
+notifications (middle/face), and launcher (right). Left **page bars** on
+settings, notifications, and launcher (bright/dim = face colours).
+
+Companion **`0.8.2-p63` / 64**. Firmware: `build/dfu/slate-dfu.zip` —
+SHA-256 prefix **`BA6BD6327017`**.
+
+### Reconnect notif haptic (FLAG_SILENT)
+
+Confirmed: after Ready the companion bulk-UPSERTs the shade on ch=4; empty-store
+inserts were `StubNew` → wake + DOUBLE (coalesce still fired repeatedly across
+the slow write queue). Fix: `FLAG_SILENT` on reconnect sync; firmware maps silent
+new inserts to `StubUpdate` UX. Companion **`0.8.2-p62` / versionCode 63**
+(installed). **Firmware ready:** `build/dfu/slate-dfu.zip` — SHA-256 prefix
+`431656156A13` (includes settings row Y fix + FLAG_SILENT). Flash via SDP OTA.
+
+### Settings row overlap (u8 Y wrap)
+
+Eight settings rows at pitch 48 put content Y at 288/336, which truncated in
+`BEGIN_ELEM`'s u8 Y and redrew Face diag / Heart rate on top of Raise sens /
+Shake wake. Pitch/row height reduced so all content Y fits in 0…255.
 
 ### Companion installed + dual ZIP Open-with
 
@@ -215,27 +240,32 @@ before them. 21/21 host tests (`-E ble_link`). RAM slack 200 B.
 **Companion: build 36, `0.8.0-p35`, installed on the Pixel.** 167/167
 `:sdp-tests`.
 
-Three settings, editable in both places, syncing both ways:
+Three settings families, editable in both places, syncing both ways:
 
 | | watch | phone |
 |---|---|---|
-| Raise to wake | Settings row 1 | switch |
-| Screen timeout | Settings row 2 (cycles) | chips 10/20/30/60/120/Never |
-| Show step count | Settings row 3 | switch |
+| Raise to wake | Settings row | switch |
+| Raise sensitivity | Soft/Normal/Hard cycle | chips |
+| Shake to wake | Settings row (default Off) | switch |
+| Shake sensitivity | Soft/Normal/Hard cycle | chips |
+| Screen timeout | cycles | chips 10/20/30/60/120/Never |
+| Show step count | On/Off | switch |
 
 Reached on the watch by **swiping left-to-right** from the face; on the phone
 from **Watch settings** on the main screen.
 
-`tilt_sensitivity` is deliberately **not** synced and not shown: it configured
-the any-motion threshold that raise-to-wake replaced, so it does nothing. A
-control with no effect is worse than no control.
+Raise Soft/Normal/Hard scales InfiniTime's raise thresholds (roll / arm-level).
+Shake Soft/Normal/Hard maps to InfiniTime `shakeWakeThreshold` 80/150/250.
+Legacy `tilt_sensitivity` (BMA any-motion) is **not** synced — it does nothing
+for these gestures.
 
 #### The merge rule, and why it is written twice
 
 `include/settings_sync.hpp` / `src/settings_sync.cpp` and
-`companion/sdp-core/…/session/WatchSettings.kt` are the same 10-byte format and
-the same rule, one per language. Wire:
-`[0x21][ver][revision:u32 LE][tilt][wake_s][steps][reserved]`.
+`companion/sdp-core/…/session/WatchSettings.kt` are the same **20-byte** v4
+format and the same rule, one per language. Wire:
+`[0x21][ver=4][revision:u32 LE][tilt][wake_s][steps][diag][hr]`
+`[uiChrome:u16][faceBright:u16][faceDim:u16][raiseSens][shakeOn][shakeSens]`.
 
 - Higher revision wins.
 - Equal revision, identical content: no-op.

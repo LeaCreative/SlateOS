@@ -694,6 +694,14 @@ static void app_loop() {
           g_core.show_notifs();
           continue;
         }
+        // Settings pages like the launcher: finger up → next, down → previous.
+        if (ev.type == input::EventType::Swipe && g_local_owns_screen &&
+            g_core.local_state().screen == slate::local::Screen::Settings &&
+            (ev.swipe == input::SwipeDir::Up ||
+             ev.swipe == input::SwipeDir::Down)) {
+          (void)g_core.on_settings_swipe(ev.swipe == input::SwipeDir::Up);
+          continue;
+        }
         if (ev.type == input::EventType::Swipe &&
             ev.swipe == input::SwipeDir::Up && g_local_owns_screen &&
             (g_core.local_state().screen == slate::local::Screen::Notifs ||

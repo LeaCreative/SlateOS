@@ -1,0 +1,21 @@
+---
+description: Always install companion when versionCode bumps and a phone is on adb
+alwaysApply: true
+---
+
+# Companion install on version bump
+
+Whenever `companion/app/build.gradle.kts` `versionCode` / `versionName` is
+bumped for an installable build (or companion code that needs to land on the
+Pixel is finished):
+
+1. Check `adb devices` (use `%ANDROID_HOME%\platform-tools\adb.exe` on Windows
+   if `adb` is not on PATH).
+2. If a suitable device is connected (Pixel / `device` state; skip boards that
+   fail minSdk), run from `companion/`:
+   `gradlew.bat :app:installDebug`
+3. Prefer pinning the Pixel serial with `-s` when multiple devices are listed.
+4. Do this in the same turn as the bump — do not wait for the operator to ask.
+
+Firmware DFU packaging is separate; still package `slate_dfu` when firmware
+changed, but companion install is mandatory whenever the APK version moves.

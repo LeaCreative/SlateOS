@@ -102,6 +102,16 @@
     if (typeof fn === 'function') fn(this);
     u8(this.buf, OP.END_ELEM);
   };
+  /**
+   * SCROLL_REGION + optional children + CLIP_CLEAR. Empty block is a paging
+   * sentinel so firmware can emit changing SCROLL_POS without moving rows.
+   */
+  Builder.prototype.scrollRegion = function (y, h, contentH, fn) {
+    u8(this.buf, OP.SCROLL_REGION);
+    u8(this.buf, y | 0); u8(this.buf, h | 0); u16le(this.buf, contentH | 0);
+    if (typeof fn === 'function') fn(this);
+    u8(this.buf, OP.CLIP_CLEAR);
+  };
   Builder.prototype.line = function (x0, y0, x1, y1, c, width) {
     u8(this.buf, OP.LINE);
     u8(this.buf, x0); u8(this.buf, y0); u8(this.buf, x1); u8(this.buf, y1);

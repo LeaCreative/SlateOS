@@ -102,6 +102,55 @@ void fmt2(char* o, std::uint8_t v) {
   o[2] = '\0';
 }
 
+/** Top section strip: Settings | Face | Launcher. Active = face bright. */
+void draw_section_bars(W& w, local::SectionId active, std::uint16_t bright,
+                       std::uint16_t dim) {
+  constexpr std::uint8_t kY = 2u;
+  constexpr std::uint8_t kH = 3u;
+  constexpr std::uint8_t kW = 28u;
+  constexpr std::uint8_t kGap = 8u;
+  constexpr std::uint8_t kCount = 3u;
+  constexpr std::uint8_t kTotal =
+      static_cast<std::uint8_t>(kCount * kW + (kCount - 1u) * kGap);
+  constexpr std::uint8_t kX0 = static_cast<std::uint8_t>((240u - kTotal) / 2u);
+  for (std::uint8_t i = 0u; i < kCount; ++i) {
+    const std::uint8_t x =
+        static_cast<std::uint8_t>(kX0 + i * (kW + kGap));
+    const bool on = static_cast<std::uint8_t>(active) == i;
+    w.fill(x, kY, kW, kH, on ? bright : dim);
+  }
+}
+
+/**
+ * Left page strip. `page_index` is 0-based; `page_count` < 2 draws nothing.
+ * Vertically centred in the list band (~y 36..228).
+ */
+void draw_page_bars(W& w, std::uint8_t page_count, std::uint8_t page_index,
+                    std::uint16_t bright, std::uint16_t dim) {
+  if (page_count < 2u) {
+    return;
+  }
+  if (page_index >= page_count) {
+    page_index = 0u;
+  }
+  constexpr std::uint8_t kX = 2u;
+  constexpr std::uint8_t kW = 3u;
+  constexpr std::uint8_t kH = 14u;
+  constexpr std::uint8_t kGap = 4u;
+  constexpr std::uint8_t kBandMid = 132u;
+  const std::uint8_t total = static_cast<std::uint8_t>(
+      page_count * kH + (page_count - 1u) * kGap);
+  std::uint8_t y0 = 36u;
+  if (total < 180u) {
+    y0 = static_cast<std::uint8_t>(kBandMid - total / 2u);
+  }
+  for (std::uint8_t i = 0u; i < page_count; ++i) {
+    const std::uint8_t y =
+        static_cast<std::uint8_t>(y0 + i * (kH + kGap));
+    w.fill(kX, y, kW, kH, i == page_index ? bright : dim);
+  }
+}
+
 void fmt_u32(char* o, std::size_t cap, std::uint32_t v) {
   char tmp[11];
   std::uint8_t n = 0u;
@@ -260,6 +309,8 @@ std::size_t build_face(W& w, const ViewModel& vm) {
   if (st.trial_image) {
     w.fill(0, 0, 240, 8, kAmber);
   }
+  // After the trial band so the strip stays visible on an unconfirmed image.
+  draw_section_bars(w, local::SectionId::Face, kBright, kDim);
 
 #if SLATE_DIAG_OVERLAY
   if (st.settings.face_show_diag) {
@@ -408,11 +459,13 @@ std::size_t build_face(W& w, const ViewModel& vm) {
 }
 
 std::size_t build_notifs(W& w, const ViewModel& vm) {
-  // Outline rows + right-side scroll arrows (no SCROLL_REGION — vertical
+  // Outline rows + right-side page arrows (no SCROLL_REGION — vertical
   // swipe is back-to-face and must not also mean "scroll").
   constexpr std::uint8_t kFont = 1u;
   const local::State& st = *vm.state;
   const std::uint16_t chrome = st.settings.ui_chrome;
+  const std::uint16_t bright = st.settings.face_bright;
+  const std::uint16_t dim = st.settings.face_dim;
 
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
@@ -420,7 +473,9 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
   w.b(0x00u);
   w.u16(chrome);
 
-  w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "Notifications", kFont);
+  // Notifications hang off the face — section strip stays on Face (middle).
+  draw_section_bars(w, local::SectionId::Face, bright, dim);
+  w.text_big(120, 10, sdp::align::CENTER, 2u, 0u, "Notifications", kFont);
 
   const notif::Store* ns = vm.notifs;
   const std::uint8_t count = ns ? ns->count : 0u;
@@ -450,6 +505,11 @@ std::size_t build_notifs(W& w, const ViewModel& vm) {
       static_cast<std::uint8_t>(count - start);
   const std::uint8_t visible =
       remain > local::kNotifPageRows ? local::kNotifPageRows : remain;
+  const std::uint8_t page_count = static_cast<std::uint8_t>(
+      (count + local::kNotifPageRows - 1u) / local::kNotifPageRows);
+  const std::uint8_t page_index = static_cast<std::uint8_t>(
+      start / local::kNotifPageRows);
+  draw_page_bars(w, page_count, page_index, bright, dim);
 
   for (std::uint8_t i = 0u; i < visible; ++i) {
     const std::uint8_t idx = static_cast<std::uint8_t>(start + i);
@@ -597,21 +657,14 @@ std::size_t build_call(W& w, const ViewModel& vm) {
 }
 
 /**
- * Watch settings — full-width rounded buttons (launcher language).
- *
- * Four rows: raise-to-wake, timeout, show steps, face diagnostics. Pitch is
- * tight so all four fit without scrolling.
- *
- * Element ids are [kSettingRaise..kSettingDiag] and are the contract with
- * Core::on_tap_elem — they are named constants in local_state.hpp precisely so
- * the two cannot drift.
- *
- * `tilt_sensitivity` is deliberately absent. It set the any-motion threshold,
- * which raise-to-wake replaced, so the control would do nothing.
+ * Watch settings — four outline rows per page, swipe to page (no arrows).
+ * Top section strip + left page bars match notifications / launcher.
  */
 std::size_t build_settings(W& w, const ViewModel& vm) {
   const local::State& st = *vm.state;
   const std::uint16_t chrome = st.settings.ui_chrome;
+  const std::uint16_t bright = st.settings.face_bright;
+  const std::uint16_t dim = st.settings.face_dim;
   w.b(sdp::op::CLEAR);
   w.rgb(0x0000u);
   w.b(sdp::op::SET_PALETTE);
@@ -627,33 +680,134 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
   w.b(0x03u);
   w.u16(0xFFE0u);  // variable values (timeout, etc.)
 
+  constexpr std::uint8_t kFont = 1u;
   constexpr std::uint8_t kRowX = 8u;
   constexpr std::uint8_t kRowW = 224u;
   constexpr std::uint8_t kRowH = 44u;
-  // Multiple of InputRouter's 24 px scroll step so swipes land on row edges.
   constexpr std::uint8_t kPitch = 48u;
-  constexpr std::uint8_t kListTop = 28u;
-  constexpr std::uint8_t kListH = 212u;
+  constexpr std::uint8_t kListTop = 36u;
   constexpr std::uint8_t kRad = 8u;
-  constexpr std::uint8_t kRows = 5u;
   constexpr std::uint8_t kTextY = 15u;  // (44 - 14) / 2 for scale-2 5×7
   constexpr std::uint8_t kPalOn = 1u;
   constexpr std::uint8_t kPalOff = 2u;
   constexpr std::uint8_t kPalVar = 3u;
 
-  w.text_big(120, 6, sdp::align::CENTER, 2u, 0u, "Settings", 1u);
+  draw_section_bars(w, local::SectionId::Settings, bright, dim);
+  w.text_big(120, 10, sdp::align::CENTER, 2u, 0u, "Settings", kFont);
 
-  const std::uint16_t content_h =
-      static_cast<std::uint16_t>(kRows * kPitch);
-  w.b(sdp::op::SCROLL_REGION);
-  w.b(kListTop);
-  w.b(kListH);
-  w.u16(content_h > kListH ? content_h : kListH);
+  std::uint8_t start = st.settings_sel;
+  if (start >= local::kSettingsRowCount) {
+    start = 0u;
+  }
+  start = static_cast<std::uint8_t>(
+      (start / local::kSettingsPageRows) * local::kSettingsPageRows);
+  const std::uint8_t remain =
+      static_cast<std::uint8_t>(local::kSettingsRowCount - start);
+  const std::uint8_t visible = remain > local::kSettingsPageRows
+                                   ? local::kSettingsPageRows
+                                   : remain;
+  const std::uint8_t page_count = static_cast<std::uint8_t>(
+      (local::kSettingsRowCount + local::kSettingsPageRows - 1u) /
+      local::kSettingsPageRows);
+  const std::uint8_t page_index =
+      static_cast<std::uint8_t>(start / local::kSettingsPageRows);
+  draw_page_bars(w, page_count, page_index, bright, dim);
 
-  const auto row = [&](std::uint16_t id, std::uint8_t index, const char* label,
-                       const char* value, std::uint8_t value_pal) {
-    // Content-relative Y inside the scroll region (launcher pattern).
-    const std::uint8_t y = static_cast<std::uint8_t>(index * kPitch);
+  const auto sens_label = [](std::uint8_t s) -> const char* {
+    switch (s) {
+      case 0u:
+        return "Soft";
+      case 2u:
+        return "Hard";
+      default:
+        return "Normal";
+    }
+  };
+
+  char timeout_buf[8];
+  if (st.settings.wake_seconds == 0u) {
+    timeout_buf[0] = 'N';
+    timeout_buf[1] = 'e';
+    timeout_buf[2] = 'v';
+    timeout_buf[3] = 'e';
+    timeout_buf[4] = 'r';
+    timeout_buf[5] = '\0';
+  } else {
+    fmt_u32(timeout_buf, sizeof(timeout_buf) - 1u, st.settings.wake_seconds);
+    std::size_t l = 0u;
+    while (timeout_buf[l] != '\0' && l + 1u < sizeof(timeout_buf)) {
+      ++l;
+    }
+    if (l + 1u < sizeof(timeout_buf)) {
+      timeout_buf[l] = 's';
+      timeout_buf[l + 1u] = '\0';
+    }
+  }
+
+  const auto fill_row = [&](std::uint8_t abs, std::uint16_t* id,
+                            const char** label, const char** value,
+                            std::uint8_t* pal) {
+    switch (abs) {
+      case 0u:
+        *id = local::kSettingRaise;
+        *label = "Raise wake";
+        *value = st.settings.tilt_enabled ? "On" : "Off";
+        *pal = st.settings.tilt_enabled ? kPalOn : kPalOff;
+        break;
+      case 1u:
+        *id = local::kSettingRaiseSens;
+        *label = "Raise sens";
+        *value = sens_label(st.settings.raise_sensitivity);
+        *pal = kPalVar;
+        break;
+      case 2u:
+        *id = local::kSettingShake;
+        *label = "Shake wake";
+        *value = st.settings.shake_enabled ? "On" : "Off";
+        *pal = st.settings.shake_enabled ? kPalOn : kPalOff;
+        break;
+      case 3u:
+        *id = local::kSettingShakeSens;
+        *label = "Shake sens";
+        *value = sens_label(st.settings.shake_sensitivity);
+        *pal = kPalVar;
+        break;
+      case 4u:
+        *id = local::kSettingTimeout;
+        *label = "Timeout";
+        *value = timeout_buf;
+        *pal = kPalVar;
+        break;
+      case 5u:
+        *id = local::kSettingSteps;
+        *label = "Show steps";
+        *value = st.settings.face_show_steps ? "On" : "Off";
+        *pal = st.settings.face_show_steps ? kPalOn : kPalOff;
+        break;
+      case 6u:
+        *id = local::kSettingDiag;
+        *label = "Face diag";
+        *value = st.settings.face_show_diag ? "On" : "Off";
+        *pal = st.settings.face_show_diag ? kPalOn : kPalOff;
+        break;
+      default:
+        *id = local::kSettingHr;
+        *label = "Heart rate";
+        *value = st.settings.hr_enabled ? "On" : "Off";
+        *pal = st.settings.hr_enabled ? kPalOn : kPalOff;
+        break;
+    }
+  };
+
+  for (std::uint8_t i = 0u; i < visible; ++i) {
+    const std::uint8_t abs = static_cast<std::uint8_t>(start + i);
+    std::uint16_t id = 0u;
+    const char* label = "";
+    const char* value = "";
+    std::uint8_t pal = kPalVar;
+    fill_row(abs, &id, &label, &value, &pal);
+    const std::uint8_t y =
+        static_cast<std::uint8_t>(kListTop + i * kPitch);
     w.b(sdp::op::BEGIN_ELEM);
     w.u16(id);
     w.b(kRowX);
@@ -663,49 +817,11 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
     w.b(sdp::elem_flags::EMIT_TOUCH | sdp::elem_flags::HAPTIC);
     w.rect_round_stroke(kRowX, y, kRowW, kRowH, kRad, chrome);
     w.text_big(16, static_cast<std::uint8_t>(y + kTextY), sdp::align::LEFT, 2u,
-               0u, label, 1u);
+               0u, label, kFont);
     w.text_big(224, static_cast<std::uint8_t>(y + kTextY), sdp::align::RIGHT,
-               2u, value_pal, value, 1u);
+               2u, pal, value, kFont);
     w.b(sdp::op::END_ELEM);
-  };
-
-  row(local::kSettingRaise, 0u, "Raise wake",
-      st.settings.tilt_enabled ? "On" : "Off",
-      st.settings.tilt_enabled ? kPalOn : kPalOff);
-
-  char secs[8];
-  if (st.settings.wake_seconds == 0u) {
-    secs[0] = 'N';
-    secs[1] = 'e';
-    secs[2] = 'v';
-    secs[3] = 'e';
-    secs[4] = 'r';
-    secs[5] = '\0';
-  } else {
-    fmt_u32(secs, sizeof(secs) - 1u, st.settings.wake_seconds);
-    std::size_t l = 0u;
-    while (secs[l] != '\0' && l + 1u < sizeof(secs)) {
-      ++l;
-    }
-    if (l + 1u < sizeof(secs)) {
-      secs[l] = 's';
-      secs[l + 1u] = '\0';
-    }
   }
-  row(local::kSettingTimeout, 1u, "Timeout", secs, kPalVar);
-
-  row(local::kSettingSteps, 2u, "Show steps",
-      st.settings.face_show_steps ? "On" : "Off",
-      st.settings.face_show_steps ? kPalOn : kPalOff);
-
-  row(local::kSettingDiag, 3u, "Face diag",
-      st.settings.face_show_diag ? "On" : "Off",
-      st.settings.face_show_diag ? kPalOn : kPalOff);
-
-  // Master gate: On starts continuous measuring; BPM shows on the face.
-  row(local::kSettingHr, 4u, "Heart rate",
-      st.settings.hr_enabled ? "On" : "Off",
-      st.settings.hr_enabled ? kPalOn : kPalOff);
 
   w.b(sdp::op::COMMIT);
   w.b(0x00u);

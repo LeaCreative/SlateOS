@@ -144,12 +144,17 @@ Ingest on_system_message(Store* store, const std::uint8_t* msg, std::size_t len)
   Entry& e = store->entries[static_cast<std::uint8_t>(idx)];
   std::memset(&e, 0, sizeof(e));
   copy_str(e.key, kKeyCap, key, klen, &e.key_len);
-  e.flags = flags;
+  // Silent is wire-only (reconnect bulk sync); do not retain it on the row.
+  e.flags = static_cast<std::uint8_t>(flags & ~kFlagSilent);
   e.category = category;
   e.monogram = mono;
   copy_str(e.title, kTitleCap, title, tlen, &e.title_len);
   e.when_sec = when;
   e.stale = 0u;
+  // Reconnect / shade restore must not wake or DOUBLE — treat as update UX.
+  if (is_new && (flags & kFlagSilent) != 0u) {
+    return Ingest::StubUpdate;
+  }
   return is_new ? Ingest::StubNew : Ingest::StubUpdate;
 }
 

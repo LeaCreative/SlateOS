@@ -167,12 +167,33 @@ void test_from_settings_round_trips() {
   s.ui_chrome = 0xF800u;
   s.face_bright = 0x07E0u;
   s.face_dim = 0x001Fu;
+  s.raise_sensitivity = 2u;
+  s.shake_enabled = 1u;
+  s.shake_sensitivity = 0u;
   const Payload p = ss::from(s, 12u);
   expect("from() captures the synced fields",
          p.revision == 12u && p.tilt_enabled == 0u && p.wake_seconds == 35u &&
              p.face_show_steps == 1u && p.face_show_diag == 0u &&
              p.hr_enabled == 1u && p.ui_chrome == 0xF800u &&
-             p.face_bright == 0x07E0u && p.face_dim == 0x001Fu);
+             p.face_bright == 0x07E0u && p.face_dim == 0x001Fu &&
+             p.raise_sensitivity == 2u && p.shake_enabled == 1u &&
+             p.shake_sensitivity == 0u);
+}
+
+void test_round_trip_includes_wake_sens() {
+  Payload in = make(3u, 1u, 20u, 1u);
+  in.raise_sensitivity = 0u;
+  in.shake_enabled = 1u;
+  in.shake_sensitivity = 2u;
+  std::uint8_t buf[32] = {};
+  const std::size_t n = ss::encode(in, buf, sizeof(buf));
+  expect("v4 length", n == 20u);
+  expect("wire version 4", buf[1] == 4u);
+  Payload out;
+  expect("decodes v4", ss::decode(buf, n, &out));
+  expect("raise sens", out.raise_sensitivity == 0u);
+  expect("shake on", out.shake_enabled == 1u);
+  expect("shake sens", out.shake_sensitivity == 2u);
 }
 
 }  // namespace
@@ -187,6 +208,7 @@ int main() {
   test_revision_saturates_rather_than_wrapping();
   test_apply_leaves_unsynced_fields_alone();
   test_from_settings_round_trips();
+  test_round_trip_includes_wake_sens();
   if (g_fails != 0) {
     std::printf("%d failure(s)\n", g_fails);
     return 1;

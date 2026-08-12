@@ -179,6 +179,33 @@ void test_stats_window() {
   expect("prev mean is the oldest window", s.prev_x_mean == 50);
 }
 
+/** Soft fires where Hard rejects (look-angle gate + roll). */
+void test_soft_vs_hard_roll() {
+  // Reading pose with y ≈ −50: Soft (y_mean ≤ 0) accepts; Hard (y_mean ≤ −128)
+  // rejects. Roll is still past Soft's −30° threshold.
+  auto feed = [](RaiseDetector& d) {
+    settle(d, 0, 900, -300);
+    d.update(0, 500, -600);
+    d.update(0, 200, -850);
+    d.update(0, 50, -980);
+    d.update(0, -20, -1010);
+    d.update(0, -50, -1020);
+    d.update(0, -50, -1020);
+  };
+
+  RaiseDetector soft;
+  soft.reset();
+  soft.set_sensitivity(slate::motion::Sensitivity::Soft);
+  feed(soft);
+  expect("Soft wakes on milder look angle", soft.should_raise_wake());
+
+  RaiseDetector hard;
+  hard.reset();
+  hard.set_sensitivity(slate::motion::Sensitivity::Hard);
+  feed(hard);
+  expect("Hard rejects milder look angle", !hard.should_raise_wake());
+}
+
 }  // namespace
 
 int main() {
@@ -190,6 +217,7 @@ int main() {
   test_cold_start_does_not_wake();
   test_reset_clears_history();
   test_stats_window();
+  test_soft_vs_hard_roll();
   if (g_fails != 0) {
     std::printf("%d failure(s)\n", g_fails);
     return 1;

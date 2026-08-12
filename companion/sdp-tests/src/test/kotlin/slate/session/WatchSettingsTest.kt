@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 /**
  * The phone half of settings sync must agree with the watch half exactly.
  *
- * Golden vectors match `slate::settings_sync::encode` (wire version 3).
+ * Golden vectors match `slate::settings_sync::encode` (wire version 4).
  */
 class WatchSettingsTest {
     @Test
@@ -28,10 +28,13 @@ class WatchSettingsTest {
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x03, 0x00, 0x00, 0x00, 0x00, 0x01, 0x14, 0x01, 0x01, 0x00,
+                0x21, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01, 0x14, 0x01, 0x01, 0x00,
                 0xFF.toByte(), 0xFF.toByte(),
                 0xFF.toByte(), 0xFF.toByte(),
                 0x10, 0x84.toByte(),
+                0x01, // raise Normal
+                0x00, // shake Off
+                0x01, // shake Normal
             ),
             bytes,
         )
@@ -47,14 +50,18 @@ class WatchSettingsTest {
                 showSteps = false,
                 showDiag = false,
                 hrEnabled = false,
+                raiseSensitivity = WatchSettings.SENS_SOFT,
+                shakeEnabled = true,
+                shakeSensitivity = WatchSettings.SENS_HARD,
             ),
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x21, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0xFF.toByte(), 0xFF.toByte(),
                 0xFF.toByte(), 0xFF.toByte(),
                 0x10, 0x84.toByte(),
+                0x00, 0x01, 0x02,
             ),
             bytes,
         )
@@ -73,14 +80,18 @@ class WatchSettingsTest {
                 uiChrome = 0x07E0,
                 faceBright = 0xF800,
                 faceDim = 0x001F,
+                raiseSensitivity = WatchSettings.SENS_HARD,
+                shakeEnabled = true,
+                shakeSensitivity = WatchSettings.SENS_SOFT,
             ),
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x03, 0x07, 0x00, 0x00, 0x00, 0x01, 0x78, 0x00, 0x00, 0x01,
+                0x21, 0x04, 0x07, 0x00, 0x00, 0x00, 0x01, 0x78, 0x00, 0x00, 0x01,
                 0xE0.toByte(), 0x07,
                 0x00, 0xF8.toByte(),
                 0x1F, 0x00,
+                0x02, 0x01, 0x00,
             ),
             bytes,
         )
@@ -100,11 +111,12 @@ class WatchSettingsTest {
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x03, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
+                0x21, 0x04, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
                 0x00, 0x3C, 0x01, 0x00, 0x01,
                 0xFF.toByte(), 0xFF.toByte(),
                 0xFF.toByte(), 0xFF.toByte(),
                 0x10, 0x84.toByte(),
+                0x01, 0x00, 0x01,
             ),
             bytes,
         )
@@ -113,11 +125,12 @@ class WatchSettingsTest {
     @Test
     fun decodesWhatTheFirmwareEncodes() {
         val fromWatch = byteArrayOf(
-            0x21, 0x03, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
+            0x21, 0x04, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
             0x00, 0x3C, 0x01, 0x00, 0x01,
             0xFF.toByte(), 0xFF.toByte(),
             0xFF.toByte(), 0xFF.toByte(),
             0x10, 0x84.toByte(),
+            0x02, 0x01, 0x00,
         )
         val p = WatchSettings.decode(fromWatch)
         assertNotNull(p)
@@ -130,6 +143,9 @@ class WatchSettingsTest {
         assertEquals(0xFFFF, p.uiChrome)
         assertEquals(0xFFFF, p.faceBright)
         assertEquals(0x8410, p.faceDim)
+        assertEquals(WatchSettings.SENS_HARD, p.raiseSensitivity)
+        assertTrue(p.shakeEnabled)
+        assertEquals(WatchSettings.SENS_SOFT, p.shakeSensitivity)
     }
 
     @Test
@@ -158,6 +174,7 @@ class WatchSettingsTest {
         assertFalse(WatchSettings.differs(a, b))
         assertTrue(WatchSettings.differs(a, b.copy(hrEnabled = false)))
         assertTrue(WatchSettings.differs(a, b.copy(uiChrome = 0x07E0)))
+        assertTrue(WatchSettings.differs(a, b.copy(shakeEnabled = true)))
     }
 
     @Test
@@ -173,5 +190,11 @@ class WatchSettingsTest {
         assertEquals(6L, WatchSettings.nextRevision(5L, 5L))
         assertEquals(7L, WatchSettings.nextRevision(5L, 6L))
         assertEquals(0xFFFFFFFFL, WatchSettings.nextRevision(0xFFFFFFFFL, 0L))
+    }
+
+    @Test
+    fun clampSensUnknownToNormal() {
+        assertEquals(WatchSettings.SENS_NORMAL, WatchSettings.clampSens(9))
+        assertEquals(WatchSettings.SENS_SOFT, WatchSettings.clampSens(0))
     }
 }
