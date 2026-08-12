@@ -66,6 +66,8 @@ object HostCapabilities {
         "slate.nav",
         "slate.camera",
         "slate.map",
+        "slate.news",
+        "slate.weather",
         /**
          * Buzzing the handset has been bindable since 6 Aug but had no token
          * here, so `examples/vibrate` could not declare the one capability it

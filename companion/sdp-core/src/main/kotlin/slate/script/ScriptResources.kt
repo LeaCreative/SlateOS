@@ -20,6 +20,14 @@ object ScriptResources {
     const val LOCATION_MANIFEST = "/slate/subapps/location/manifest.json"
     const val MAP_MAIN = "/slate/subapps/map/main.js"
     const val MAP_MANIFEST = "/slate/subapps/map/manifest.json"
+    const val NEWS_MAIN = "/slate/subapps/news/main.js"
+    const val NEWS_MANIFEST = "/slate/subapps/news/manifest.json"
+    const val MEDIA_MAIN = "/slate/subapps/media/main.js"
+    const val MEDIA_MANIFEST = "/slate/subapps/media/manifest.json"
+    const val WEATHER_MAIN = "/slate/subapps/weather/main.js"
+    const val WEATHER_MANIFEST = "/slate/subapps/weather/manifest.json"
+    const val HTTPDEMO_MAIN = "/slate/subapps/httpdemo/main.js"
+    const val HTTPDEMO_MANIFEST = "/slate/subapps/httpdemo/manifest.json"
 
     fun read(path: String): String {
         val stream = ScriptResources::class.java.getResourceAsStream(path)
@@ -37,7 +45,8 @@ object ScriptResources {
             }
         }
         val hosts = mutableSetOf<String>()
-        val hostArr = o.optJSONArray("allowedHosts")
+        val http = o.optJSONObject("http")
+        val hostArr = http?.optJSONArray("allowedHosts") ?: o.optJSONArray("allowedHosts")
         if (hostArr != null) {
             for (i in 0 until hostArr.length()) hosts += hostArr.getString(i)
         }

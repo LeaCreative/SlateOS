@@ -39,6 +39,11 @@ class JsSlateAppEndpoint(
      * anything else it saved itself.
      */
     initialStore: Map<String, String> = emptyMap(),
+    /**
+     * Called when [BindingSurface] strips an adapter command for missing
+     * permission. The host should emit a status event so UI is not stuck.
+     */
+    private val onAdapterDenied: (adapter: String, command: String) -> Unit = { _, _ -> },
 ) : SlateAppEndpoint, AutoCloseable {
 
     override val manifest: AppManifest = manifestFrom(scriptManifest)
@@ -78,6 +83,7 @@ class JsSlateAppEndpoint(
         onTimerSet = onTimerSet,
         onTimerClear = onTimerClear,
         appId = scriptManifest.id,
+        onAdapterDenied = onAdapterDenied,
     )
 
     suspend fun installRuntime(

@@ -65,21 +65,22 @@ index git repo. Open submissions: all of the above plus capacity for ongoing mod
 
 - Keep contact information current.
 - Do not ship permission increases without calling them out in the changelog.
-- Do not circumvent third-party reduced permissions by directing users to sideload
-  unsigned indexes that impersonate Official.
+- Do not impersonate Official provenance (unsigned indexes, forged signatures).
 - Report vulnerabilities in the runtime/bindings through the security contact, not via
   silent exploitation.
 
 ## Relationship to third-party repositories
 
-Third-party indexes are **user-added**, clearly labeled, and get a **reduced** permission
-set unless the user grants sensitive permissions per app. They must not shadow official
-app IDs. We do not endorse third-party content; Play responsibility for official listings
-remains ours. Users who add third-party repos accept additional risk after an explicit
-trust prompt in the companion UI.
+Third-party indexes are **user-added** and clearly labeled. They receive the **same**
+binding permissions as official packages for everything they declare (the host
+whitelist still applies; there is no reduced third-party set). They must not shadow
+official app IDs. We do not endorse third-party content; Play responsibility for
+official listings remains ours. Users who add third-party repos accept additional
+risk after an explicit trust prompt in the companion UI.
 
 ## Change log
 
 | Date | Change |
 |---|---|
+| 2026-08-11 | Third-party / sideload: same declared binding ceiling as Official (no reduced set) |
 | 2026-07-27 | Initial draft for M13 |

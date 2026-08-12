@@ -25,6 +25,7 @@ import slate.app.link.SharedLink
 import slate.app.link.SlateGattClient
 import slate.app.location.LocationAdapter
 import slate.app.map.MapAdapter
+import slate.app.news.NewsAdapter
 import slate.app.nav.NavAdapter
 import slate.app.repo.InstalledStore
 import slate.app.repo.RepoPrefs
@@ -190,6 +191,18 @@ class CompositorHost(
     private var mapAdapter: MapAdapter? = null
     private var mapSubscriberId: String? = null
 
+    private var newsAdapter: NewsAdapter? = null
+    private var newsSubscriberId: String? = null
+
+    private var mediaAdapter: slate.app.media.MediaAdapter? = null
+    private var mediaSubscriberId: String? = null
+
+    private var httpAdapter: slate.app.http.HttpAdapter? = null
+    private var httpSubscriberId: String? = null
+
+    private var weatherAdapter: slate.app.weather.WeatherAdapter? = null
+    private var weatherSubscriberId: String? = null
+
     /** Last display list pushed, for duplicate coalescing. */
     private var lastPushDigest: Int = 0
     private var lastPushAtMs: Long = 0L
@@ -351,6 +364,7 @@ class CompositorHost(
         // sub-app that asked for it and keeps the GPS warm for nobody.
         stopLocation()
         stopMap()
+        stopNews()
         serviceLifecycle.destroy()
         scripts.close()
         // Close the shared V8 host too — otherwise a sticky restart can leave
@@ -1011,8 +1025,173 @@ class CompositorHost(
             "phone" -> handlePhoneAdapter(cmd)
             "location" -> handleLocationAdapter(appId, cmd)
             "map" -> handleMapAdapter(appId, cmd)
+            "news" -> handleNewsAdapter(appId, cmd)
+            "media" -> handleMediaAdapter(appId, cmd)
+            "http" -> handleHttpAdapter(appId, cmd)
+            "weather" -> handleWeatherAdapter(appId, cmd)
             else -> Unit
         }
+    }
+
+    /**
+     * Official news reader: host fetches RSS/Atom; JS draws titles and pages.
+     */
+    private fun handleNewsAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        when (cmd.command) {
+            "list" -> {
+                val feedUrl = try {
+                    JSONObject(cmd.payloadJson).optString("feedUrl", "")
+                } catch (_: Throwable) {
+                    ""
+                }
+                if (newsAdapter == null || newsSubscriberId != appId) {
+                    stopNews()
+                    newsSubscriberId = appId
+                    newsAdapter = NewsAdapter(
+                        scope = scope,
+                        onEvent = { json ->
+                            val target = newsSubscriberId ?: return@NewsAdapter
+                            scope.launch { compositor.dispatchSystemEvent(target, "news", json) }
+                        },
+                    )
+                }
+                newsAdapter?.list(feedUrl)
+                LinkLog.i("news.list for $appId")
+            }
+            "page" -> {
+                val o = try {
+                    JSONObject(cmd.payloadJson)
+                } catch (_: Throwable) {
+                    return
+                }
+                val id = o.optString("id", "")
+                val page = o.optInt("page", 0)
+                if (id.isBlank()) return
+                if (newsAdapter == null || newsSubscriberId != appId) {
+                    LinkLog.w("news.page with no active list for $appId")
+                    return
+                }
+                newsAdapter?.page(id, page)
+            }
+            "stop" -> {
+                if (newsSubscriberId == appId || newsSubscriberId == null) {
+                    stopNews()
+                    LinkLog.i("news.stop for $appId")
+                }
+            }
+        }
+    }
+
+    private fun stopNews() {
+        newsAdapter?.stop()
+        newsAdapter = null
+        newsSubscriberId = null
+    }
+
+    private fun handleMediaAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        when (cmd.command) {
+            "subscribe" -> {
+                if (mediaAdapter == null || mediaSubscriberId != appId) {
+                    stopMedia()
+                    mediaSubscriberId = appId
+                    mediaAdapter = slate.app.media.MediaAdapter(context) { json ->
+                        val target = mediaSubscriberId ?: return@MediaAdapter
+                        scope.launch { compositor.dispatchSystemEvent(target, "media", json) }
+                    }
+                }
+                mediaAdapter?.subscribe()
+                LinkLog.i("media.subscribe for $appId")
+            }
+            "unsubscribe" -> {
+                if (mediaSubscriberId == appId || mediaSubscriberId == null) {
+                    stopMedia()
+                    LinkLog.i("media.unsubscribe for $appId")
+                }
+            }
+            "play" -> mediaAdapter?.play()
+            "pause" -> mediaAdapter?.pause()
+            "next" -> mediaAdapter?.next()
+            "previous" -> mediaAdapter?.previous()
+        }
+    }
+
+    private fun stopMedia() {
+        mediaAdapter?.unsubscribe()
+        mediaAdapter = null
+        mediaSubscriberId = null
+    }
+
+    private fun handleHttpAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        val o = try {
+            JSONObject(cmd.payloadJson)
+        } catch (_: Throwable) {
+            return
+        }
+        if (httpAdapter == null || httpSubscriberId != appId) {
+            httpAdapter?.stop()
+            httpSubscriberId = appId
+            httpAdapter = slate.app.http.HttpAdapter(scope) { json ->
+                val target = httpSubscriberId ?: return@HttpAdapter
+                scope.launch { compositor.dispatchSystemEvent(target, "http", json) }
+            }
+        }
+        val id = o.optString("id", "")
+        val url = o.optString("url", "")
+        when (cmd.command) {
+            "get" -> {
+                httpAdapter?.get(id, url)
+                LinkLog.i("http.get for $appId ${url.take(60)}")
+            }
+            "post" -> {
+                val body = if (o.has("body") && !o.isNull("body")) o.getString("body") else null
+                httpAdapter?.post(id, url, body)
+                LinkLog.i("http.post for $appId ${url.take(60)}")
+            }
+            "cancel" -> httpAdapter?.cancel(id)
+            "stop" -> {
+                if (httpSubscriberId == appId || httpSubscriberId == null) {
+                    httpAdapter?.stop()
+                    httpAdapter = null
+                    httpSubscriberId = null
+                }
+            }
+        }
+    }
+
+    private fun handleWeatherAdapter(appId: String, cmd: HostOutbound.AdapterCommand) {
+        when (cmd.command) {
+            "fetch" -> {
+                val o = try {
+                    JSONObject(cmd.payloadJson)
+                } catch (_: Throwable) {
+                    JSONObject()
+                }
+                val lat = if (o.has("lat") && !o.isNull("lat")) o.optDouble("lat") else null
+                val lon = if (o.has("lon") && !o.isNull("lon")) o.optDouble("lon") else null
+                if (weatherAdapter == null || weatherSubscriberId != appId) {
+                    stopWeather()
+                    weatherSubscriberId = appId
+                    weatherAdapter = slate.app.weather.WeatherAdapter(context, scope) { json ->
+                        val target = weatherSubscriberId ?: return@WeatherAdapter
+                        scope.launch { compositor.dispatchSystemEvent(target, "weather", json) }
+                    }
+                }
+                weatherAdapter?.fetch(lat, lon)
+                LinkLog.i("weather.fetch for $appId")
+            }
+            "stop" -> {
+                if (weatherSubscriberId == appId || weatherSubscriberId == null) {
+                    stopWeather()
+                    LinkLog.i("weather.stop for $appId")
+                }
+            }
+        }
+    }
+
+    private fun stopWeather() {
+        weatherAdapter?.stop()
+        weatherAdapter = null
+        weatherSubscriberId = null
     }
 
     /**

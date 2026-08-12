@@ -20,6 +20,16 @@ enum class ScriptPermission(val id: String) {
     Camera("camera"),
     /** Vibrate the phone. Distinct from slate.haptic(), which is the watch. */
     Vibrate("vibrate"),
+    /**
+     * Host RSS/Atom adapter. Feed fetch and parse stay on the phone;
+     * the isolate only receives titles and text pages.
+     */
+    News("news"),
+    /**
+     * Host weather snapshot (Open-Meteo). Coordinates and HTTP stay on the
+     * phone; the isolate receives a small typed JSON snapshot.
+     */
+    Weather("weather"),
     ;
 
     companion object {

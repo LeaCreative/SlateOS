@@ -59,10 +59,14 @@ class PackageException(message: String) : Exception(message)
 /**
  * §6.1 / §6.6 permission ceilings.
  *
- * Effective bindable set = declared ∩ [PermissionPolicy.effective] ∩
- * [HOST_HELD] ∩ [sourceCeiling]. Store install already applies [effective];
- * runtime re-applies host + source ceilings so a future privileged-internal
- * permission cannot silently land on third-party / store apps.
+ * Effective bindable set = declared ∩ [sourceCeiling] ∩ [HOST_HELD].
+ * Store install already applies [effective]; runtime re-applies the same so a
+ * future [PRIVILEGED_INTERNAL] permission cannot silently land on store apps.
+ *
+ * Third-party / sideloaded packages are **not** permission-restricted relative
+ * to Official: if the host can wire a binding, a declared third-party app may
+ * use it. Users still see provenance (Official vs repo name) and must consent
+ * when an update *adds* permissions ([UpdatePolicy]).
  */
 object PermissionPolicy {
     /**
@@ -72,19 +76,17 @@ object PermissionPolicy {
     val HOST_HELD: Set<ScriptPermission> = ScriptPermission.entries.toSet()
 
     /**
-     * Privileged-internal permissions: grantable only under Official/bundled
-     * trust. Add new host-only capabilities here — never to third-party even
-     * with a user toggle.
+     * Host-only capabilities: grantable solely under Official/bundled trust.
+     * Keep empty unless a binding must never ship to community packages.
      */
     val PRIVILEGED_INTERNAL: Set<ScriptPermission> = emptySet()
 
-    val THIRD_PARTY_BLOCKED: Set<ScriptPermission> = setOf(
-        ScriptPermission.Http,
-        ScriptPermission.HealthRead,
-        ScriptPermission.Location,
-        ScriptPermission.Camera,
-        ScriptPermission.Navigation,
-    )
+    /**
+     * Historical “reduced third-party set”. Intentionally empty — open-source
+     * packages declare what they need; the BindingSurface still gates on the
+     * manifest. Kept as a named set so older UI/tests compile.
+     */
+    val THIRD_PARTY_BLOCKED: Set<ScriptPermission> = emptySet()
 
     /** Max permissions a package from [trust] may ever hold. */
     fun sourceCeiling(trust: RepoTrust): Set<ScriptPermission> = when (trust) {
@@ -95,21 +97,14 @@ object PermissionPolicy {
     fun effective(
         declared: Set<ScriptPermission>,
         trust: RepoTrust,
+        @Suppress("UNUSED_PARAMETER")
         userGrantedSensitive: Set<ScriptPermission> = emptySet(),
-    ): Set<ScriptPermission> {
-        if (trust == RepoTrust.Official) {
-            return declared.intersect(sourceCeiling(trust)).intersect(HOST_HELD)
-        }
-        return declared.filter { p ->
-            p in sourceCeiling(trust) &&
-                p in HOST_HELD &&
-                (p !in THIRD_PARTY_BLOCKED || p in userGrantedSensitive)
-        }.toSet()
-    }
+    ): Set<ScriptPermission> =
+        declared.intersect(sourceCeiling(trust)).intersect(HOST_HELD)
 
     /**
      * Runtime bindable set for [JsSlateAppEndpoint] / [BindingSurface].
-     * Recomputes from declared permissions + trust + user grants.
+     * Recomputes from declared permissions + trust.
      */
     fun bindable(
         declared: Set<ScriptPermission>,

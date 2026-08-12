@@ -188,6 +188,112 @@
       return { type: 'adapter', adapter: 'map', command: 'unsubscribe', payload: '{}' };
     }
   };
+  /**
+   * News — host fetches RSS/Atom; titles and article pages arrive as
+   * onEvent('news', json). Feed URL comes from the feedUrl setting (storage).
+   *
+   *   slate.news.list(feedUrl)
+   *   slate.news.page(id, pageIndex)
+   *   slate.news.stop()
+   *
+   * Events:
+   *   { "type": "status", "state": "loading"|"empty"|"need_url"|"error", "detail"? }
+   *   { "type": "list", "items": [{ "id", "title" }, …] }  // up to 8
+   *   { "type": "page", "id", "page", "pageCount", "text" }
+   */
+  slate.news = {
+    list: function (feedUrl) {
+      return { type: 'adapter', adapter: 'news', command: 'list',
+        payload: JSON.stringify({ feedUrl: String(feedUrl || '') }) };
+    },
+    page: function (id, page) {
+      return { type: 'adapter', adapter: 'news', command: 'page',
+        payload: JSON.stringify({
+          id: String(id || ''),
+          page: (page == null ? 0 : page) | 0
+        }) };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'news', command: 'stop', payload: '{}' };
+    }
+  };
+  /**
+   * Media — now-playing + transport. Requires companion Notification Listener.
+   * Events: onEvent('media', json)
+   *   { type: 'nowPlaying', playing, title, artist, album, app }
+   *   { type: 'status', state: 'idle'|'denied'|'error', detail? }
+   */
+  slate.media = {
+    subscribe: function () {
+      return { type: 'adapter', adapter: 'media', command: 'subscribe', payload: '{}' };
+    },
+    unsubscribe: function () {
+      return { type: 'adapter', adapter: 'media', command: 'unsubscribe', payload: '{}' };
+    },
+    play: function () {
+      return { type: 'adapter', adapter: 'media', command: 'play', payload: '{}' };
+    },
+    pause: function () {
+      return { type: 'adapter', adapter: 'media', command: 'pause', payload: '{}' };
+    },
+    next: function () {
+      return { type: 'adapter', adapter: 'media', command: 'next', payload: '{}' };
+    },
+    previous: function () {
+      return { type: 'adapter', adapter: 'media', command: 'previous', payload: '{}' };
+    }
+  };
+  /**
+   * HTTP — host GET/POST. Manifest must declare permission "http" and
+   * http.allowedHosts. Response capped (~64 KiB). Events: onEvent('http', json)
+   *   { type: 'response', id, status, body }
+   *   { type: 'error', id, detail }
+   */
+  slate.http = {
+    get: function (url, opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'http', command: 'get',
+        payload: JSON.stringify({
+          url: String(url || ''),
+          id: String(opts.id == null ? '' : opts.id)
+        }) };
+    },
+    post: function (url, body, opts) {
+      opts = opts || {};
+      return { type: 'adapter', adapter: 'http', command: 'post',
+        payload: JSON.stringify({
+          url: String(url || ''),
+          body: body == null ? null : String(body),
+          id: String(opts.id == null ? '' : opts.id)
+        }) };
+    },
+    cancel: function (id) {
+      return { type: 'adapter', adapter: 'http', command: 'cancel',
+        payload: JSON.stringify({ id: String(id || '') }) };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'http', command: 'stop', payload: '{}' };
+    }
+  };
+  /**
+   * Weather — host Open-Meteo snapshot. Optional lat/lon; else last-known GPS.
+   * Events: onEvent('weather', json)
+   *   { type: 'snapshot', tempC, weatherCode, label, precipMm, windMps, lat, lon }
+   *   { type: 'status', state: 'loading'|'error', detail? }
+   */
+  slate.weather = {
+    fetch: function (opts) {
+      opts = opts || {};
+      var payload = {};
+      if (opts.lat != null) payload.lat = +opts.lat;
+      if (opts.lon != null) payload.lon = +opts.lon;
+      return { type: 'adapter', adapter: 'weather', command: 'fetch',
+        payload: JSON.stringify(payload) };
+    },
+    stop: function () {
+      return { type: 'adapter', adapter: 'weather', command: 'stop', payload: '{}' };
+    }
+  };
   /** Navigation — host adapter; maneuvers arrive as onEvent('nav', …). */
   slate.nav = {
     subscribe: function () {

@@ -36,6 +36,10 @@ class BundledSubAppConformanceTest {
         Demo(ScriptResources.VIBRATE_MANIFEST, "slate.vibrate"),
         Demo(ScriptResources.LOCATION_MANIFEST, "slate.location"),
         Demo(ScriptResources.MAP_MANIFEST, "slate.map"),
+        Demo(ScriptResources.NEWS_MANIFEST, "slate.news"),
+        Demo(ScriptResources.MEDIA_MANIFEST, "slate.media"),
+        Demo(ScriptResources.WEATHER_MANIFEST, "slate.weather"),
+        Demo(ScriptResources.HTTPDEMO_MANIFEST, "slate.httpdemo"),
     )
 
     private val entryScripts = mapOf(
@@ -45,6 +49,10 @@ class BundledSubAppConformanceTest {
         ScriptResources.VIBRATE_MANIFEST to ScriptResources.VIBRATE_MAIN,
         ScriptResources.LOCATION_MANIFEST to ScriptResources.LOCATION_MAIN,
         ScriptResources.MAP_MANIFEST to ScriptResources.MAP_MAIN,
+        ScriptResources.NEWS_MANIFEST to ScriptResources.NEWS_MAIN,
+        ScriptResources.MEDIA_MANIFEST to ScriptResources.MEDIA_MAIN,
+        ScriptResources.WEATHER_MANIFEST to ScriptResources.WEATHER_MAIN,
+        ScriptResources.HTTPDEMO_MANIFEST to ScriptResources.HTTPDEMO_MAIN,
     )
 
     private fun parse(res: String): PackageManifest =
@@ -126,6 +134,10 @@ class BundledSubAppConformanceTest {
             ScriptResources.VIBRATE_MAIN,
             ScriptResources.LOCATION_MAIN,
             ScriptResources.MAP_MAIN,
+            ScriptResources.NEWS_MAIN,
+            ScriptResources.MEDIA_MAIN,
+            ScriptResources.WEATHER_MAIN,
+            ScriptResources.HTTPDEMO_MAIN,
         )
         for (res in mains) {
             val js = ScriptResources.read(res)

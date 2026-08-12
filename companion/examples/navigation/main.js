@@ -21,8 +21,7 @@
  * Perms: navigation — slate.nav.subscribe/unsubscribe/demo are gated on it.
  *        storage — reads the units setting; §5.2 requires the storage
  *        permission to read settings. Nothing is written.
- *        Like Camera, navigation is in PermissionPolicy.THIRD_PARTY_BLOCKED,
- *        so this only runs with the permission because it is bundled Official.
+ *        Third-party packages may declare navigation the same way as Official.
  * Settings: units (metric | imperial, default metric) picks m/km or yd/mi.
  *        Read at focus, so a change applies next time the app is opened.
  * Budget: 101 B waiting, 122 B worst case (18-char street, ETA and a status

@@ -175,20 +175,20 @@ class PolicyTest {
     }
 
     @Test
-    fun reducedPermissions() {
+    fun thirdPartyGetsDeclaredPermissions() {
         val declared = setOf(
             ScriptPermission.Storage,
             ScriptPermission.Http,
             ScriptPermission.Location,
+            ScriptPermission.News,
         )
         val eff = PermissionPolicy.effective(declared, RepoTrust.ThirdParty)
-        assertEquals(setOf(ScriptPermission.Storage), eff)
-        val granted = PermissionPolicy.effective(
+        assertEquals(declared, eff)
+        assertTrue(PermissionPolicy.blockedByDefault(declared, RepoTrust.ThirdParty).isEmpty())
+        assertEquals(
             declared,
-            RepoTrust.ThirdParty,
-            userGrantedSensitive = setOf(ScriptPermission.Http),
+            PermissionPolicy.effective(declared, RepoTrust.Official),
         )
-        assertEquals(setOf(ScriptPermission.Storage, ScriptPermission.Http), granted)
     }
 
     @Test

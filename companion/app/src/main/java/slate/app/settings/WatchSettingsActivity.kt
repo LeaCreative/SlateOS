@@ -285,34 +285,41 @@ private fun ThemeColorRow(
     }
 }
 
-/** RGB565 presets: greys first, then light/dark pairs per hue (adjacent in the grid). */
+/** RGB565 presets: greys unchanged, then three evenly spaced value steps per hue. */
 private val THEME_PRESETS: List<Int> = listOf(
-    // Greyscale
+    // Greyscale (unchanged)
     0xFFFF, // white
     0xC618, // light grey
     0x8410, // mid grey (default face dim)
     0x4208, // dark grey
-    // Red
-    0xFC10, // light
-    0xF800, // dark
-    // Orange (amber + deep orange)
-    0xFD20, // light
-    0xFC00, // dark
+    // Red — V = 1, ⅔, ⅓
+    0xF800,
+    0xA000,
+    0x5000,
+    // Orange
+    0xFBE0,
+    0xA2A0,
+    0x5140,
     // Yellow
-    0xFFE0, // light
-    0xC600, // dark
+    0xFFE0,
+    0xA540,
+    0x52A0,
     // Green
-    0x07E0, // light
-    0x0400, // dark
+    0x07E0,
+    0x0540,
+    0x02A0,
     // Cyan
-    0x07FF, // light
-    0x0410, // dark
+    0x07FF,
+    0x0554,
+    0x02AA,
     // Blue
-    0x64BF, // light
-    0x001F, // dark
+    0x001F,
+    0x0014,
+    0x000A,
     // Magenta
-    0xF81F, // light
-    0xA010, // dark
+    0xF81F,
+    0xA014,
+    0x500A,
 )
 
 /**

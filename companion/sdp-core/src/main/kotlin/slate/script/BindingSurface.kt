@@ -2,6 +2,7 @@ package slate.script
 
 import org.json.JSONObject
 import slate.host.HostOutbound
+import java.net.URI
 
 /**
  * Permission-gated binding surface (§6.3).
@@ -19,6 +20,12 @@ class BindingSurface(
     private val onTimerSet: (id: String, intervalMs: Long) -> Unit,
     private val onTimerClear: (id: String) -> Unit,
     private val appId: String,
+    /**
+     * Fired when an adapter command is stripped for missing permission
+     * (or http host not allowlisted). Host pushes a status event so the
+     * script is not stuck on Loading.
+     */
+    private val onAdapterDenied: (adapter: String, command: String) -> Unit = { _, _ -> },
 ) {
     private var storageBytes: Int = store.values.sumOf { it.toByteArray().size + 8 }
 
@@ -40,9 +47,11 @@ class BindingSurface(
                     when (m.adapter) {
                         "store" -> handleStore(m)
                         "timer" -> handleTimer(m)
-                        "http" -> handleHttp(m)
+                        "http" -> {
+                            if (allowHttp(m)) kept += m
+                        }
                         "notifications", "media", "location", "health", "haptic",
-                        "nav", "camera", "phone", "map",
+                        "nav", "camera", "phone", "map", "news", "weather",
                         -> {
                             val perm = when (m.adapter) {
                                 "notifications" -> ScriptPermission.Notifications
@@ -52,16 +61,14 @@ class BindingSurface(
                                 "nav" -> ScriptPermission.Navigation
                                 "camera" -> ScriptPermission.Camera
                                 "phone" -> ScriptPermission.Vibrate
-                                // The map is built from the user's position, so
-                                // it is exactly as sensitive as reading it
-                                // directly and is gated the same way. A sub-app
-                                // that can see where it is on a map knows where
-                                // it is.
                                 "map" -> ScriptPermission.Location
+                                "news" -> ScriptPermission.News
+                                "weather" -> ScriptPermission.Weather
                                 else -> null
                             }
                             if (perm != null && !effective(perm)) {
                                 deny(perm)
+                                onAdapterDenied(m.adapter, m.command)
                             } else {
                                 kept += m
                             }
@@ -124,25 +131,41 @@ class BindingSurface(
         }
     }
 
-    private fun handleHttp(cmd: HostOutbound.AdapterCommand) {
+    /** Permission + allowlist; keep command for the host HTTP adapter. */
+    private fun allowHttp(cmd: HostOutbound.AdapterCommand): Boolean {
         if (!effective(ScriptPermission.Http)) {
             deny(ScriptPermission.Http)
-            return
+            onAdapterDenied("http", cmd.command)
+            return false
         }
-        // Network I/O is host-side only; M13 repository host will fulfill.
-        // For now record intent + host allowlist check.
-        val o = JSONObject(cmd.payloadJson)
-        val host = o.optString("host", "")
-        if (host.isNotEmpty() && host !in script.allowedHosts) {
+        val o = try {
+            JSONObject(cmd.payloadJson)
+        } catch (_: Throwable) {
+            ScriptConsole.violation(appId, "http bad payload")
+            onAdapterDenied("http", cmd.command)
+            return false
+        }
+        val url = o.optString("url", "")
+        val host = hostOf(url).ifEmpty { o.optString("host", "") }
+        if (host.isEmpty() || host !in script.allowedHosts) {
             governor.noteViolation(Governor.Kind.HttpQuota, "host not allowed: $host", nowMs())
             ScriptConsole.violation(appId, "http host denied: $host")
-        } else {
-            ScriptConsole.log(appId, "info", "http stub: ${cmd.command} $host")
+            onAdapterDenied("http", cmd.command)
+            return false
         }
+        return true
     }
 
     private fun deny(p: ScriptPermission) {
         governor.denyPermission(p, nowMs())
         ScriptConsole.violation(appId, "permission denied: ${p.id}")
+    }
+
+    companion object {
+        fun hostOf(rawUrl: String): String = try {
+            URI(rawUrl.trim()).host?.lowercase().orEmpty()
+        } catch (_: Throwable) {
+            ""
+        }
     }
 }

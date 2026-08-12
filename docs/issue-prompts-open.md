@@ -1786,6 +1786,42 @@ same address, and ambiguity blocks rather than guesses.
 
 ---
 
+### I-17 — JS host connectors (bridge surface)
+
+| | |
+|---|---|
+| **Status** | Open — 1–3 shipped; 4–12 open; 13 deferred |
+| **Area** | Companion script host adapters |
+| **Impact** | Sub-apps need phone-side I/O; isolate must stay display-list only |
+| **Priority** | High — product surface for third-party JS |
+
+Host pattern (same as news / map): phone fetches or binds Android APIs; JS
+receives small JSON events and draws. No raw Android objects in the isolate.
+
+| # | Connector | Status | Notes |
+|---|---|---|---|
+| 1 | `slate.media` | **Done** (p55+) | Now-playing + play/pause/skip via MediaSession (NLS) |
+| 2 | `slate.http` | **Done** (p55+) | GET/POST; `http.allowedHosts`; size/timeout caps |
+| 3 | `slate.weather` | **Done** (p55+) | Typed snapshot (Open-Meteo); host fetch |
+| 4 | `slate.calendar` | Open | Next N events from CalendarContract |
+| 5 | `slate.notifications` (JS) | Open | List/action surface for JS (Kotlin shade exists) |
+| 6 | `slate.battery` / device | Open | Phone battery %, charging |
+| 7 | `slate.clipboard` | Open | Read/write short text |
+| 8 | `slate.share` / intents | Open | `openUrl`, dial, geo, share text |
+| 9 | `slate.alarms` | Open | Schedule phone AlarmManager from watch UI |
+| 10 | `slate.contacts` (search) | Open | Capped name lookup → dial/deep link |
+| 11 | `slate.health` | Open | Health Connect aggregates (steps/HR/sleep) |
+| 12 | `slate.translate` / TTS | Open | Short phrase translate or speak on phone |
+| 13 | `slate.home` / IoT | Deferred | Prefer community packages on `slate.http` first |
+
+**Avoid:** generic “any Intent / any Android API”; dumping large blobs into the
+isolate (paginate like news).
+
+Done when: each row is either shipped with a documented binding in
+`docs/subapp-rules.md` §8, or explicitly deferred with rationale.
+
+---
+
 ## C. Firmware and architecture
 
 ### I-9 — InfiniTime low-level divergence audit

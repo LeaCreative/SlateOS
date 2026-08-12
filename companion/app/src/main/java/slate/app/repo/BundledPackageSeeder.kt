@@ -71,6 +71,30 @@ object BundledPackageSeeder {
             ScriptResources.MAP_MAIN,
             setOf(ScriptPermission.Location, ScriptPermission.Storage),
         ),
+        Bundled(
+            "slate.news",
+            ScriptResources.NEWS_MANIFEST,
+            ScriptResources.NEWS_MAIN,
+            setOf(ScriptPermission.News, ScriptPermission.Storage),
+        ),
+        Bundled(
+            "slate.media",
+            ScriptResources.MEDIA_MANIFEST,
+            ScriptResources.MEDIA_MAIN,
+            setOf(ScriptPermission.Media),
+        ),
+        Bundled(
+            "slate.weather",
+            ScriptResources.WEATHER_MANIFEST,
+            ScriptResources.WEATHER_MAIN,
+            setOf(ScriptPermission.Weather),
+        ),
+        Bundled(
+            "slate.httpdemo",
+            ScriptResources.HTTPDEMO_MANIFEST,
+            ScriptResources.HTTPDEMO_MAIN,
+            setOf(ScriptPermission.Http, ScriptPermission.Storage),
+        ),
     )
 
     fun ensureOfficialDemos(context: Context): Int {
@@ -86,7 +110,10 @@ object BundledPackageSeeder {
             val existing = store.get(demo.id)
             if (existing != null) {
                 val bundledVersion = ManifestParser.parse(manifestText).version
-                if (existing.version == bundledVersion) continue
+                // Reinstall when the bundled copy advances, or when an older
+                // install is missing permissions the demo now declares.
+                val needsHeal = demo.permissions.any { it !in existing.permissions }
+                if (existing.version == bundledVersion && !needsHeal) continue
             }
             val mainText = ScriptResources.read(demo.mainRes)
             val zip = zipOf(

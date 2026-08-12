@@ -64,14 +64,16 @@ before it did.
 |---|---|---|---|
 | `slate.ui` / `invalidate` / `timer` / `haptic` / `log` | — | yes | Ungated. `timer` is still floored at 1000 ms by the Governor |
 | `slate.store` | `storage` | yes | Also how declared settings reach a script (§5) |
-| `slate.phone` | `vibrate` | yes | Buzzes the handset, not the watch motor. **No `requires` token exists for it** — `HostCapabilities.ALL` has no `slate.phone` |
-| `slate.location` | `location` | yes (7 Aug) | `LocationAdapter`; fixes arrive as `onEvent('location', …)`. Third-party-blocked by default |
-| `slate.map` | `location` | yes (7 Aug) | North-up OSM vector map. Host renders and pushes; the script never sees map data. Gated on `location` because that is what it is built from |
+| `slate.phone` | `vibrate` | yes | Buzzes the handset, not the watch motor |
+| `slate.location` | `location` | yes | `LocationAdapter`; fixes arrive as `onEvent('location', …)` |
+| `slate.map` | `location` | yes | North-up OSM vector map. Host renders and pushes |
+| `slate.news` | `news` | yes | Host RSS/Atom; JS draws titles and text pages |
+| `slate.media` | `media` | yes | Now-playing + transport; needs Notification Listener |
+| `slate.http` | `http` (+ `allowedHosts`) | yes | Host GET/POST; response capped ~64 KiB |
+| `slate.weather` | `weather` | yes | Open-Meteo snapshot; optional lat/lon |
 | `slate.nav` | `navigation` | yes | Bound to one app id host-side |
 | `slate.camera` | `camera` | yes | Bound to one app id host-side |
-| `slate.http` | `http` (+ `allowedHosts`) | **stub** | `handleHttp` records intent and checks the allowlist; performs no I/O |
-| `slate.notifications` | `notifications` | partial | Host handles `action`; no read binding |
-| `slate.media` | `media` | no | Permission and gate only |
+| `slate.notifications` | `notifications` | partial | Host handles `action`; no JS read binding yet |
 | `slate.health` | `health.read` | no | Permission and gate only |
 
 ### Location (`slate.location`)
@@ -141,6 +143,27 @@ service start**. A grant that arrives later needs
 "1c. Grant location" button calls. Claiming the type unconditionally would
 throw `SecurityException` on Android 14+ and take the whole link service down
 with it.
+
+### News (`slate.news`)
+
+```js
+slate.news.list(feedUrl)
+slate.news.page(id, pageIndex)
+slate.news.stop()
+```
+
+Feed fetch and XML parse stay on the phone. Events:
+
+```json
+{ "type": "status", "state": "loading" | "empty" | "need_url" | "error", "detail": "…" }
+{ "type": "list", "items": [{ "id": "…", "title": "…" }] }
+{ "type": "page", "id": "…", "page": 0, "pageCount": 3, "text": "line1\\nline2…" }
+```
+
+The official `slate.news` demo reads `feedUrl` from settings (`type: string`)
+and draws the list / article UI itself.
+
+Normative API summaries for media / http / weather: `docs/subapp-rules.md` §8.
 
 ## Governor (§6.5)
 

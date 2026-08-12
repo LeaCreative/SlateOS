@@ -1,0 +1,26 @@
+{
+  "id": "slate.httpdemo",
+  "name": "HTTP JS",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["http", "storage"],
+  "http": {
+    "allowedHosts": ["api.open-meteo.com"]
+  },
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.http", "slate.store", "slate.log"],
+  "settings": [
+    {
+      "key": "url",
+      "label": "GET URL",
+      "type": "string",
+      "default": "https://api.open-meteo.com/v1/forecast?latitude=48.85&longitude=2.35&current=temperature_2m",
+      "max": 512,
+      "help": "Must match an http.allowedHosts entry (api.open-meteo.com)."
+    }
+  ]
+}

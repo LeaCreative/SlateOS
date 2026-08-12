@@ -43,6 +43,18 @@ tasks.processResources {
     from("$rootDir/examples/map") {
         into("slate/subapps/map")
     }
+    from("$rootDir/examples/news") {
+        into("slate/subapps/news")
+    }
+    from("$rootDir/examples/media") {
+        into("slate/subapps/media")
+    }
+    from("$rootDir/examples/weather") {
+        into("slate/subapps/weather")
+    }
+    from("$rootDir/examples/httpdemo") {
+        into("slate/subapps/httpdemo")
+    }
 }
 
 tasks.test {

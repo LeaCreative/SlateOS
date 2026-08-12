@@ -27,7 +27,7 @@ data class SubAppSetting(
     val help: String = "",
     val options: List<Option> = emptyList(),
 ) {
-    enum class Type { INT, BOOL, CHOICE }
+    enum class Type { INT, BOOL, CHOICE, STRING }
 
     data class Option(val value: String, val label: String)
 
@@ -42,9 +42,16 @@ data class SubAppSetting(
         Type.BOOL -> if (raw == "1" || raw.equals("true", true)) "1" else "0"
         Type.CHOICE ->
             if (options.any { it.value == raw }) raw else defaultValue
+        Type.STRING -> {
+            val trimmed = raw.trim()
+            val hi = max ?: MAX_STRING_LEN
+            trimmed.take(hi.coerceIn(1, MAX_STRING_LEN))
+        }
     }
 
     companion object {
+        const val MAX_STRING_LEN = 512
+
         /**
          * Parse the optional `settings` array from a manifest.
          *
@@ -66,6 +73,7 @@ data class SubAppSetting(
                 val type = when (o.optString("type", "int").lowercase()) {
                     "bool", "boolean" -> Type.BOOL
                     "choice", "enum" -> Type.CHOICE
+                    "string", "text", "url" -> Type.STRING
                     else -> Type.INT
                 }
                 val options = mutableListOf<Option>()
@@ -77,12 +85,17 @@ data class SubAppSetting(
                     }
                 }
                 if (type == Type.CHOICE && options.isEmpty()) continue
+                val default = o.opt("default")?.toString()
+                    ?: when (type) {
+                        Type.BOOL -> "0"
+                        Type.STRING -> ""
+                        else -> ""
+                    }
                 out += SubAppSetting(
                     key = key,
                     label = o.optString("label", key),
                     type = type,
-                    defaultValue = o.opt("default")?.toString()
-                        ?: if (type == Type.BOOL) "0" else "",
+                    defaultValue = default,
                     min = if (o.has("min")) o.optInt("min") else null,
                     max = if (o.has("max")) o.optInt("max") else null,
                     unit = o.optString("unit", ""),

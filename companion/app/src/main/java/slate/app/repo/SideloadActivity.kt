@@ -10,6 +10,7 @@ import java.util.zip.ZipInputStream
 import slate.app.link.LinkLog
 import slate.app.ota.SlateOtaActivity
 import slate.repo.ManifestParser
+import slate.repo.PermissionPolicy
 import slate.repo.RepoTrust
 
 /**
@@ -20,8 +21,9 @@ import slate.repo.RepoTrust
  * `slate-dfu.zip`, send it by any means, and open it. Android routes the file
  * here; [ZipIntake] decides which path applies.
  *
- * Sub-app trust is deliberately the third-party tier: a file arriving from
- * outside the app has not been through the repository.
+ * Sideloaded sub-apps are ThirdParty provenance, but they receive every
+ * permission they declare that the host can wire — same binding ceiling as
+ * Official (minus any [PermissionPolicy.PRIVILEGED_INTERNAL] host-only caps).
  */
 class SideloadActivity : Activity() {
 
@@ -76,17 +78,25 @@ class SideloadActivity : Activity() {
             md.digest().joinToString("") { "%02x".format(it) }
         }
 
+        val effective = PermissionPolicy.effective(
+            declared = manifest.permissions,
+            trust = RepoTrust.ThirdParty,
+        )
         InstalledStore.create(this).install(
             packageFiles = files,
             manifest = manifest,
             repoId = REPO_ID,
             trust = RepoTrust.ThirdParty,
             sha256 = sha,
-            effectivePermissions = emptySet(),
+            effectivePermissions = effective,
         )
-        LinkLog.i("sideload: installed ${manifest.id} v${manifest.version} (${files.size} files)")
+        LinkLog.i(
+            "sideload: installed ${manifest.id} v${manifest.version} " +
+                "(ThirdParty, ${files.size} files, perms=${effective.joinToString { it.id }})",
+        )
         return "Installed ${manifest.name} ${manifest.version}\n\n" +
             "id: ${manifest.id}\nentry: ${manifest.entry}\n" +
+            "trust: ThirdParty (declared permissions granted)\n" +
             "files: ${files.keys.sorted().joinToString(", ")}\n\n" +
             "Open it from “Sub-app repository” on the main screen."
     }

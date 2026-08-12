@@ -1,0 +1,23 @@
+{
+  "id": "slate.news",
+  "name": "News JS",
+  "version": "1.0.1",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["news", "storage"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.news", "slate.store", "slate.log"],
+  "settings": [
+    {
+      "key": "feedUrl",
+      "label": "RSS feed URL",
+      "type": "string",
+      "default": "",
+      "max": 512,
+      "help": "https URL of an RSS or Atom feed. The phone fetches it; the watch only shows titles and text. Applies next time you open News JS."
+    }
+  ]
+}

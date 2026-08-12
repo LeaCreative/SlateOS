@@ -49,8 +49,9 @@ Replace `OfficialRepoTrust.PUBLIC_KEY_SPKI_BASE64_PLACEHOLDER` before any public
 - Official source is built-in.
 - Users may add HTTPS third-party indexes (with their Ed25519 public key).
 - Provenance shown on list/detail (`Official` vs repo name).
-- Third-party → reduced permissions (no `http` / `location` / `health.read`) unless
-  the user grants per-app on the install disclosure.
+- Third-party packages get the **same** binding ceiling as Official for every
+  permission they declare (minus any future host-only `PRIVILEGED_INTERNAL`
+  caps). Provenance is still labeled; updates that *add* permissions need consent.
 - Third-party **never shadows** an official app ID (`CatalogMerge`).
 
 ## Updates

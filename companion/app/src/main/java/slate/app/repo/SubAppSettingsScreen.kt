@@ -111,6 +111,18 @@ fun SubAppSettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+                SubAppSetting.Type.STRING -> {
+                    OutlinedTextField(
+                        value = edited[setting.key] ?: "",
+                        onValueChange = {
+                            val hi = setting.max ?: SubAppSetting.MAX_STRING_LEN
+                            edited[setting.key] = it.take(hi.coerceIn(1, SubAppSetting.MAX_STRING_LEN))
+                        },
+                        label = { Text(if (setting.unit.isNotBlank()) setting.unit else "Value") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
             if (setting.help.isNotBlank()) {
                 Text(text = setting.help, style = MaterialTheme.typography.bodySmall)

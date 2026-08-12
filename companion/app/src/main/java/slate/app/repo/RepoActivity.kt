@@ -73,6 +73,51 @@ class RepoActivity : SlateActivity() {
 
 private enum class Tab { Browse, Installed, Sources }
 
+private data class KotlinBuiltin(
+    val id: String,
+    val name: String,
+    val note: String,
+)
+
+/** Companion-built apps — not downloadable packages; shown for clarity. */
+private val KOTLIN_BUILTINS = listOf(
+    KotlinBuiltin("slate.ref.test", "Test", "Transport probe — open from Debug"),
+    KotlinBuiltin("slate.ref.notifications", "Notifications", "Kotlin list — watch shade is primary"),
+    KotlinBuiltin("slate.ui.launcher", "Launcher", "Watch face swipe right→left"),
+    KotlinBuiltin("slate.ref.clock", "Clock", "Ambient reference (stack base)"),
+)
+
+@Composable
+private fun KotlinBuiltinRow(row: KotlinBuiltin) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = row.name,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "Kotlin",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(
+                text = "Built-in",
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+        Text(
+            text = "${row.id} · ${row.note}",
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
 @Composable
 private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.content.Context) {
     var tab by remember { mutableStateOf(Tab.Browse) }
@@ -161,13 +206,41 @@ private fun RepoScreen(manager: RepoManager, prefs: RepoPrefs, context: android.
 
         when (tab) {
             Tab.Browse -> LazyColumn {
-                items(catalog, key = { it.entry.app.id + "/" + it.entry.repoId }) { item ->
-                    LauncherToggleRow(
-                        item, prefs, launcherHidden,
-                        onClick = { selected = item },
-                        onOpenSettings = { settingsFor = item },
-                    )
-                    HorizontalDivider()
+                items(
+                    listOf("hdr-kt") + KOTLIN_BUILTINS.map { "kt-" + it.id } +
+                        listOf("hdr-js") + catalog.map { "js-" + it.entry.app.id + "/" + it.entry.repoId },
+                    key = { it },
+                ) { key ->
+                    when {
+                        key == "hdr-kt" -> Text(
+                            text = "Built-in (Kotlin)",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(vertical = 6.dp),
+                        )
+                        key == "hdr-js" -> Text(
+                            text = "Packages (JS)",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
+                        )
+                        key.startsWith("kt-") -> {
+                            val row = KOTLIN_BUILTINS.first { "kt-" + it.id == key }
+                            KotlinBuiltinRow(row)
+                            HorizontalDivider()
+                        }
+                        else -> {
+                            val item = catalog.first {
+                                "js-" + it.entry.app.id + "/" + it.entry.repoId == key
+                            }
+                            LauncherToggleRow(
+                                item, prefs, launcherHidden,
+                                onClick = { selected = item },
+                                onOpenSettings = { settingsFor = item },
+                            )
+                            HorizontalDivider()
+                        }
+                    }
                 }
             }
             Tab.Installed -> LazyColumn {
@@ -263,6 +336,12 @@ private fun CatalogRow(
                 modifier = Modifier.weight(1f),
             )
             Text(
+                text = "JS",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(end = 8.dp),
+            )
+            Text(
                 text = if (item.entry.trust == RepoTrust.Official) {
                     "Official"
                 } else {
@@ -329,6 +408,7 @@ private fun DetailScreen(
             style = MaterialTheme.typography.bodyMedium,
         )
         Text(text = app.author.ifBlank { "-" })
+        Text(text = "Runtime: JS (downloaded package)")
         Text(text = app.description.ifBlank { "No description." })
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "Permissions declared", fontWeight = FontWeight.SemiBold)
@@ -342,20 +422,10 @@ private fun DetailScreen(
         if (item.entry.trust == RepoTrust.ThirdParty) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Third-party repos block http / location / health.read unless you grant them below.",
+                text = "Third-party provenance — same bindings as official packages " +
+                    "for every permission this app declares.",
                 style = MaterialTheme.typography.bodySmall,
             )
-            for (p in PermissionPolicy.THIRD_PARTY_BLOCKED.intersect(app.permissions)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = p in grants,
-                        onCheckedChange = { checked ->
-                            grants = if (checked) grants + p else grants - p
-                        },
-                    )
-                    Text(text = "Allow ${p.id}")
-                }
-            }
         }
         val avail = item.availability
         if (avail is Availability.Unavailable) {
@@ -402,7 +472,7 @@ private fun DetailScreen(
                         Text("• ${p.id}")
                     }
                     if (blocked.isNotEmpty()) {
-                        Text("Still blocked (third-party default): ${blocked.joinToString { it.id }}")
+                        Text("Still blocked: ${blocked.joinToString { it.id }}")
                     }
                     Text("Install uses the network once. Running later is offline from the local cache.")
                 }

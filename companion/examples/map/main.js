@@ -11,10 +11,8 @@
  *        host has just drawn the map, so this script deliberately pushes
  *        NOTHING in response — anything it drew would paint over the map.
  * Perms: location — the map is built from the user's position, so slate.map is
- *        gated on exactly the same permission as reading it directly. Like
- *        Camera and Navigation it is in THIRD_PARTY_BLOCKED, so a downloaded
- *        app needs an explicit user grant; this one is bundled at Official
- *        trust.
+ *        gated on exactly the same permission as reading it directly. Declared
+ *        in the manifest; third-party packages may use it the same way.
  *        storage — reads the radiusM setting (§5.2 requires it). Never writes.
  * Settings: radiusM (100-2000 m, default 400) is how far the map reaches from
  *        the centre of the screen to its edge. Read at focus, so a change

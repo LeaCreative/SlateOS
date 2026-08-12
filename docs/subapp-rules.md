@@ -151,7 +151,15 @@ In `manifest.json`:
     "min": 5,
     "max": 3600,
     "unit": "s",
-    "help": "How long the timer starts from."
+    "help": "How long the countdown runs from Start."
+  },
+  {
+    "key": "feedUrl",
+    "label": "RSS feed URL",
+    "type": "string",
+    "default": "",
+    "max": 512,
+    "help": "https URL of an RSS or Atom feed."
   }
 ]
 ```
@@ -160,9 +168,9 @@ In `manifest.json`:
 |---|---|---|
 | `key` | yes | Also the storage key the script reads |
 | `label` | yes | Shown in the settings screen |
-| `type` | yes | `int`, `bool` or `choice` |
+| `type` | yes | `int`, `bool`, `choice`, or `string` |
 | `default` | yes | Used until the user changes it |
-| `min` / `max` | int only | Clamped by the host; the script may still validate |
+| `min` / `max` | int: range; string: `max` = max length (default 512) | Clamped by the host; the script may still validate |
 | `options` | choice only | Array of `{ "value": …, "label": … }` |
 | `unit` | no | Suffix shown after the value |
 | `help` | no | One line under the control |
@@ -199,8 +207,83 @@ Before accepting a sub-app into `examples/` or the repository:
 
 ---
 
-## 7. Related
+## 8. Host connectors (phone adapters)
+
+JS sub-apps **MUST NOT** open sockets or touch Android APIs. Phone I/O goes
+through named adapters. The isolate draws; the host fetches / binds.
+
+Permissions are declared in `manifest.json`. Third-party packages get the same
+binding ceiling as Official for every permission they declare.
+
+| Binding | Permission | Events (`onEvent` source) | Notes |
+|---|---|---|---|
+| `slate.store` / settings | `storage` | — | Local key/value; settings are seeded here (§5) |
+| `slate.timer` | — | `timer` | Interval clamped by governor |
+| `slate.haptic` | — | — | Watch motor |
+| `slate.phone.vibrate` | `vibrate` | — | Phone vibrator |
+| `slate.location` | `location` | `location` | Subscribe / request; status states required |
+| `slate.map` | `location` | `map` | Host draws OSM; script is thin controller |
+| `slate.nav` | `navigation` | `nav` | Maneuver pushes |
+| `slate.camera` | `camera` | `camera` | Host PATCH preview |
+| `slate.news` | `news` | `news` | RSS/Atom list + text pages |
+| `slate.media` | `media` | `media` | Now-playing + play/pause/skip (needs NLS) |
+| `slate.http` | `http` | `http` | GET/POST; **requires** `http.allowedHosts` |
+| `slate.weather` | `weather` | `weather` | Open-Meteo snapshot; optional lat/lon |
+
+### 8.1 `slate.media`
+
+```js
+slate.media.subscribe()
+slate.media.unsubscribe()
+slate.media.play() / pause() / next() / previous()
+// onEvent('media', …):
+//   { type: 'nowPlaying', playing, title, artist, album, app }
+//   { type: 'status', state: 'idle'|'denied'|'error', detail? }
+```
+
+Needs companion **Notification Listener** access (same as the shade).
+
+### 8.2 `slate.http`
+
+```json
+"permissions": ["http"],
+"http": { "allowedHosts": ["api.example.com"] }
+```
+
+```js
+slate.http.get(url, { id: 'r1' })
+slate.http.post(url, bodyString, { id: 'r2' })
+slate.http.cancel(id)
+slate.http.stop()
+// onEvent('http', …):
+//   { type: 'response', id, status, body }   // body capped ~64 KiB
+//   { type: 'error', id, detail }
+```
+
+Host must match `allowedHosts` exactly (no wildcards). Prefer typed adapters
+(`news`, `weather`) when the shape is fixed.
+
+### 8.3 `slate.weather`
+
+```js
+slate.weather.fetch()                    // last-known GPS if available
+slate.weather.fetch({ lat: 48.85, lon: 2.35 })
+slate.weather.stop()
+// onEvent('weather', …):
+//   { type: 'snapshot', tempC, weatherCode, label, precipMm, windMps, lat, lon }
+//   { type: 'status', state: 'loading'|'error', detail? }
+```
+
+### 8.4 Planned (see `docs/issue-prompts-open.md` I-17)
+
+Calendar, JS notifications list/actions, phone battery, clipboard, share/
+intents, alarms, contacts search, Health Connect, translate/TTS. Home/IoT
+deferred — use `slate.http` from community packages first.
+
+---
+
+## 9. Related
 
 - `docs/script-runtime.md` — isolate lifecycle, engine choice, IPC budget
-- `docs/issue-prompts-open.md` — open defects, including the credit model (§3)
+- `docs/issue-prompts-open.md` — open defects, including I-17 connectors
 - `CLAUDE.md` — the standing rules this document sits under

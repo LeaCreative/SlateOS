@@ -1,0 +1,13 @@
+{
+  "id": "slate.weather",
+  "name": "Weather JS",
+  "version": "1.0.0",
+  "entry": "main.js",
+  "minProtocolVersion": 1,
+  "minHostVersion": "0.1",
+  "priority": "normal",
+  "refreshPolicy": "on-change",
+  "permissions": ["weather"],
+  "allowedHosts": [],
+  "requires": ["slate.ui", "slate.weather", "slate.log"]
+}

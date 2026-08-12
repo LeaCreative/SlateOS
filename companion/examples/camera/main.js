@@ -15,9 +15,8 @@
  *        motor; BACK (0x06) stops the preview and relinquishes focus; onBlur
  *        stops it too, so leaving by any route releases the camera. Status and
  *        capture events from the host redraw the chrome.
- * Perms: camera — start/stop/capture are gated on it. Note the ceiling in
- *        PermissionPolicy.THIRD_PARTY_BLOCKED: this app only runs with the
- *        permission because it is bundled at Official trust.
+ * Perms: camera — start/stop/capture are gated on it (declare in the manifest;
+ *        third-party packages may use it the same way as Official).
  *        No storage: nothing is persisted and no settings are declared.
  * Settings: none. The only numbers worth tuning are the preview rect, and they
  *        must match the geometry the host overlays its PATCH at — a user-set

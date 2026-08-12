@@ -7,6 +7,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import slate.app.link.LinkLog
 import slate.app.repo.BundledPackageSeeder
 import java.io.File
 import slate.script.SubAppSetting
@@ -28,6 +29,8 @@ class ScriptRuntimeHost(
     private val compositor: Compositor,
 ) {
     private val apps = HashMap<String, JsSlateAppEndpoint>()
+    /** sha256|trust|version at last successful register — detect sideload mid-session. */
+    private val registeredFingerprint = HashMap<String, String>()
     private val timerJobs = HashMap<String, Job>()
     private val prefs by lazy { RepoPrefs(context) }
     var lastRenderIpcMs: Long = -1L
@@ -40,16 +43,20 @@ class ScriptRuntimeHost(
     suspend fun ensureTimerRegistered() = ensureRegistered(TIMER_ID)
 
     suspend fun ensureRegistered(appId: String) {
+        ensureSeeded()
+        val installed = InstalledStore.create(context).get(appId)
+            ?: error("Package $appId not installed — open Sub-app repository or re-seed demos")
+        val fingerprint = "${installed.sha256}|${installed.trust}|${installed.version}"
         val already = apps[appId]
         if (already != null) {
-            // Re-seed the declared settings even though the app is already
-            // running. This used to return immediately, which meant settings
-            // were read exactly once per service lifetime: a user could change
-            // the map radius or the timer duration, reopen the app, and see no
-            // difference at all until something restarted the link service.
-            // §5.2 promises the script that settings are read at focus, and
-            // this is the only place that promise can be kept.
-            InstalledStore.create(context).get(appId)?.let { installed ->
+            if (registeredFingerprint[appId] == fingerprint) {
+                // Re-seed the declared settings even though the app is already
+                // running. This used to return immediately, which meant settings
+                // were read exactly once per service lifetime: a user could change
+                // the map radius or the timer duration, reopen the app, and see no
+                // difference at all until something restarted the link service.
+                // §5.2 promises the script that settings are read at focus, and
+                // this is the only place that promise can be kept.
                 val settings = settingsFor(appId, installed)
                 if (settings.isNotEmpty()) {
                     already.seedSettings(settings)
@@ -59,15 +66,15 @@ class ScriptRuntimeHost(
                         "settings refreshed: " + settings.entries.joinToString { "${it.key}=${it.value}" },
                     )
                 }
+                return
             }
-            return
+            ScriptConsole.log(appId, "info", "re-registering after package change")
+            LinkLog.i("$appId: re-registering after package change")
+            dropRegistered(appId)
         }
-        ensureSeeded()
         if (apps.isEmpty() && lastRenderIpcMs < 0) {
             probeIpc()
         }
-        val installed = InstalledStore.create(context).get(appId)
-            ?: error("Package $appId not installed — open Sub-app repository or re-seed demos")
         val declared = installed.manifest().permissions
         val granted = PermissionPolicy.bindable(
             declared = declared,
@@ -86,6 +93,12 @@ class ScriptRuntimeHost(
                     " denied=[${denied.joinToString { it.id }}]"
                 },
         )
+        if (denied.isNotEmpty()) {
+            LinkLog.w(
+                "$appId: permissions denied=[${denied.joinToString { it.id }}] " +
+                    "(trust=${installed.trust})",
+            )
+        }
         val script = installed.manifest().toScriptManifest()
             .copy(permissions = granted)
         val engine = AndroidJsEngine.create(context)
@@ -98,11 +111,66 @@ class ScriptRuntimeHost(
             onTimerSet = { id, ms -> scheduleTimer(appId, id, ms) },
             onTimerClear = { id -> clearTimer(id) },
             initialStore = settingsFor(appId, installed),
+            onAdapterDenied = { adapter, command ->
+                LinkLog.w("$appId: adapter denied $adapter.$command (missing permission)")
+                val detail = "permission denied"
+                scope.launch {
+                    when {
+                        adapter == "news" && command == "list" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "news",
+                                JSONObject()
+                                    .put("type", "status")
+                                    .put("state", "error")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
+                        adapter == "http" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "http",
+                                JSONObject()
+                                    .put("type", "error")
+                                    .put("id", "")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
+                        adapter == "media" && command == "subscribe" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "media",
+                                JSONObject()
+                                    .put("type", "status")
+                                    .put("state", "error")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
+                        adapter == "weather" && command == "fetch" ->
+                            compositor.dispatchSystemEvent(
+                                appId,
+                                "weather",
+                                JSONObject()
+                                    .put("type", "status")
+                                    .put("state", "error")
+                                    .put("detail", detail)
+                                    .toString(),
+                            )
+                    }
+                }
+            },
         )
         ep.installRuntime(appJs = installed.entryJs())
         compositor.register(ep)
         apps[appId] = ep
+        registeredFingerprint[appId] = fingerprint
         ScriptConsole.log(appId, "info", "registered from InstalledStore v${installed.version}")
+    }
+
+    private fun dropRegistered(appId: String) {
+        apps.remove(appId)?.close()
+        compositor.unregister(appId)
+        registeredFingerprint.remove(appId)
     }
 
     /**
@@ -175,6 +243,7 @@ class ScriptRuntimeHost(
         timerJobs.clear()
         apps.values.forEach { it.close() }
         apps.clear()
+        registeredFingerprint.clear()
     }
 
     /**
@@ -192,7 +261,7 @@ class ScriptRuntimeHost(
 
     /** Forget one app so [ensureRegistered] rebuilds it with a fresh isolate. */
     fun evict(appId: String) {
-        apps.remove(appId)?.close()
+        dropRegistered(appId)
     }
 
     companion object {
@@ -202,5 +271,9 @@ class ScriptRuntimeHost(
         const val VIBRATE_ID = "slate.vibrate"
         const val LOCATION_ID = "slate.location"
         const val MAP_ID = "slate.map"
+        const val NEWS_ID = "slate.news"
+        const val MEDIA_ID = "slate.media"
+        const val WEATHER_ID = "slate.weather"
+        const val HTTPDEMO_ID = "slate.httpdemo"
     }
 }

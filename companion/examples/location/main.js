@@ -11,10 +11,8 @@
  *        on behind a screen nobody is looking at. Tapping Refresh asks for a
  *        single immediate fix. Fixes and status changes arrive as
  *        onEvent('location', json) and redraw the screen.
- * Perms: location — slate.location.* is gated on it. Note this permission is
- *        in PermissionPolicy.THIRD_PARTY_BLOCKED, so a downloaded third-party
- *        app gets it only if the user grants it explicitly in the repository
- *        screen; this demo has it because it is bundled at Official trust.
+ * Perms: location — slate.location.* is gated on it (declare in the manifest;
+ *        third-party packages may use it the same way as Official).
  *        storage — reads the updateSec setting. §5.2 requires the storage
  *        permission to read settings. Nothing is written.
  * Settings: updateSec (1-300 s, default 5) is how often the phone is asked for

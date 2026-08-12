@@ -74,7 +74,7 @@
 ### Sub-apps
 - **JS** via androidx.javascriptengine (V8 isolate); Kotlin DSL / JS builder byte-identical lists.
 - **Watch launcher** (`LauncherApp`): swipe face→launcher, tap to focus, swipe back to close.
-- **Bundled demos** (seeded): `timer`, `navigation`, `camera`, `vibrate`, `location`, `map`.
+- **Bundled demos** (seeded): `timer`, `navigation`, `camera`, `vibrate`, `location`, `map`, `news`, `media`, `weather`, `httpdemo`.
 - **Sideload-only examples:** `image`, `image-vector` (zip).
 - Repo UI + third-party sources; official hosted index still **placeholder**.
 - **Open with / Share zip** (`SideloadActivity`, label “Open with Slate”):
@@ -93,8 +93,11 @@
 | Location | Working |
 | Map (Overpass + host vector render) | Working |
 | Haptic (watch) / phone vibrate | Working |
-| HTTP | Stub (allowlist + log) |
-| Media / Health | Permission gates only — **no adapter** |
+| HTTP (`slate.http`) | Working — GET/POST, allowlist, 64 KiB cap |
+| News (`slate.news`) | Host RSS/Atom adapter; JS UI |
+| Media (`slate.media`) | Now-playing + transport (NLS) |
+| Weather (`slate.weather`) | Open-Meteo snapshot; JS UI |
+| Health | Permission gate only — **no adapter yet** |
 
 ### OTA UI
 - **Install Slate on sealed PineTime** — Nordic DFU first hop.
