@@ -18,6 +18,15 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+        // OsmAnd AIDL stubs (android-aidl-lib) — same ivy as OsmAnd's API demo.
+        ivy {
+            name = "OsmAndBinariesIvy"
+            url = uri("https://builder.osmand.net")
+            patternLayout {
+                artifact("ivy/[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]")
+            }
+            metadataSources { artifact() }
+        }
     }
 }
 

@@ -16,8 +16,8 @@ android {
         // It sat at 1 through roughly fifteen installs, which made the version
         // display useless for the one thing it exists for â€” telling two builds
         // apart. versionName tracks features; versionCode tracks the install.
-        versionCode = 71
-        versionName = "0.8.2-p70"
+        versionCode = 72
+        versionName = "0.8.2-p71"
     }
 
     buildTypes {
@@ -60,6 +60,8 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.4.0")
     implementation("androidx.javascriptengine:javascriptengine:1.0.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    // OsmAnd turn-by-turn AIDL (turn type + metres to next maneuver).
+    implementation("net.osmand:android-aidl-lib:master-snapshot@aar")
     testImplementation(kotlin("test"))
     testImplementation("org.json:json:20240303")
     val composeBom = platform("androidx.compose:compose-bom:2024.10.01")

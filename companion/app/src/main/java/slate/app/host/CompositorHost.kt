@@ -1534,7 +1534,7 @@ class CompositorHost(
         when (cmd.command) {
             "subscribe" -> {
                 if (navAdapter == null) {
-                    navAdapter = NavAdapter(context) { m ->
+                    navAdapter = NavAdapter(context, scope) { m ->
                         scope.launch {
                             compositor.dispatchSystemEvent(
                                 ScriptRuntimeHost.NAV_ID,

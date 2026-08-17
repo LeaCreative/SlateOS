@@ -14,14 +14,20 @@ apps are runnable before a hosted index exists.
 
 | Action | Role |
 |---|---|
+| OsmAnd AIDL `registerForNavigationUpdates` | Turn type + metres to next turn (travel-relative) |
+| OsmAnd navigation notification (NLS) | Remaining metres to destination + street text |
 | `slate.app.NAV_MANEUVER` | Slate demo / CI |
 | `net.osmand.navigation` / `net.osmand.plus.NAVIGATION` | OsmAnd-style extras |
 
 Extras mapped: `turn` / `turn_type` / `maneuver`, `distanceM` / `distance`, `street` /
-`streetName`, `progressPct`, `etaEpochSec` / `eta`, `status`.
+`streetName`, `progressPct`, `etaEpochSec` / `eta`, `destinationDistanceM` /
+`time_distance_left`, `status`.
+
+JSON to script: `turn`, `distanceM`, `destinationDistanceM`, `street`, `status`, …
 
 Script API: `slate.nav.subscribe()` / `unsubscribe()` / `demo(kind)`. Maneuvers arrive as
-`onEvent('nav', json)` with `type=maneuver`.
+`onEvent('nav', json)` with `type=maneuver`. Turn arrows are relative to **direction of
+travel**, not phone compass orientation.
 
 ### Screen
 

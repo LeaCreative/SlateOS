@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.CoroutineScope
 import slate.nav.NavManeuver
 
 /**
@@ -16,18 +17,25 @@ fun interface NavManeuverListener {
 
 /**
  * Listens for:
+ * - OsmAnd AIDL + OsmAnd navigation notification ([OsmAndNavBridge])
  * - Slate demo broadcasts (`slate.app.NAV_MANEUVER`)
- * - OsmAnd-style navigation extras when present
+ * - OsmAnd-style navigation extras when present on intents
  *
- * OsmAnd does not guarantee a stable public broadcast across versions; we
- * accept a documented extra set and the Slate demo action for CI / demos.
+ * Maneuver [NavManeuver.turn] is always relative to direction of travel.
  */
 class NavAdapter(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val listener: NavManeuverListener,
 ) {
     private var registered = false
     private var last: NavManeuver? = null
+    private var osmAnd: OsmAndNavBridge? = null
+
+    private val fanOut = NavManeuverListener { m ->
+        last = m
+        listener.onManeuver(m)
+    }
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context?, intent: Intent?) {
@@ -45,8 +53,6 @@ class NavAdapter(
             addAction(ACTION_OSMAND_NAV)
             addAction(ACTION_OSMAND_PLUS_NAV)
         }
-        // OsmAnd is a different app, so this receiver must be exported. Parsing
-        // still rejects broadcasts without a recognized maneuver payload.
         ContextCompat.registerReceiver(
             context,
             receiver,
@@ -54,9 +60,15 @@ class NavAdapter(
             ContextCompat.RECEIVER_EXPORTED,
         )
         registered = true
+        if (osmAnd == null) {
+            osmAnd = OsmAndNavBridge(context, scope, fanOut)
+        }
+        osmAnd?.start()
     }
 
     fun stop() {
+        osmAnd?.stop()
+        osmAnd = null
         if (!registered) return
         runCatching { context.unregisterReceiver(receiver) }
         registered = false
@@ -107,6 +119,13 @@ class NavAdapter(
                 "etaEpochSec",
                 intent.getLongExtra("eta", 0L),
             )
+            val dest = intent.getIntExtra(
+                "destinationDistanceM",
+                intent.getIntExtra(
+                    "time_distance_left",
+                    intent.getIntExtra("distanceLeft", 0),
+                ),
+            )
             val status = intent.getStringExtra("status") ?: "ok"
             return NavManeuver(
                 turn = turn.lowercase(),
@@ -114,6 +133,7 @@ class NavAdapter(
                 street = street,
                 progressPct = pct,
                 etaEpochSec = eta,
+                destinationDistanceM = dest,
                 status = status,
             )
         }

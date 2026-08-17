@@ -74,7 +74,7 @@
 ### Sub-apps
 - **JS** via androidx.javascriptengine (V8 isolate); Kotlin DSL / JS builder byte-identical lists.
 - **Watch launcher** (`LauncherApp`): swipe face→launcher, tap to focus, swipe back to close.
-- **Bundled demos** (seeded): `timer`, `navigation`, `camera`, `vibrate`, `location`, `map`, `news`, `media`, `weather`, `httpdemo`.
+- **Bundled demos** (seeded): `timer`, `navigation` (OsmAnd AIDL + dest remaining), `camera`, `vibrate`, `location`, `map`, `news`, `media`, `weather`, `httpdemo`.
 - **Sideload-only examples:** `image`, `image-vector` (zip).
 - Repo UI + third-party sources; official hosted index still **placeholder**.
 - **Open with / Share zip** (`SideloadActivity`, label “Open with Slate”):

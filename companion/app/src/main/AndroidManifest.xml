@@ -50,6 +50,11 @@
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <package android:name="net.osmand" />
+        <package android:name="net.osmand.plus" />
+        <intent>
+            <action android:name="net.osmand.aidl.OsmandAidlServiceV2" />
+        </intent>
     </queries>
 
     <uses-feature
