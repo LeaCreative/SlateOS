@@ -16,7 +16,7 @@
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
 | Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`EDAC341E7A03`** (`0.1.0-m21 Aug 18 15:56`, MCUBoot 0.1.21). **On wrist** after SDP OTA. |
-| Companion APK | **`0.8.2-p84`** (versionCode **85**, `slate.app.debug`) — force reconnect + MAC scan then autoConnect fallback |
+| Companion APK | **`0.8.2-p85`** (versionCode **86**, `slate.app.debug`) — TX CCCD bounce if HELLO_OFFER missing |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
 
@@ -66,7 +66,7 @@
 ## Companion (phone)
 
 ### Link / host
-- CDM association, presence service, FGS `connectedDevice` (+ location type when granted). **CDM `onDeviceDisappeared` ignored while GATT is up** (`0.8.2-p73+`); **FGS stays up when GATT is down** (`0.8.2-p82`) so the reconnect watchdog can `connectGatt` without a tap. Main / boot / APK replace start the FGS for the remembered watch. **Start / reconnect** force-aborts a hung `connectGatt`; connect path is MAC-filtered LE scan then `autoConnect` fallback (`0.8.2-p84`).
+- CDM association, presence service, FGS `connectedDevice` (+ location type when granted). **CDM `onDeviceDisappeared` ignored while GATT is up** (`0.8.2-p73+`); **FGS stays up when GATT is down** (`0.8.2-p82`) so the reconnect watchdog can `connectGatt` without a tap. Main / boot / APK replace start the FGS for the remembered watch. **Start / reconnect** force-aborts a hung `connectGatt`; connect path is MAC-filtered LE scan then `autoConnect` fallback (`0.8.2-p84`). If HELLO_OFFER never arrives, TX CCCD is bounced 0→1 so the watch starts the session (`0.8.2-p85`).
 - GATT session, compositor (focus, credit, push quota), in-app log, contention / troubleshooting UI.
 - Empty focus stack → watch **local face** (Kotlin `ClockApp` is not forced as ambient base — N-34 mitigated this way).
 - **Watch settings UI + sync** (Face diag hides version + counter lines from **m19**); confirm banner for trial firmware.

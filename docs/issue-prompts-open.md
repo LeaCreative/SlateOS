@@ -9,6 +9,19 @@
 
 ## Current state (18 Aug 2026)
 
+### Launcher deferred: session stuck Connected (`0.8.2-p85`)
+
+p84 connected (scan hit, GATT up) but never reached session **Ready**. Swipe-left
+logged `openLauncher: deferred until Ready (session=Connected)` with no
+`HELLO_OFFER` notify at all. Firmware only sends the offer on a TX CCCD
+0→1 edge (N-23). Bonded Android can restore CCCD without that edge, so the
+watch never HELLO's and the launcher waits forever.
+
+p85: if HELLO is missing ~2 s after TX subscribe, rewrite TX CCCD 0 then 1;
+the first deferred swipe does the same. PHY 2M is requested after CCCD, not
+on top of it. Judge by `CONTROL op=1` (HELLO_OFFER) then Ready, then the
+launcher list — not by GATT connected.
+
 ### `connectGatt` hung with no callback (`0.8.2-p84`)
 
 p83 started the FGS and issued `connectGatt(autoConnect=false)` via

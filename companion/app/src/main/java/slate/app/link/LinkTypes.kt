@@ -58,6 +58,8 @@ data class LinkMetrics(
     val lastError: String = "",
     val lastPushAt: Long = 0L,
     val notes: String = "",
+    /** True once TX(+STATUS) CCCD writes have completed. */
+    val notifyReady: Boolean = false,
 )
 
 object SlateGattIds {

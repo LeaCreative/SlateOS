@@ -147,6 +147,8 @@ class CompositorHost(
     private var tickJob: Job? = null
     private var notifJob: Job? = null
     private var confirmPollJob: Job? = null
+    private var helloWatchdogJob: Job? = null
+    private var helloBounceAttempts = 0
     /** Keys the wearer already read on the watch — skip on bulk re-sync. */
     private val watchClearedKeys = mutableSetOf<String>()
     private var callMonitor: slate.app.call.CallMonitor? = null
@@ -335,7 +337,9 @@ class CompositorHost(
                 if (m.connected) {
                     if (!wasConnected) {
                         session.onLinkUp()
+                        helloBounceAttempts = 0
                     }
+                    if (m.notifyReady) armHelloWatchdog()
                     // No ambient base. ClockApp used to sit at the bottom of
                     // the stack, so relinquishing the last sub-app focused it
                     // and pushed its small-digit clock over the watch's own
@@ -358,6 +362,7 @@ class CompositorHost(
                     startTicker()
                     startNotifBridge()
                 } else {
+                    cancelHelloWatchdog()
                     stopTicker()
                     stopConfirmPoll()
                     _confirmUi.value = ConfirmUi.Idle
@@ -471,6 +476,7 @@ class CompositorHost(
             }
         }
         if (!wasReady && session.state == SessionClient.State.Ready) {
+            cancelHelloWatchdog()
             openSettingsExchange()
             if (pendingLauncherOpen) {
                 pendingLauncherOpen = false
@@ -829,6 +835,7 @@ class CompositorHost(
                 "openLauncher: deferred until Ready " +
                     "(session=${session.state}, linkConnected=${compositor.linkConnected})",
             )
+            gatt.resubscribeTx()
             return
         }
         pendingLauncherOpen = false
@@ -1731,8 +1738,32 @@ class CompositorHost(
         tickJob = null
     }
 
+    private fun armHelloWatchdog() {
+        if (session.state == SessionClient.State.Ready) return
+        if (helloWatchdogJob?.isActive == true) return
+        helloWatchdogJob = scope.launch {
+            while (isActive && helloBounceAttempts < HELLO_BOUNCE_MAX) {
+                delay(HELLO_WATCHDOG_MS)
+                if (session.state != SessionClient.State.Connected) return@launch
+                helloBounceAttempts++
+                LinkLog.w(
+                    "HELLO_OFFER missing after TX subscribe — bouncing CCCD " +
+                        "($helloBounceAttempts/$HELLO_BOUNCE_MAX)",
+                )
+                gatt.resubscribeTx()
+            }
+        }
+    }
+
+    private fun cancelHelloWatchdog() {
+        helloWatchdogJob?.cancel()
+        helloWatchdogJob = null
+    }
+
     companion object {
         const val TICK_MS = 500L
+        private const val HELLO_WATCHDOG_MS = 2_000L
+        private const val HELLO_BOUNCE_MAX = 3
 
         /**
          * Resend the wall clock this often while connected. The watch keeps

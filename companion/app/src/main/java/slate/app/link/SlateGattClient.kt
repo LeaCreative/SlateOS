@@ -94,7 +94,7 @@ class SlateGattClient(
         }
         LinkLog.w("connectGatt timed out — releasing for retry")
         abortGattLocked(clearConnecting = true)
-        update { copy(notes = "connect timed out", connected = false) }
+        update { copy(notes = "connect timed out", connected = false, notifyReady = false) }
     }
 
     /**
@@ -103,6 +103,16 @@ class SlateGattClient(
      * ERROR_GATT_WRITE_REQUEST_BUSY (201). Queue until both CCCDs land.
      */
     private var notifyReady = false
+
+    /**
+     * TX CCCD rewrite to force a NimBLE `SUBSCRIBE` edge. Bonded Android can
+     * restore 0x0001 without the watch seeing 0→1, so HELLO_OFFER is never
+     * sent (N-23) and the phone sits in Connected forever.
+     */
+    private var txCccdBounce: Bounce = Bounce.None
+    private var lastTxBounceMs = 0L
+
+    private enum class Bounce { None, Disabling, Enabling }
 
     /** Message-boundary state for the write pump (N-28). */
     private var lastPktEndedMessage = false
@@ -250,7 +260,7 @@ class SlateGattClient(
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     connecting = false
-                    update { copy(connected = false, notes = "disconnected") }
+                    update { copy(connected = false, notes = "disconnected", notifyReady = false) }
                     closeInternal()
                 }
             }
@@ -306,24 +316,9 @@ class SlateGattClient(
                 return
             }
 
-            // Prefer 2M PHY (API 26+). Log what is actually granted in onPhyUpdate.
-            if (Build.VERSION.SDK_INT >= 26) {
-                val phyOk = g.setPreferredPhy(
-                    BluetoothDevice.PHY_LE_2M_MASK,
-                    BluetoothDevice.PHY_LE_2M_MASK,
-                    BluetoothDevice.PHY_OPTION_NO_PREFERRED,
-                )
-                LinkLog.i("setPreferredPhy(2M) called (void); will log onPhyUpdate")
-                // Also request connection priority for a shorter interval while active.
-                val prio = g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
-                LinkLog.i("requestConnectionPriority(HIGH)=$prio")
-            }
-
-            // DLE is negotiated by the stack when MTU>23; Android does not expose a
-            // direct "request DLE" API on the GATT client. Log MTU as the practical proxy
-            // and read PHY after a short delay.
-            bleHandler.postDelayed({ readPhy(g) }, 500)
-
+            // PHY / interval after CCCD. Requesting 2M (unsupported on
+            // nRF52832) at the same moment as the TX subscribe used to land
+            // onPhyUpdate status=6 on top of HELLO_OFFER.
             enableNotify(g, txChar!!, "TX")
         }
 
@@ -333,17 +328,20 @@ class SlateGattClient(
             status: Int,
         ) {
             LinkLog.i("onDescriptorWrite uuid=${descriptor.uuid} status=$status")
-            if (descriptor.characteristic.uuid == SlateGattIds.TX &&
+            val chUuid = descriptor.characteristic.uuid
+            if (chUuid == SlateGattIds.TX && txCccdBounce != Bounce.None) {
+                onTxBounceDescriptorWrite(g, status)
+                return
+            }
+            if (chUuid == SlateGattIds.TX &&
                 status == BluetoothGatt.GATT_SUCCESS &&
                 statusChar != null
             ) {
                 enableNotify(g, statusChar!!, "STATUS")
-            } else if (descriptor.characteristic.uuid == SlateGattIds.STATUS ||
-                (descriptor.characteristic.uuid == SlateGattIds.TX && statusChar == null)
+            } else if (chUuid == SlateGattIds.STATUS ||
+                (chUuid == SlateGattIds.TX && statusChar == null)
             ) {
-                notifyReady = true
-                update { copy(notes = "subscribed TX(+STATUS); ready to push") }
-                bleHandler.post { pumpWrites() }
+                markNotifyReady(g)
             }
         }
 
@@ -469,6 +467,7 @@ class SlateGattClient(
                 deviceAddress = device.address,
                 notes = if (autoConnect) "waiting for watch…" else "scanning for watch…",
                 lastError = "",
+                notifyReady = false,
             )
         }
         logAdapterSnapshot(device)
@@ -611,6 +610,7 @@ class SlateGattClient(
         }
         discoveryStarted = false
         notifyReady = false
+        txCccdBounce = Bounce.None
         writing.set(false)
         gapUntilMs = 0L
         rxChar = null
@@ -655,6 +655,83 @@ class SlateGattClient(
                 "bond=${device.bondState} gattState=${adapterGattState(device)} " +
                 "address=${device.address}",
         )
+    }
+
+    /**
+     * Rewrite TX CCCD 0→1 so the watch emits `BLE_GAP_EVENT_SUBSCRIBE` and
+     * sends HELLO_OFFER. No-op while a bounce is already in flight or if the
+     * last one was recent — swipe-to-launcher can call this repeatedly.
+     */
+    fun resubscribeTx() {
+        bleHandler.post { resubscribeTxLocked() }
+    }
+
+    private fun resubscribeTxLocked() {
+        val g = gatt
+        val tx = txChar
+        if (g == null || tx == null || !notifyReady) {
+            LinkLog.w("resubscribeTx skipped — GATT not subscribed yet")
+            return
+        }
+        if (txCccdBounce != Bounce.None) {
+            LinkLog.i("resubscribeTx skipped — bounce already in flight")
+            return
+        }
+        val now = System.currentTimeMillis()
+        if (now - lastTxBounceMs < TX_BOUNCE_MIN_INTERVAL_MS) {
+            LinkLog.i("resubscribeTx skipped — too soon")
+            return
+        }
+        lastTxBounceMs = now
+        txCccdBounce = Bounce.Disabling
+        LinkLog.w("bouncing TX CCCD — forcing watch HELLO_OFFER (N-23)")
+        writeCccd(g, tx, enable = false, label = "TX")
+    }
+
+    private fun onTxBounceDescriptorWrite(g: BluetoothGatt, status: Int) {
+        val tx = txChar
+        if (tx == null || status != BluetoothGatt.GATT_SUCCESS) {
+            LinkLog.w("TX CCCD bounce failed status=$status")
+            txCccdBounce = Bounce.None
+            return
+        }
+        when (txCccdBounce) {
+            Bounce.Disabling -> {
+                txCccdBounce = Bounce.Enabling
+                writeCccd(g, tx, enable = true, label = "TX")
+            }
+            Bounce.Enabling -> {
+                txCccdBounce = Bounce.None
+                LinkLog.i("TX CCCD bounce complete — watch should HELLO")
+            }
+            Bounce.None -> {}
+        }
+    }
+
+    private fun markNotifyReady(g: BluetoothGatt) {
+        notifyReady = true
+        update {
+            copy(
+                notes = "subscribed TX(+STATUS); ready to push",
+                notifyReady = true,
+            )
+        }
+        requestPhyAfterSubscribe(g)
+        bleHandler.post { pumpWrites() }
+    }
+
+    private fun requestPhyAfterSubscribe(g: BluetoothGatt) {
+        if (Build.VERSION.SDK_INT >= 26) {
+            g.setPreferredPhy(
+                BluetoothDevice.PHY_LE_2M_MASK,
+                BluetoothDevice.PHY_LE_2M_MASK,
+                BluetoothDevice.PHY_OPTION_NO_PREFERRED,
+            )
+            LinkLog.i("setPreferredPhy(2M) after CCCD; will log onPhyUpdate")
+            val prio = g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
+            LinkLog.i("requestConnectionPriority(HIGH)=$prio")
+        }
+        bleHandler.postDelayed({ readPhy(g) }, 500)
     }
 
     fun close() {
@@ -845,23 +922,40 @@ class SlateGattClient(
     private fun enableNotify(g: BluetoothGatt, ch: BluetoothGattCharacteristic, label: String) {
         val set = g.setCharacteristicNotification(ch, true)
         LinkLog.i("setCharacteristicNotification($label)=$set")
+        writeCccd(g, ch, enable = true, label = label)
+    }
+
+    private fun writeCccd(
+        g: BluetoothGatt,
+        ch: BluetoothGattCharacteristic,
+        enable: Boolean,
+        label: String,
+    ) {
         val cccd = ch.getDescriptor(SlateGattIds.CCCD)
         if (cccd == null) {
             LinkLog.w("CCCD missing on $label")
-            notifyReady = true
-            bleHandler.post { pumpWrites() }
+            if (enable) {
+                notifyReady = true
+                update { copy(notifyReady = true) }
+                bleHandler.post { pumpWrites() }
+            }
             return
         }
-        val enable = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        val value = if (enable) {
+            BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+        } else {
+            BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
+        }
+        val action = if (enable) "enable" else "disable"
         if (Build.VERSION.SDK_INT >= 33) {
-            val rc = g.writeDescriptor(cccd, enable)
-            LinkLog.i("writeDescriptor($label CCCD) rc=$rc")
+            val rc = g.writeDescriptor(cccd, value)
+            LinkLog.i("writeDescriptor($label CCCD $action) rc=$rc")
         } else {
             @Suppress("DEPRECATION")
-            cccd.value = enable
+            cccd.value = value
             @Suppress("DEPRECATION")
             val ok = g.writeDescriptor(cccd)
-            LinkLog.i("writeDescriptor($label CCCD legacy)=$ok")
+            LinkLog.i("writeDescriptor($label CCCD $action legacy)=$ok")
         }
     }
 
@@ -913,6 +1007,8 @@ class SlateGattClient(
     }
 
     private fun dispatchControl(msg: ByteArray) {
+        val op = if (msg.isNotEmpty()) msg[0].toInt() and 0xFF else -1
+        LinkLog.i("CONTROL op=$op len=${msg.size}")
         for (l in controlListeners) {
             try {
                 l(msg)
@@ -991,6 +1087,7 @@ class SlateGattClient(
         private const val AUTO_CONNECT_TIMEOUT_MS = 90_000L
         private const val SCAN_TIMEOUT_MS = 8_000L
         private const val GATT_SETTLE_MS = 400L
+        private const val TX_BOUNCE_MIN_INTERVAL_MS = 2_000L
 
         /** Minimum gap between "not ready" log lines. */
         private const val NOT_READY_LOG_INTERVAL_MS = 5_000L
