@@ -9,6 +9,41 @@
 
 ## Current state (18 Aug 2026)
 
+### `connectGatt` hung with no callback (`0.8.2-p84`)
+
+p83 started the FGS and issued `connectGatt(autoConnect=false)` via
+`getRemoteDevice(mac)`, but **never** got `onConnectionStateChange`. The
+watchdog correctly refused to abort that in-flight attempt, so **Start /
+reconnect** logged `ignored — already connecting`. Direct connect without a
+recent LE scan is a known Android stall when the watch is not in the
+controller cache (or an ACL is stuck CONNECTING after `close()` without
+`disconnect()`).
+
+p84: user tap / opening Main **force**-aborts a hung attempt (`disconnect()`
+then `close()`); MAC-filtered scan then `connectGatt(false)` on the scan
+result; 20 s timeout falls back to `autoConnect=true`; boot uses autoConnect
+from the start. Judge by `onConnectionStateChange` in the in-app log, not by
+`connectGatt` being issued.
+
+### p82 auto-start killed the FGS (`0.8.2-p83`)
+
+Package-replace started the link service in the background while claiming the
+**location** FGS type (FINE is foreground-only). Android threw, `onCreate`
+called `stopSelf()`, then the watchdog `close()`'d every in-flight
+`connectGatt` at 5 s so the UI stuck on connecting. BLE uses
+`connectedDevice` unless background location is granted or the process is
+foreground; a refused type retries without `stopSelf()`. Watchdog no longer
+aborts a live connect.
+
+### Auto-reconnect without tapping the button (`0.8.2-p82`)
+
+The link already knew the MAC. It still required **Start / reconnect** because
+(1) opening Main only re-registered CDM presence, it did not start the FGS,
+(2) boot / `installDebug` did the same, and (3) CDM `onDeviceDisappeared`
+with GATT down called `stopSelf()`, so the reconnect watchdog died. Keep the
+service and retry `connectGatt`; start the FGS from Main, boot, and package
+replace when a watch is remembered.
+
 ### Sticky "writeNoResponse failed — requeued" (`0.8.2-p81`)
 
 Not a failed link. On connect, HELLO_ACCEPT was written while the STATUS CCCD

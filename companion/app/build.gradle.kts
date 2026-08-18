@@ -16,8 +16,8 @@ android {
         // It sat at 1 through roughly fifteen installs, which made the version
         // display useless for the one thing it exists for â€” telling two builds
         // apart. versionName tracks features; versionCode tracks the install.
-        versionCode = 82
-        versionName = "0.8.2-p81"
+        versionCode = 85
+        versionName = "0.8.2-p84"
     }
 
     buildTypes {

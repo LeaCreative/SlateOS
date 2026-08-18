@@ -1,17 +1,26 @@
 package slate.app.link
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothStatusCodes
+import android.bluetooth.le.BluetoothLeScanner
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +62,40 @@ class SlateGattClient(
 
     /** True once discoverServices() has been issued for the current GATT. */
     private var discoveryStarted = false
+
+    val isConnecting: Boolean get() = connecting
+
+    private var pendingDevice: BluetoothDevice? = null
+    private var usedAutoConnect = false
+    private var leScanner: BluetoothLeScanner? = null
+    private var leScanCallback: ScanCallback? = null
+
+    private val scanGiveUp = Runnable {
+        if (!connecting || _metrics.value.connected) return@Runnable
+        val d = pendingDevice ?: return@Runnable
+        LinkLog.w("LE scan timed out — falling back to autoConnect")
+        stopScanLocked()
+        openGattLocked(d, autoConnect = true)
+    }
+
+    private val connectTimeout = Runnable {
+        if (!connecting || _metrics.value.connected) return@Runnable
+        val d = pendingDevice
+        if (!usedAutoConnect && d != null) {
+            LinkLog.w("connectGatt(false) timed out — disconnect and autoConnect")
+            abortGattLocked(clearConnecting = false)
+            connecting = true
+            bleHandler.postDelayed({
+                if (connecting && !_metrics.value.connected) {
+                    openGattLocked(d, autoConnect = true)
+                }
+            }, GATT_SETTLE_MS)
+            return@Runnable
+        }
+        LinkLog.w("connectGatt timed out — releasing for retry")
+        abortGattLocked(clearConnecting = true)
+        update { copy(notes = "connect timed out", connected = false) }
+    }
 
     /**
      * Android allows one GATT write at a time. TX/STATUS CCCD writes occupy
@@ -169,6 +212,10 @@ class SlateGattClient(
             }
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
+                    bleHandler.removeCallbacks(connectTimeout)
+                    bleHandler.removeCallbacks(scanGiveUp)
+                    stopScanLocked()
+                    connecting = false
                     update {
                         copy(
                             connected = true,
@@ -356,59 +403,271 @@ class SlateGattClient(
         }
     }
 
-    fun connect(device: BluetoothDevice) {
-        // Ignore a second attempt while one is already in flight (N-24).
-        // CDM's presence callback fires moments after we connect ourselves, and
-        // the old code called close() first — tearing down a GATT that had
-        // requestMtu() outstanding. Its onMtuChanged never arrived, and since
-        // discovery is chained off that callback, services were never
-        // discovered, rxChar stayed null, and every send failed "not ready".
-        if (connecting || _metrics.value.connected) {
-            LinkLog.w(
-                "connect(${device.address}) ignored — already " +
-                    if (connecting) "connecting" else "connected",
-            )
+    /**
+     * Start (or continue) a GATT attempt.
+     *
+     * [force] aborts an in-flight connect so a user tap cannot no-op while
+     * `connectGatt(false)` sits with no callback. A live connected session is
+     * never torn down here — that is still [close].
+     *
+     * Direct `getRemoteDevice` + `autoConnect=false` often never callbacks if
+     * the watch is not in the controller's recent scan cache. Foreground /
+     * tap paths scan by MAC first; boot / watchdog use [autoConnect].
+     */
+    fun connect(
+        device: BluetoothDevice,
+        force: Boolean = false,
+        autoConnect: Boolean = false,
+    ) {
+        bleHandler.post { connectLocked(device, force, autoConnect) }
+    }
+
+    private fun connectLocked(
+        device: BluetoothDevice,
+        force: Boolean,
+        autoConnect: Boolean,
+    ) {
+        if (_metrics.value.connected) {
+            LinkLog.w("connect(${device.address}) ignored — already connected")
+            return
+        }
+        if (connecting && !force) {
+            LinkLog.w("connect(${device.address}) ignored — already connecting")
+            return
+        }
+        if (force && connecting) {
+            LinkLog.i("connect force — aborting in-flight GATT for ${device.address}")
+            abortGattLocked(clearConnecting = true)
+            connecting = true
+            pendingDevice = device
+            usedAutoConnect = autoConnect
+            writeQueue.reset()
+            update {
+                copy(
+                    deviceAddress = device.address,
+                    notes = "retrying…",
+                    lastError = "",
+                )
+            }
+            bleHandler.postDelayed({
+                if (connecting && !_metrics.value.connected) {
+                    continueConnectLocked(device, autoConnect)
+                }
+            }, GATT_SETTLE_MS)
             return
         }
         connecting = true
-        close()
-        // Sequences restart with the connection: the watch resets its
-        // reassembler on every reboot (N-32).
+        pendingDevice = device
+        usedAutoConnect = autoConnect
         writeQueue.reset()
+        continueConnectLocked(device, autoConnect)
+    }
+
+    private fun continueConnectLocked(device: BluetoothDevice, autoConnect: Boolean) {
         update {
             copy(
                 deviceAddress = device.address,
-                notes = "connecting…",
+                notes = if (autoConnect) "waiting for watch…" else "scanning for watch…",
                 lastError = "",
             )
         }
-        LinkLog.i("connectGatt autoConnect=false TRANSPORT_LE address=${device.address}")
-        gatt = device.connectGatt(
-            appContext,
-            /* autoConnect = */ false,
-            callback,
-            BluetoothDevice.TRANSPORT_LE,
+        logAdapterSnapshot(device)
+        runCatching { bluetoothAdapter()?.cancelDiscovery() }
+        val acl = adapterGattState(device)
+        if (acl == BluetoothProfile.STATE_CONNECTED ||
+            acl == BluetoothProfile.STATE_CONNECTING
+        ) {
+            LinkLog.i("ACL already gattState=$acl — connectGatt(false) without scan")
+            openGattLocked(device, autoConnect = false)
+            return
+        }
+        if (autoConnect) {
+            openGattLocked(device, autoConnect = true)
+        } else {
+            startScanThenConnectLocked(device)
+        }
+    }
+
+    private fun startScanThenConnectLocked(device: BluetoothDevice) {
+        val scanner = bluetoothAdapter()?.bluetoothLeScanner
+        if (scanner == null || !hasScanPermission()) {
+            LinkLog.w("LE scan unavailable — connectGatt(false) via getRemoteDevice")
+            openGattLocked(device, autoConnect = false)
+            return
+        }
+        stopScanLocked()
+        LinkLog.i("LE scan for ${device.address}")
+        val cb = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                bleHandler.post {
+                    if (!connecting || _metrics.value.connected) return@post
+                    if (!result.device.address.equals(device.address, ignoreCase = true)) {
+                        return@post
+                    }
+                    LinkLog.i("scan hit ${result.device.address} rssi=${result.rssi}")
+                    bleHandler.removeCallbacks(scanGiveUp)
+                    stopScanLocked()
+                    openGattLocked(result.device, autoConnect = false)
+                }
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                bleHandler.post {
+                    LinkLog.w("LE scan failed error=$errorCode — autoConnect")
+                    stopScanLocked()
+                    if (connecting && !_metrics.value.connected) {
+                        openGattLocked(device, autoConnect = true)
+                    }
+                }
+            }
+        }
+        leScanCallback = cb
+        leScanner = scanner
+        val filter = ScanFilter.Builder().setDeviceAddress(device.address).build()
+        val settings = ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+            .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
+            .build()
+        try {
+            scanner.startScan(listOf(filter), settings, cb)
+        } catch (t: Throwable) {
+            LinkLog.e("startScan failed", t)
+            openGattLocked(device, autoConnect = false)
+            return
+        }
+        bleHandler.removeCallbacks(scanGiveUp)
+        bleHandler.postDelayed(scanGiveUp, SCAN_TIMEOUT_MS)
+    }
+
+    private fun openGattLocked(device: BluetoothDevice, autoConnect: Boolean) {
+        val leftover = gatt
+        if (leftover != null) {
+            gatt = null
+            runCatching { leftover.disconnect() }
+            runCatching { leftover.close() }
+        }
+        usedAutoConnect = autoConnect
+        pendingDevice = device
+        update {
+            copy(
+                deviceAddress = device.address,
+                notes = if (autoConnect) "waiting for watch (autoConnect)…" else "connecting…",
+                lastError = "",
+            )
+        }
+        val g = try {
+            device.connectGatt(
+                appContext,
+                autoConnect,
+                callback,
+                BluetoothDevice.TRANSPORT_LE,
+                BluetoothDevice.PHY_LE_1M_MASK,
+                bleHandler,
+            )
+        } catch (t: Throwable) {
+            LinkLog.w("connectGatt(handler) failed: ${t.message}; trying 4-arg")
+            device.connectGatt(
+                appContext,
+                autoConnect,
+                callback,
+                BluetoothDevice.TRANSPORT_LE,
+            )
+        }
+        gatt = g
+        val acl = adapterGattState(device)
+        LinkLog.i(
+            "connectGatt autoConnect=$autoConnect TRANSPORT_LE " +
+                "address=${device.address} returned=${g != null} " +
+                "bond=${device.bondState} gattState=$acl",
         )
+        if (g == null) {
+            connecting = false
+            update {
+                copy(
+                    notes = "connectGatt returned null",
+                    lastError = "connectGatt null",
+                    connected = false,
+                )
+            }
+            return
+        }
+        bleHandler.removeCallbacks(connectTimeout)
+        val timeoutMs = if (autoConnect) AUTO_CONNECT_TIMEOUT_MS else CONNECT_TIMEOUT_MS
+        bleHandler.postDelayed(connectTimeout, timeoutMs)
     }
 
-    fun close() {
-        closeInternal()
-        update { LinkMetrics(notes = "idle") }
-    }
-
-    private fun closeInternal() {
-        bleHandler.removeCallbacksAndMessages(null)
-        connecting = false
+    private fun abortGattLocked(clearConnecting: Boolean) {
+        bleHandler.removeCallbacks(connectTimeout)
+        bleHandler.removeCallbacks(scanGiveUp)
+        stopScanLocked()
+        val old = gatt
+        gatt = null
+        if (old != null) {
+            runCatching { old.disconnect() }
+                .onFailure { LinkLog.w("gatt.disconnect: ${it.message}") }
+            runCatching { old.close() }
+                .onFailure { LinkLog.w("gatt.close: ${it.message}") }
+        }
         discoveryStarted = false
         notifyReady = false
-        writeQueue.reset()
         writing.set(false)
         gapUntilMs = 0L
         rxChar = null
         txChar = null
         statusChar = null
-        gatt?.close()
-        gatt = null
+        if (clearConnecting) connecting = false
+    }
+
+    private fun stopScanLocked() {
+        val scanner = leScanner
+        val cb = leScanCallback
+        leScanner = null
+        leScanCallback = null
+        if (scanner != null && cb != null) {
+            runCatching { scanner.stopScan(cb) }
+        }
+    }
+
+    private fun bluetoothAdapter() =
+        appContext.getSystemService(BluetoothManager::class.java)?.adapter
+
+    private fun adapterGattState(device: BluetoothDevice): Int =
+        try {
+            appContext.getSystemService(BluetoothManager::class.java)
+                ?.getConnectionState(device, BluetoothProfile.GATT)
+                ?: -1
+        } catch (_: Throwable) {
+            -1
+        }
+
+    private fun hasScanPermission(): Boolean =
+        Build.VERSION.SDK_INT < 31 ||
+            ContextCompat.checkSelfPermission(
+                appContext,
+                Manifest.permission.BLUETOOTH_SCAN,
+            ) == PackageManager.PERMISSION_GRANTED
+
+    private fun logAdapterSnapshot(device: BluetoothDevice) {
+        val adapter = bluetoothAdapter()
+        LinkLog.i(
+            "adapter enabled=${adapter?.isEnabled} state=${adapter?.state} " +
+                "bond=${device.bondState} gattState=${adapterGattState(device)} " +
+                "address=${device.address}",
+        )
+    }
+
+    fun close() {
+        bleHandler.post {
+            closeInternal()
+            update { LinkMetrics(notes = "idle") }
+        }
+    }
+
+    private fun closeInternal() {
+        abortGattLocked(clearConnecting = true)
+        writeQueue.reset()
+        pendingDevice = null
     }
 
     /** Push a complete SDP message on [channel] (DISPLAY=1, DIAG=7, …). */
@@ -728,6 +987,10 @@ class SlateGattClient(
     companion object {
         /** How long to wait for onMtuChanged before discovering anyway. */
         private const val MTU_GRACE_MS = 2_000L
+        private const val CONNECT_TIMEOUT_MS = 20_000L
+        private const val AUTO_CONNECT_TIMEOUT_MS = 90_000L
+        private const val SCAN_TIMEOUT_MS = 8_000L
+        private const val GATT_SETTLE_MS = 400L
 
         /** Minimum gap between "not ready" log lines. */
         private const val NOT_READY_LOG_INTERVAL_MS = 5_000L

@@ -97,14 +97,9 @@ class LinkForegroundService : Service() {
         createChannel()
         val notification = buildNotification("Slate link starting…")
         try {
-            if (Build.VERSION.SDK_INT >= 34) {
-                ServiceCompat.startForeground(this, NOTIF_ID, notification, foregroundTypes())
-            } else {
-                @Suppress("DEPRECATION")
-                startForeground(NOTIF_ID, notification)
-            }
+            enterForeground(notification)
         } catch (t: SecurityException) {
-            LinkLog.e("Missing Bluetooth permission for connectedDevice FGS", t)
+            LinkLog.e("Unable to enter connectedDevice foreground", t)
             stopSelf()
             return
         }
@@ -133,24 +128,53 @@ class LinkForegroundService : Service() {
     /**
      * Foreground-service types this service may claim **right now**.
      *
-     * `location` is added only when the runtime permission is actually held.
-     * From Android 14, `startForeground` with a type the app lacks permission
-     * for throws `SecurityException`, and the catch above calls `stopSelf()` —
-     * so claiming `location` unconditionally would kill the entire link
-     * service on every phone where the user never granted it. The BLE link
-     * matters more than any sub-app; it must not depend on this.
-     *
-     * The type is fixed at `startForeground` time, so a grant that arrives
-     * later needs [refreshForegroundType] to take effect. Without the
-     * `location` type, a sub-app's fixes stop as soon as the app is backgrounded
-     * — which is the normal case for a watch companion.
+     * `location` is added only when it is legal **in this process state**.
+     * FINE/COARSE are foreground-only; claiming the location FGS type from a
+     * boot / package-replace receiver throws and used to `stopSelf()` the
+     * whole link. BLE uses `connectedDevice` alone until we are eligible.
      */
     private fun foregroundTypes(): Int {
         var types = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-        if (hasLocationPermission(this)) {
+        if (mayClaimLocationType()) {
             types = types or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
         }
         return types
+    }
+
+    private fun mayClaimLocationType(): Boolean {
+        if (!hasLocationPermission(this)) return false
+        if (hasBackgroundLocation(this)) return true
+        return isProcessForeground()
+    }
+
+    private fun isProcessForeground(): Boolean {
+        val am = getSystemService(android.app.ActivityManager::class.java) ?: return false
+        val pkg = packageName
+        return am.runningAppProcesses.orEmpty().any {
+            it.processName == pkg &&
+                it.importance <= android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        }
+    }
+
+    private fun enterForeground(notification: Notification) {
+        if (Build.VERSION.SDK_INT < 34) {
+            @Suppress("DEPRECATION")
+            startForeground(NOTIF_ID, notification)
+            return
+        }
+        try {
+            ServiceCompat.startForeground(this, NOTIF_ID, notification, foregroundTypes())
+        } catch (t: SecurityException) {
+            LinkLog.w(
+                "FGS types refused (${t.message}); retrying connectedDevice-only",
+            )
+            ServiceCompat.startForeground(
+                this,
+                NOTIF_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
+            )
+        }
     }
 
     /**
@@ -180,14 +204,16 @@ class LinkForegroundService : Service() {
         if (intent == null) {
             AssociationHelper(applicationContext).lastAssociatedAddress()?.let {
                 LinkLog.i("sticky service restart — reconnect $it")
-                connectAddress(it)
+                connectAddress(it, force = false, autoConnect = true)
             }
             return START_STICKY
         }
         when (intent?.action) {
             ACTION_CONNECT -> {
                 val addr = intent.getStringExtra(EXTRA_ADDRESS)
-                if (addr != null) connectAddress(addr)
+                val force = intent.getBooleanExtra(EXTRA_FORCE, false)
+                val autoConnect = intent.getBooleanExtra(EXTRA_AUTO_CONNECT, false)
+                if (addr != null) connectAddress(addr, force, autoConnect)
             }
             ACTION_DISCONNECT -> {
                 compositorHost?.sendGoodbye()
@@ -202,7 +228,7 @@ class LinkForegroundService : Service() {
                         AssociationHelper(applicationContext).lastAssociatedAddress()
                     if (preferred == null || preferred.equals(addr, ignoreCase = true)) {
                         LinkLog.i("presence appeared — reconnect $addr")
-                        connectAddress(addr)
+                        connectAddress(addr, force = true, autoConnect = false)
                     } else {
                         LinkLog.i("ignoring presence for non-selected association $addr")
                     }
@@ -228,10 +254,16 @@ class LinkForegroundService : Service() {
                     )
                     return START_STICKY
                 }
-                LinkLog.i("presence disappeared ${gone ?: ""}")
-                stopReconnect()
-                client.close()
-                stopSelf()
+                // Watch is out of CDM's scan and GATT is down. Keep the FGS so
+                // the reconnect watchdog can connectGatt when it is back —
+                // stopSelf here is why the operator had to tap Reconnect.
+                val addr = active
+                    ?: AssociationHelper(applicationContext).lastAssociatedAddress()
+                    ?: gone
+                LinkLog.i(
+                    "presence disappeared ${gone ?: ""} — keeping service to reconnect",
+                )
+                if (addr != null) scheduleReconnectWatchdog(addr)
             }
             ACTION_OPEN_TEST_APP -> {
                 scope.launch {
@@ -267,7 +299,11 @@ class LinkForegroundService : Service() {
     fun watchProtocolVersion(): Int =
         compositorHost?.compositor?.watchProtocolVersion ?: 1
 
-    private fun connectAddress(rawAddress: String) {
+    private fun connectAddress(
+        rawAddress: String,
+        force: Boolean = false,
+        autoConnect: Boolean = false,
+    ) {
         // Presence callbacks and intent extras can carry CDM's lowercase form,
         // which getRemoteDevice() rejects outright.
         val address = BtAddress.normalize(rawAddress)
@@ -296,7 +332,7 @@ class LinkForegroundService : Service() {
             LinkLog.e("getRemoteDevice failed", t)
             return
         }
-        client.connect(device)
+        client.connect(device, force = force, autoConnect = autoConnect)
         scheduleReconnectWatchdog(address)
     }
 
@@ -307,6 +343,10 @@ class LinkForegroundService : Service() {
             while (isActive) {
                 delay(delayMs)
                 if (!client.metrics.value.connected) {
+                    if (client.isConnecting) {
+                        LinkLog.i("reconnect watchdog — connect still in flight, not aborting")
+                        continue
+                    }
                     LinkLog.i("reconnect watchdog — retry $address after ${delayMs}ms")
                     val bonded = LinkContention.isBonded(applicationContext, address)
                     // After the first failed retry, treat bonded+no-link as a
@@ -323,7 +363,7 @@ class LinkForegroundService : Service() {
                     }
                     val adapter = getSystemService(BluetoothManager::class.java)?.adapter
                     val device = adapter?.getRemoteDevice(address) ?: continue
-                    client.connect(device)
+                    client.connect(device, force = false, autoConnect = true)
                     delayMs = (delayMs * 2).coerceAtMost(60_000L)
                 } else {
                     SharedLink.lastContentionMessage = null
@@ -415,6 +455,8 @@ class LinkForegroundService : Service() {
         const val ACTION_OPEN_NOTIFICATIONS = "slate.app.OPEN_NOTIFICATIONS"
         const val ACTION_REFRESH_FGS_TYPE = "slate.app.REFRESH_FGS_TYPE"
         const val EXTRA_ADDRESS = "address"
+        const val EXTRA_FORCE = "force"
+        const val EXTRA_AUTO_CONNECT = "autoConnect"
 
         @Volatile
         var instance: LinkForegroundService? = null
@@ -438,6 +480,13 @@ class LinkForegroundService : Service() {
                     Manifest.permission.ACCESS_FINE_LOCATION,
                 ) == PackageManager.PERMISSION_GRANTED
 
+        fun hasBackgroundLocation(context: Context): Boolean =
+            Build.VERSION.SDK_INT < 29 ||
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                ) == PackageManager.PERMISSION_GRANTED
+
         /**
          * Tell a running service to re-evaluate its foreground type.
          *
@@ -453,7 +502,12 @@ class LinkForegroundService : Service() {
                 .onFailure { LinkLog.e("Unable to refresh FGS type", it) }
         }
 
-        fun start(context: Context, address: String? = null): Boolean {
+        fun start(
+            context: Context,
+            address: String? = null,
+            force: Boolean = false,
+            autoConnect: Boolean = false,
+        ): Boolean {
             if (!hasBluetoothPermission(context)) {
                 LinkLog.w("Not starting link service: Bluetooth permission missing")
                 return false
@@ -462,6 +516,8 @@ class LinkForegroundService : Service() {
             if (address != null) {
                 i.action = ACTION_CONNECT
                 i.putExtra(EXTRA_ADDRESS, address)
+                i.putExtra(EXTRA_FORCE, force)
+                i.putExtra(EXTRA_AUTO_CONNECT, autoConnect)
             }
             return try {
                 context.startForegroundService(i)
@@ -470,6 +526,25 @@ class LinkForegroundService : Service() {
                 LinkLog.e("Unable to start link foreground service", t)
                 false
             }
+        }
+
+        /**
+         * Start (or keep) the link FGS for the last associated watch.
+         * Used from Main, boot, and package-replace so reconnect does not
+         * depend on tapping the button or on CDM firing appeared.
+         */
+        fun startForRememberedWatch(
+            context: Context,
+            force: Boolean = false,
+            autoConnect: Boolean = false,
+        ): Boolean {
+            val app = context.applicationContext
+            val association = AssociationHelper(app)
+            val addr = association.lastAssociatedAddress()
+                ?: association.associatedAddresses().firstOrNull()
+                ?: return false
+            association.startObservingPresence(addr)
+            return start(app, addr, force = force, autoConnect = autoConnect)
         }
 
         private fun hasBluetoothPermission(context: Context): Boolean =

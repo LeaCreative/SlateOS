@@ -7,21 +7,34 @@ import android.os.Build
 
 /**
  * Presence observation is not guaranteed to survive a phone reboot or package
- * replacement. Re-register it for every persistent CDM association.
+ * replacement. Re-register it and start the link FGS for every persistent
+ * CDM association — do not wait for the operator to tap Reconnect.
  */
 class CompanionStartupReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
+        val action = intent?.action ?: return
         if (Build.VERSION.SDK_INT < 31) return
-        if (intent?.action != Intent.ACTION_BOOT_COMPLETED &&
-            intent?.action != Intent.ACTION_MY_PACKAGE_REPLACED
+        if (action != Intent.ACTION_BOOT_COMPLETED &&
+            action != Intent.ACTION_MY_PACKAGE_REPLACED
         ) {
             return
         }
 
-        val association = AssociationHelper(context.applicationContext)
+        val app = context.applicationContext
+        val association = AssociationHelper(app)
         val associated = association.associatedAddresses().map { it.uppercase() }.toSet()
         association.presenceAddresses()
             .filter { it.uppercase() in associated }
             .forEach(association::startObservingPresence)
+        val autoConnect = action == Intent.ACTION_BOOT_COMPLETED
+        val started = LinkForegroundService.startForRememberedWatch(
+            app,
+            force = false,
+            autoConnect = autoConnect,
+        )
+        LinkLog.i(
+            "$action — presence re-registered" +
+                if (started) ", link service started" else ", no remembered watch / no BT perm",
+        )
     }
 }

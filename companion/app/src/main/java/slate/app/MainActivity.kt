@@ -59,7 +59,7 @@ class MainActivity : SlateActivity() {
             SharedLink.lastContentionMessage = held
             LinkLog.w("starting link despite contention: $held")
         }
-        val started = LinkForegroundService.start(this, device.address)
+        val started = LinkForegroundService.start(this, device.address, force = true)
         statusView.text = when {
             !started ->
                 "Associated ${device.address}, but Android blocked the link service; " +
@@ -143,7 +143,7 @@ class MainActivity : SlateActivity() {
                         SharedLink.lastContentionMessage = held
                         LinkLog.w("reconnect requested despite contention: $held")
                     }
-                    val started = LinkForegroundService.start(this, addr)
+                    val started = LinkForegroundService.start(this, addr, force = true)
                     statusView.text = when {
                         !started -> "Android blocked the link service; check Permissions"
                         held != null -> "Reconnecting $addr anyway — $held"
@@ -218,6 +218,7 @@ class MainActivity : SlateActivity() {
         association.presenceAddresses()
             .filter { it.uppercase() in associated }
             .forEach(association::startObservingPresence)
+        LinkForegroundService.startForRememberedWatch(this, force = true)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
