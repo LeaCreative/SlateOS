@@ -252,12 +252,13 @@ add_custom_command(TARGET slate_firmware.elf POST_BUILD
 )
 
 # InfiniTime-compatible DFU zip (imgtool create + adafruit-nrfutil). Optional tools.
+# MCUBoot --version is derived from include/slate_version.hpp (`0.1.0-mN` → 0.1.N).
+# Do not hardcode it here — keep it in lockstep with kVersion.
 find_program(SLATE_PYTHON NAMES python3 python py)
 if(SLATE_PYTHON AND BOOTLOADER_PRESENT)
   add_custom_target(slate_dfu
     COMMAND "${SLATE_PYTHON}" "${CMAKE_SOURCE_DIR}/scripts/package_dfu.py"
             --bin "${CMAKE_BINARY_DIR}/slate_firmware.bin"
-            --version "0.1.0"
             --out-dir "${CMAKE_BINARY_DIR}"
     DEPENDS slate_firmware.elf
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"

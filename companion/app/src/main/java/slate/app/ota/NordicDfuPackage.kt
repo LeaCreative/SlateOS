@@ -85,6 +85,81 @@ object NordicDfuPackageReader {
         return NordicDfuPackage(firmware, initPacket)
     }
 
+    /**
+     * MCUBoot `ih_ver` from the 32-byte image header (`major.minor.revision`).
+     * MCUBoot `ih_ver` from the 32-byte image header (`major.minor.revision`).
+     * Shown on the OTA screen so a hardcoded `0.1.0` package is obvious.
+     */
+    fun mcubootVersion(firmware: ByteArray): String? {
+        if (firmware.size < 26) return null
+        if (firmware[0] != 0x3d.toByte() ||
+            firmware[1] != 0xb8.toByte() ||
+            firmware[2] != 0xf3.toByte() ||
+            firmware[3] != 0x96.toByte()
+        ) {
+            return null
+        }
+        val major = firmware[20].toInt() and 0xff
+        val minor = firmware[21].toInt() and 0xff
+        val revision = (firmware[22].toInt() and 0xff) or
+            ((firmware[23].toInt() and 0xff) shl 8)
+        return "$major.$minor.$revision"
+    }
+
+    /**
+     * Face stamp baked into the MCUBoot payload (`0.1.0-mNN` + `__DATE__`).
+     * Shown on the OTA screen so a remembered zip cannot be mistaken for a
+     * newly built image.
+     */
+    fun faceStamp(firmware: ByteArray): String? {
+        val ver = cStringContaining(firmware, "0.1.0-m") ?: return null
+        val date = cStringContaining(firmware, "Aug ")
+            ?: cStringContaining(firmware, "Jan ")
+            ?: cStringContaining(firmware, "Feb ")
+            ?: cStringContaining(firmware, "Mar ")
+            ?: cStringContaining(firmware, "Apr ")
+            ?: cStringContaining(firmware, "May ")
+            ?: cStringContaining(firmware, "Jun ")
+            ?: cStringContaining(firmware, "Jul ")
+            ?: cStringContaining(firmware, "Sep ")
+            ?: cStringContaining(firmware, "Oct ")
+            ?: cStringContaining(firmware, "Nov ")
+            ?: cStringContaining(firmware, "Dec ")
+        return if (date != null) "$ver $date" else ver
+    }
+
+    fun sha12(data: ByteArray): String {
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val hex = md.digest(data).joinToString("") { b ->
+            "%02X".format(b)
+        }
+        return hex.take(12)
+    }
+
+    private fun cStringContaining(hay: ByteArray, needle: String): String? {
+        val n = needle.encodeToByteArray()
+        var i = 0
+        while (i <= hay.size - n.size) {
+            var ok = true
+            for (j in n.indices) {
+                if (hay[i + j] != n[j]) {
+                    ok = false
+                    break
+                }
+            }
+            if (ok) {
+                val start = i
+                var end = i
+                while (end < hay.size && hay[end] != 0.toByte() && end - start < 40) {
+                    end++
+                }
+                return hay.copyOfRange(start, end).toString(Charsets.US_ASCII)
+            }
+            i++
+        }
+        return null
+    }
+
     private fun validateInitPacket(init: ByteArray, firmware: ByteArray) {
         require(init.size >= 12) { "Legacy DFU init packet is truncated" }
         fun u16(offset: Int): Int =

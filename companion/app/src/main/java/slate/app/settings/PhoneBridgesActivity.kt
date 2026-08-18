@@ -77,6 +77,16 @@ class PhoneBridgesActivity : SlateActivity() {
             },
         )
 
+        root.addView(
+            SimpleViews.text(
+                this,
+                "Watch BPM is always logged on the Heart rate screen (24 h graph). " +
+                    "Health Connect below is optional export.",
+                13f,
+                false,
+            ),
+        )
+
         hcStatus = SimpleViews.text(this, "", 14f, false).also { root.addView(it) }
         // One toggle — previously two On/Off buttons for the same boolean.
         hcSyncButton = SimpleViews.button(this, "") {

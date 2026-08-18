@@ -15,8 +15,8 @@
 | Piece | Identity |
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
-| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`2D7C272691C8`** (`0.1.0-m19`: version line gated with Face diag; includes N-61 m18 accel fix) |
-| Companion APK | **`0.8.2-p75`** (versionCode **76**, `slate.app.debug`) |
+| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`EDAC341E7A03`** (`0.1.0-m21 Aug 18 15:56`, MCUBoot 0.1.21). **On wrist** after SDP OTA. |
+| Companion APK | **`0.8.2-p81`** (versionCode **82**, `slate.app.debug`) — GATT busy requeue is not a sticky Error |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
 
@@ -43,7 +43,7 @@
 
 ### Sensors / power
 - BMA421/425: Bosch feature upload, pedometer enable (full-block R/W), ACC_CONF **`0x28`** (InfiniTime CIC_AVG), axis swap for mount frame.
-- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60), then **both raise and shake died** on the m17 image (N-61: ACC_DATA zeros / `PWR_CONF` cleared `fifo_self_wakeup`). **m18** restores InfiniTime `PWR_CONF` and re-enables acc on dead samples (packaged **`9FA5215458E0`**). **m19** adds Face-diag gating for the version line (**`2D7C272691C8`**). Confirm on wrist after SDP OTA. Overlay line 1 is `uptime/chip.status.step.pwr` (`pwr=4` = acc_en).
+- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60), then **both raise and shake died** on the m17 image (N-61: ACC_DATA zeros / `PWR_CONF` cleared `fifo_self_wakeup`). **m18** restores InfiniTime `PWR_CONF` and re-enables acc on dead samples (packaged **`9FA5215458E0`**). **m19** adds Face-diag gating for the version line. The zip previously labelled m19 (**`2D7C272691C8`**) was actually **m18 Aug 17 17:59** (packaged after bumping docs, before rebuilding). Current package **`275FAE146A95`** is the real m19 (`0.1.0-m19 Aug 18 14:59`). Confirm on wrist after SDP OTA. Overlay line 1 is `uptime/chip.status.step.pwr` (`pwr=4` = acc_en).
 - Battery SAADC InfiniTime-matched curve + charge pin; BAS.
 - HRS3300 **gated by settings** — `hr_enabled` (default Off). On-demand measure
   from local Heart Rate screen or GATT HRS CCCD; asleep otherwise.
@@ -100,7 +100,7 @@
 | Calendar | Working (p66) — CalendarContract next events |
 | Alarms | Working (p66) — Clock intent / exact AlarmManager |
 | Home | Working (p66) — Home Assistant REST |
-| Health | Working (p66) — Health Connect read; companion writes watch steps/BPM via VITALS |
+| Health | Working (p76) — companion 24 h BPM vs time of day; Health Connect read/write of watch steps/BPM via VITALS |
 
 ### OTA UI
 - **Install Slate on sealed PineTime** — Nordic DFU first hop.

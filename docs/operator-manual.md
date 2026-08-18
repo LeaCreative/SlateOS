@@ -32,7 +32,9 @@ There is one physical control: the **side button**, plus touch swipes.
 Settings / Notifications / Apps share **outline** buttons (rounded stroke, chrome colour from companion Appearance). Face **bright** / **dim** colours theme the time+battery fill vs date/metrics/track; status glyphs stay green.
 
 With **Heart rate** On in Settings, BPM appears on the face next to steps
-(continuous measure while enabled).
+(continuous measure while enabled). The companion **Heart rate** screen keeps a
+rolling 24-hour graph of those readings vs time of day, with BPM on the
+vertical axis (40–200) and time of day along the bottom.
 
 **When the phone owns the screen** (a sub-app is showing), a short press means
 *back*: the watch pops one remote screen, and when none are left it returns to
@@ -154,7 +156,7 @@ provisional.**
 At y=180, small and dim:
 
 ```
-0.1.0-m19 Aug 18 06:00
+0.1.0-m19 Aug 18 14:59
 ```
 
 Firmware version, then the compiler build stamp (date and HH:MM). The build

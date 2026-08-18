@@ -6,12 +6,10 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import slate.app.apps.ClockApp
 import slate.app.apps.LauncherApp
@@ -20,6 +18,7 @@ import slate.app.apps.TestApp
 import slate.app.camera.CameraPreviewSession
 import slate.app.link.LinkContention
 import slate.app.link.LinkLog
+import slate.app.link.PackageUpdateGate
 import slate.app.link.PhoneId
 import slate.app.link.SharedLink
 import slate.app.link.SlateGattClient
@@ -284,6 +283,15 @@ class CompositorHost(
         compositor.register(launcher)
         scope.launch {
             try {
+                if (PackageUpdateGate.replacedThisProcess) {
+                    // After APK replace the isolated V8 process can still be
+                    // dying. Binding immediately, then waiting for close on
+                    // Main in onDestroy, is the post-update freeze.
+                    LinkLog.i("JS seed deferred after package replace")
+                    delay(400)
+                    runCatching { AndroidJsEngine.forceReset() }
+                    delay(200)
+                }
                 scripts.ensureSeeded()
                 scripts.ensureTimerRegistered()
                 LinkLog.i("JS packages seeded; timer ready; render IPC≈${scripts.lastRenderIpcMs}ms")
@@ -381,11 +389,10 @@ class CompositorHost(
         stopNews()
         serviceLifecycle.destroy()
         scripts.close()
-        // Close the shared V8 host too — otherwise a sticky restart can leave
-        // androidx's bind gate shut with no handle (N-51 after OTA / FGS churn).
-        runBlocking(Dispatchers.IO) {
-            AndroidJsEngine.forceReset()
-        }
+        // Close the shared V8 host off-thread. onDestroy runs on Main;
+        // runBlocking here deadlocks if the sandbox bind still needs the
+        // looper (post-update freeze until force-stop).
+        AndroidJsEngine.forceResetAsync()
         _confirmUi.value = ConfirmUi.Idle
         SharedLink.publishConfirmUi(ConfirmUi.Idle)
     }

@@ -145,6 +145,11 @@
             android:label="Sub-app repository" />
 
         <activity
+            android:name=".health.HeartRateActivity"
+            android:exported="false"
+            android:label="Heart rate" />
+
+        <activity
             android:name=".settings.WatchSettingsActivity"
             android:exported="false"
             android:label="Watch settings" />

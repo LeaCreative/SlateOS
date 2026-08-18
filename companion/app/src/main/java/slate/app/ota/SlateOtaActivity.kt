@@ -49,7 +49,7 @@ class SlateOtaActivity : ComponentActivity() {
         }
         packageUri = uri
         packageSelection.remember(uri)
-        status.text = "Package selected: ${uri.lastPathSegment ?: uri}"
+        describePackage(uri)
     }
 
     private val permissionLauncher = registerForActivityResult(
@@ -67,7 +67,10 @@ class SlateOtaActivity : ComponentActivity() {
         packageUri = uriFromIntent(intent)
             ?: savedInstanceState?.getString(STATE_URI)?.let(Uri::parse)
             ?: packageSelection.restore()
-        packageUri?.let { packageSelection.remember(it) }
+        packageUri?.let {
+            packageSelection.remember(it)
+            // Defer until status exists — describe in onCreate after setContent.
+        }
 
         val pad = dp(16)
         val root = LinearLayout(this).apply {
@@ -142,6 +145,7 @@ class SlateOtaActivity : ComponentActivity() {
         root.addView(button("Done — main screen") { goMain() })
 
         setContentView(ScrollView(this).apply { addView(root) })
+        packageUri?.let(::describePackage)
 
         var sawTransferActive = false
         lifecycleScope.launch {
@@ -152,9 +156,7 @@ class SlateOtaActivity : ComponentActivity() {
                     status.text = when {
                         s.error != null -> "${s.message}: ${s.error}"
                         s.active || s.progress > 0 -> s.message
-                        packageUri != null ->
-                            "Package selected: ${packageUri!!.lastPathSegment ?: packageUri}. " +
-                                "Check the watch is connected, then start."
+                        packageUri != null -> describePackageText(packageUri!!)
                         else -> s.message
                     }
                     // Only leave after a transfer that ran in this session —
@@ -189,13 +191,36 @@ class SlateOtaActivity : ComponentActivity() {
         packageUri = fromOpen
         packageSelection.remember(fromOpen)
         if (::status.isInitialized) {
-            status.text = "Package selected: ${fromOpen.lastPathSegment ?: fromOpen}"
+            describePackage(fromOpen)
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString(STATE_URI, packageUri?.toString())
         super.onSaveInstanceState(outState)
+    }
+
+    private fun describePackage(uri: Uri) {
+        status.text = describePackageText(uri)
+    }
+
+    private fun describePackageText(uri: Uri): String {
+        val name = uri.lastPathSegment ?: uri.toString()
+        return try {
+            val pkg = NordicDfuPackageReader.read(contentResolver, uri)
+            val stamp = NordicDfuPackageReader.faceStamp(pkg.firmware) ?: "no face stamp"
+            val mcuboot = NordicDfuPackageReader.mcubootVersion(pkg.firmware) ?: "no ih_ver"
+            val sha = NordicDfuPackageReader.sha12(pkg.firmware)
+            val stale = if (mcuboot == "0.1.0") {
+                " Note: MCUBoot header is 0.1.0 (the old hardcoded imgtool value)."
+            } else {
+                ""
+            }
+            "$name — $stamp — MCUBoot $mcuboot — ${pkg.firmware.size} B — sha $sha. " +
+                "Watch must show this stamp after reboot. Then start.$stale"
+        } catch (t: Throwable) {
+            "$name — cannot read image: ${t.message}"
+        }
     }
 
     private fun uriFromIntent(intent: Intent?): Uri? {

@@ -29,10 +29,9 @@ had was a divergence from it.
 
 | | |
 |---|---|
-| **Firmware packaged** | `build/dfu/slate-dfu.zip` SHA-256 prefix **`2D7C272691C8`** (`0.1.0-m19`) — Face diag hides version line; includes N-61 m18 accel `PWR_CONF` |
-| **Prior packaged** | `9FA5215458E0` (`0.1.0-m18`, N-61 raise/shake zeros) |
-| **Wrist until SDP OTA** | Last confirmed operator image was **`0.1.0-m17 Aug 12 18:02`** unless they have flashed since |
-| **Companion on Pixel** | **`0.8.2-p75`** / versionCode **76** (`slate.app.debug`) — nav destination reached, CDM ignore-disappear, Face diag subtitle |
+| **Firmware packaged** | `build/dfu/slate-dfu.zip` SHA-256 prefix **`EDAC341E7A03`** (`0.1.0-m21 Aug 18 15:56`, MCUBoot **0.1.21**) |
+| **Wrist** | **m21 booted**. Equal-version `IMAGE_OK` was **not** the stall (m16–m18 already did that at `ih_ver` 0.1.0; m20 was 0.1.20 and still did not boot) |
+| **Companion on Pixel** | **`0.8.2-p81`** / versionCode **82** |
 | **Host tests** | Run with `-E ble_link`; `ble_link` still fails (`drop/reject`) |
 | **RAM link slack** | **~3016 B** (~89% static) after I-19 ScreenBlock 3072→256 |
 

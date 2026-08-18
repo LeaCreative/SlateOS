@@ -135,10 +135,17 @@ Same 30% battery gate as channel 5. On Validate, writes InfiniTime DFU magic wor
 at the end of the secondary slot. Disconnect at any stage resets all state for the
 next connection (no stale pending state).
 
+MCUBoot **image version** (`imgtool --version` / `ih_ver`) is not the face
+string. `0.1.0-mN` in `include/slate_version.hpp` stamps `0.1.N`;
+`scripts/package_dfu.py` reads that file. InfiniTime’s README says it swaps
+when a newer version is in secondary, but **equal `0.1.0` headers already
+swapped** on this watch (m16→m17→m18, each with `IMAGE_OK`). Do not treat
+`IMAGE_OK` + matching `ih_ver` as the reason a later OTA kept primary.
+
 ### Pack a DFU zip (sealed / InfiniTime BL)
 
 ```powershell
-python scripts/package_dfu.py --bin build/dfu/slate_firmware.bin --version 1.0.0
+python scripts/package_dfu.py --bin build/dfu/slate_firmware.bin
 # or: cmake --build build/dfu --target slate_dfu
 ```
 

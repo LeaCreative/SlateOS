@@ -9,15 +9,90 @@
 
 ## Current state (18 Aug 2026)
 
+### Sticky "writeNoResponse failed — requeued" (`0.8.2-p81`)
+
+Not a failed link. On connect, HELLO_ACCEPT was written while the STATUS CCCD
+write was still in flight; Android returned **201** (`ERROR_GATT_WRITE_REQUEST_BUSY`).
+The packet was requeued and the retry succeeded (~150 ms). `lastError` stayed
+set. Writes now wait until CCCD subscribe finishes, and a requeue is not shown
+as Error.
+
+### Heart rate graph Y-axis labels (`0.8.2-p80`)
+
+The 24 h BPM plot had grid lines at 40/80/120/160/200 but no numbers. Those
+ticks are now labelled on the left. Pixel install of **p80** / versionCode **81**.
+
+### m21 swapped; equal-version IMAGE_OK is not the stall
+
+Operator: **m21 booted**. The earlier claim that InfiniTime refused every
+`ih_ver` **0.1.0** zip once m18 had `IMAGE_OK` is **wrong**. m16→m17→m18
+already did that (amber → 10 s BLE → `IMAGE_OK`) with the same `imgtool
+--version 0.1.0`. m20 was already packaged as **0.1.20** and still did not
+boot. A confirmed equal-version header did not suddenly become a gate at m18.
+
+What we actually know: MCUBoot kept primary until a zip that was both a
+clean rebuild and the file actually selected (`EDAC341E7A03` / m21). In
+between, at least one “m19” zip was m18 (`2D7C272691C8` / `101`), C: was
+full during packaging, and Downloads had several ~160 kB zips. Companion
+success still only means the transfer finished.
+
+Packaging still derives `0.1.N` from `kVersion` `0.1.0-mN` (hygiene; do not
+reuse a stale CMake `--version`). Companion p78 prints MCUBoot `ih_ver`.
+Judge swap by the face stamp and amber trial bar.
+
+Wrist: **`0.1.0-m21 Aug 18 15:56`**. Zip **`EDAC341E7A03`**.
+
+### Clean rebuild m21 after disk-full (`EDAC341E7A03`)
+
+Operator: OTA reported success but the watch still booted the old slot. C: had been full during earlier packaging. Rebuilt from a clean elf/bin/zip with 70 GB free.
+
+Face stamp **`0.1.0-m21 Aug 18 15:56`**, MCUBoot **0.1.21**, zip SHA prefix **`EDAC341E7A03`**, 160496 B. On the Pixel as **`Download/slate-dfu-m21.zip`**. OTA screen (p77) must show that stamp before start. After reboot the face **must** read **m21**; anything else is still the old slot.
+
+### Wrist still on m18; m20 packaged (`55E37EEB08F7`)
+
+`slate-dfu-m19.zip` on the Pixel **is** m19 (`275FAE146A95`, face stamp `0.1.0-m19 Aug 18 14:59`). A watch that still paints `0.1.0-m18 Aug 17 17:59` did not boot that image — reconnect green is the link cube, not MCUBoot swap (trial is an amber top bar that then vanishes). Downloads also has `slate-dfu-101.zip` (`9FA5215458E0`, the m18 image) at the same ~160 kB size.
+
+New package: `0.1.0-m20 Aug 18 15:28`, MCUBoot image version **0.1.20** (was stuck at 0.1.0), zip SHA prefix **`55E37EEB08F7`**. OTA screen now prints the baked face stamp + sha before start. File on phone: `Download/slate-dfu-m20.zip`. After reboot the face **must** read **m20**; Face diag Off then hides it.
+
+### Packaged DFU was m18, not m19 (`275FAE146A95`)
+
+The zip labelled m19 (`2D7C272691C8`, packaged 18 Aug 05:57) was built from
+`slate_firmware.bin` compiled **17 Aug 17:59** — strings inside are
+`0.1.0-m18 Aug 17 17:59`. Face-diag gating for the version line landed in
+source at 06:28 the same morning and was never rebuilt. That is why the wrist
+still shows yesterday’s stamp with Face diag Off.
+
+Rebuilt and packaged: `build/dfu/slate-dfu.zip` SHA-256 prefix **`275FAE146A95`**,
+binary `0.1.0-m19 Aug 18 14:59`. Needs **SDP OTA** (or sealed DFU). After flash
+the face should read **m19 Aug 18 14:59** with Face diag On, and that line
+should vanish with Face diag Off.
+
+### Companion BPM graph + post-update freeze (`0.8.2-p76`)
+
+Watch CONTROL VITALS (steps + last BPM) was only buffered when Health Connect
+sync was on, then flushed and discarded. The companion now always records valid
+BPM into a rolling 24 h log (`BpmLog`) and plots it vs time of day under
+**Heart rate** on Main. HC write is unchanged and still optional.
+
+Post-update freeze (force-stop to recover) was `CompositorHost.stop()` calling
+`runBlocking { AndroidJsEngine.forceReset() }` from `Service.onDestroy` on Main.
+The JS sandbox bind completes on the main looper, so waiting for that bind on
+Main deadlocks until force-stop. Close is now `forceResetAsync()` with a 400 ms
+cap; leftover binds are closed when they land. After an APK replace, JS seed
+waits ~600 ms before binding.
+
+Needs a Pixel install of **p76** / versionCode **77**. Confirm: open Heart rate
+after HR On on the watch; after the next `installDebug`, Main should stay
+responsive without force-stop.
+
 ### Face version line gated with Face diag (firmware `0.1.0-m19`)
 
 The firmware version/build stamp at y=178 was compiled into diag builds but
 always drawn, even with Face diag Off. It now paints only when
 `face_show_diag` is on — same toggle on the watch Settings page and in the
 companion Watch settings screen. Companion subtitle updated (`0.8.2-p75`).
-Packaged: `build/dfu/slate-dfu.zip` SHA-256 prefix **`2D7C272691C8`**. Needs
-SDP OTA; Face diag Off on the current wrist image will still leave the version
-visible until this lands.
+Packaged: `build/dfu/slate-dfu.zip` SHA-256 prefix **`275FAE146A95`** (real m19).
+The earlier **`2D7C272691C8`** zip was m18. Needs SDP OTA.
 
 ### Navigation — destination reached + turn glyph (companion `0.8.2-p74`)
 

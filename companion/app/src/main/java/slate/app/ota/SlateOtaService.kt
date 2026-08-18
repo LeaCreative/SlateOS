@@ -121,8 +121,17 @@ class SlateOtaService : Service() {
                 publish(SlateOtaState(active = true, message = "Validating package"))
                 val pkg = NordicDfuPackageReader.read(contentResolver, uri)
                 val image = pkg.firmware
+                val stamp = NordicDfuPackageReader.faceStamp(image) ?: "unknown stamp"
+                val mcuboot = NordicDfuPackageReader.mcubootVersion(image) ?: "?"
+                val sha = NordicDfuPackageReader.sha12(image)
 
-                publish(SlateOtaState(active = true, progress = 0, message = "Hashing image (${image.size} B)"))
+                publish(
+                    SlateOtaState(
+                        active = true,
+                        progress = 0,
+                        message = "Hashing $stamp MCUBoot $mcuboot (${image.size} B) sha $sha",
+                    ),
+                )
                 val sha256 = MessageDigest.getInstance("SHA-256").digest(image)
 
                 val transferId = (System.currentTimeMillis() and 0xFFFF).toInt()

@@ -54,6 +54,13 @@ class SlateGattClient(
     /** True once discoverServices() has been issued for the current GATT. */
     private var discoveryStarted = false
 
+    /**
+     * Android allows one GATT write at a time. TX/STATUS CCCD writes occupy
+     * that slot during bring-up; a HELLO_ACCEPT in the same window returns
+     * ERROR_GATT_WRITE_REQUEST_BUSY (201). Queue until both CCCDs land.
+     */
+    private var notifyReady = false
+
     /** Message-boundary state for the write pump (N-28). */
     private var lastPktEndedMessage = false
     private var lastPktChannel = -1
@@ -284,8 +291,12 @@ class SlateGattClient(
                 statusChar != null
             ) {
                 enableNotify(g, statusChar!!, "STATUS")
-            } else if (descriptor.characteristic.uuid == SlateGattIds.STATUS) {
+            } else if (descriptor.characteristic.uuid == SlateGattIds.STATUS ||
+                (descriptor.characteristic.uuid == SlateGattIds.TX && statusChar == null)
+            ) {
+                notifyReady = true
                 update { copy(notes = "subscribed TX(+STATUS); ready to push") }
+                bleHandler.post { pumpWrites() }
             }
         }
 
@@ -389,6 +400,7 @@ class SlateGattClient(
         bleHandler.removeCallbacksAndMessages(null)
         connecting = false
         discoveryStarted = false
+        notifyReady = false
         writeQueue.reset()
         writing.set(false)
         gapUntilMs = 0L
@@ -476,6 +488,9 @@ class SlateGattClient(
             bleHandler.postDelayed({ pumpWrites() }, gapUntilMs - now)
             return
         }
+        if (!notifyReady) {
+            return
+        }
         if (!writing.compareAndSet(false, true)) {
             scheduleStallCheck()
             return
@@ -497,18 +512,18 @@ class SlateGattClient(
         scheduleStallCheck()
         val ok = writeNoResponse(g, rx, pkt.bytes)
         if (!ok) {
-            // Packet was already polled. rc=201 (CONNECTION_CONGESTED) during
-            // CCCD bring-up dropped HELLO_ACCEPT permanently; phone went Ready
-            // while the watch stayed Connected and discarded DISPLAY.
+            // Packet was already polled. ERROR_GATT_WRITE_REQUEST_BUSY (201)
+            // during CCCD bring-up used to drop HELLO_ACCEPT permanently.
             writeQueue.requeueFront(pkt)
             writing.set(false)
-            update { copy(lastError = "writeNoResponse failed — requeued") }
             LinkLog.w(
                 "write failed — requeued ch=${pkt.channel} len=${pkt.bytes.size}; " +
                     "backoff ${WRITE_FAIL_BACKOFF_MS}ms",
             )
             gapUntilMs = System.currentTimeMillis() + WRITE_FAIL_BACKOFF_MS
             bleHandler.postDelayed({ pumpWrites() }, WRITE_FAIL_BACKOFF_MS)
+        } else if (_metrics.value.lastError.isNotBlank()) {
+            update { copy(lastError = "") }
         }
     }
 
@@ -574,6 +589,8 @@ class SlateGattClient(
         val cccd = ch.getDescriptor(SlateGattIds.CCCD)
         if (cccd == null) {
             LinkLog.w("CCCD missing on $label")
+            notifyReady = true
+            bleHandler.post { pumpWrites() }
             return
         }
         val enable = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE

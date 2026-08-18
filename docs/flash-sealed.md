@@ -52,7 +52,8 @@ routine, and hold-to-blue remains the guaranteed recovery.
 
 Since `E43C26CBE325` the running image identifies itself: the watch face
 carries a version line (`0.1.0-m19 Aug 18 HH:MM` style) in **Face diag On**
-builds. From `0.1.0-m19` (`2D7C272691C8`) that line hides with Face diag Off
+builds. From `0.1.0-m19` (`275FAE146A95`; **not** the mislabelled
+`2D7C272691C8` m18 zip) that line hides with Face diag Off
 on the watch or in the companion. Current packaged zip: `build/dfu/slate-dfu.zip`.
 
 **Flashing from InfiniTime is the reliable path** while the watch still runs a
@@ -122,12 +123,12 @@ cmake --build build/dfu --target slate_dfu
 Or:
 
 ```powershell
-python scripts/package_dfu.py --bin build/dfu/slate_firmware.bin --version 0.1.0
+python scripts/package_dfu.py --bin build/dfu/slate_firmware.bin
 ```
 
 Outputs: `slate-mcuboot-image.bin` + `slate-dfu.zip` (needs `imgtool` and ideally `adafruit-nrfutil`).
 
-The image uses **`imgtool create`** with `--slot-size 475136` (InfiniTime contract), not Slate ECDSA signing.
+The image uses **`imgtool create`** with `--slot-size 475136` (InfiniTime contract), not Slate ECDSA signing. MCUBoot `ih_ver` is `0.1.N` from `kVersion` `0.1.0-mN`. Bump N with the face stamp so packaging cannot drift; **do not assume** InfiniTime refuses equal-version swaps after `IMAGE_OK` (m16–m18 already did those).
 
 Radio-less bring-up only: add `-DSLATE_HAS_NIMBLE=OFF` (companion cannot connect; prefer radio-on DFU for sealed watches).
 

@@ -163,6 +163,11 @@ class MainActivity : SlateActivity() {
             ),
         )
         root.addView(
+            SimpleViews.button(this, "Heart rate") {
+                startActivity(Intent(this, slate.app.health.HeartRateActivity::class.java))
+            },
+        )
+        root.addView(
             SimpleViews.button(this, "Watch settings") {
                 startActivity(Intent(this, slate.app.settings.WatchSettingsActivity::class.java))
             },

@@ -19,6 +19,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import slate.script.ScriptEngine
 import slate.script.ScriptEngineException
 import java.util.concurrent.TimeUnit
@@ -80,6 +81,8 @@ class AndroidJsEngine private constructor(
         private const val HEAP_BYTES = 4L * 1024L * 1024L
         /** Last-resort kill; fine-grained governor limits remain lower. */
         private const val EVAL_TIMEOUT_MS = 500L
+        /** Bound so forceReset cannot stall Main via a caller runBlocking. */
+        private const val CLOSE_TIMEOUT_MS = 400L
 
         /**
          * The sandbox is per PROCESS, not per sub-app.
@@ -272,6 +275,16 @@ class AndroidJsEngine private constructor(
         }
 
         /**
+         * Same as [forceReset] but never occupies the caller thread. Use from
+         * [android.app.Service.onDestroy] — that callback is Main.
+         */
+        fun forceResetAsync() {
+            sandboxScope.launch {
+                forceReset()
+            }
+        }
+
+        /**
          * Unbind and forget the shared sandbox.
          *
          * `close()` is what actually releases the service binding; clearing the
@@ -292,11 +305,27 @@ class AndroidJsEngine private constructor(
                 return
             }
             if (job == null) return
-            runCatching { job.await() }
-                .onSuccess {
-                    runCatching { it.close() }
-                        .onFailure { e -> LinkLog.i("JS sandbox job close: ${e.message}") }
-                }
+            val sandbox = withTimeoutOrNull(CLOSE_TIMEOUT_MS) {
+                runCatching { job.await() }.getOrNull()
+            }
+            if (sandbox != null) {
+                runCatching { sandbox.close() }
+                    .onFailure { e -> LinkLog.i("JS sandbox job close: ${e.message}") }
+                return
+            }
+            // Bind still in flight. Do not cancel it (that bricks androidx's
+            // static gate). Close when it lands so the next create() can bind.
+            LinkLog.w("JS sandbox close timed out; closing bind when it completes")
+            sandboxScope.launch {
+                runCatching { job.await() }
+                    .onSuccess { late ->
+                        runCatching { late.close() }
+                        sandboxLock.withLock {
+                            if (sandboxInstance === late) sandboxInstance = null
+                            if (sandboxJob === job) sandboxJob = null
+                        }
+                    }
+            }
         }
 
         /**

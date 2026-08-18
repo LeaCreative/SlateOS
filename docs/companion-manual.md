@@ -1,6 +1,6 @@
 # Slate companion — what every control does
 
-**Companion `0.8.2-p75` (build 76).** Updated 18 August 2026.
+**Companion `0.8.2-p76` (build 77).** Updated 18 August 2026.
 
 > Capability overview: [`capabilities.md`](capabilities.md). Sub-apps launch from
 > the **watch launcher**, not from per-app phone buttons.
@@ -17,6 +17,7 @@ Permissions, Debug, Watch settings, and the repository.
 | **Permissions** | Grants and OEM background settings |
 | **Associate watch (CDM)** | CompanionDeviceManager `watch` profile |
 | **Start / reconnect link service** | Starts `LinkForegroundService` (owns GATT) |
+| **Heart rate** | Rolling 24 h BPM graph vs time of day (from watch VITALS; HR must be On) |
 | **Watch settings** | Raise / timeout / steps / face diag (incl. version line on watch) / HR / colours; syncs with watch |
 | **Sub-app repository** | Browse/install JS apps, launcher visibility, per-app settings |
 | **Install Slate on sealed PineTime** | Nordic legacy DFU — InfiniTime → Slate first hop |

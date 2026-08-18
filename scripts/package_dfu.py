@@ -4,7 +4,10 @@
 Uses `imgtool create` (unsigned) with slot-size 475136 — same contract as
 InfiniTime's create_image.sh / pinetime-mcuboot-bootloader.
 
-  python scripts/package_dfu.py --bin build/debug/slate_firmware.bin --version 0.1.0
+MCUBoot image version is taken from `include/slate_version.hpp` (`0.1.0-mN` →
+`0.1.N`) so cmake cannot keep a hardcoded header version.
+
+  python scripts/package_dfu.py --bin build/dfu/slate_firmware.bin
 
 Requires: imgtool (pip install imgtool), adafruit-nrfutil on PATH for the zip step.
 """
@@ -12,6 +15,7 @@ Requires: imgtool (pip install imgtool), adafruit-nrfutil on PATH for the zip st
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -21,6 +25,31 @@ ROOT = Path(__file__).resolve().parents[1]
 # InfiniTime primary / secondary slot size (bytes).
 SLOT_SIZE = 475136  # 0x74000
 HEADER_SIZE = 32
+VERSION_HPP = ROOT / "include" / "slate_version.hpp"
+KVERSION_RE = re.compile(r'kVersion\[\]\s*=\s*"([^"]+)"')
+MILESTONE_RE = re.compile(r"^0\.1\.0-m(\d+)$")
+
+
+def kversion_from_header(path: Path = VERSION_HPP) -> str:
+    text = path.read_text(encoding="utf-8")
+    match = KVERSION_RE.search(text)
+    if not match:
+        raise ValueError(f"no kVersion string in {path}")
+    return match.group(1)
+
+
+def mcuboot_version_from_kversion(kversion: str) -> str:
+    """Map face stamp `0.1.0-m21` to imgtool `--version 0.1.21`."""
+    match = MILESTONE_RE.match(kversion)
+    if not match:
+        raise ValueError(
+            f"kVersion {kversion!r} must match 0.1.0-mN "
+            "(MCUBoot header becomes 0.1.N)"
+        )
+    milestone = int(match.group(1))
+    if milestone < 1:
+        raise ValueError("MCUBoot image version 0.1.0 is refused")
+    return f"0.1.{milestone}"
 
 
 def main() -> int:
@@ -31,7 +60,11 @@ def main() -> int:
         required=True,
         help="Raw app .bin (linked at 0x8020; imgtool --pad-header adds 32B header)",
     )
-    ap.add_argument("--version", required=True, help="Semantic version, e.g. 0.1.0")
+    ap.add_argument(
+        "--version",
+        default=None,
+        help="Override MCUBoot image version (default: 0.1.N from kVersion)",
+    )
     ap.add_argument(
         "--out-dir",
         type=Path,
@@ -48,6 +81,26 @@ def main() -> int:
     if not args.bin.is_file():
         print(f"missing bin: {args.bin}", file=sys.stderr)
         return 1
+
+    try:
+        derived = mcuboot_version_from_kversion(kversion_from_header())
+    except (OSError, ValueError) as exc:
+        print(f"cannot derive MCUBoot version: {exc}", file=sys.stderr)
+        return 1
+
+    version = args.version or derived
+    if version == "0.1.0":
+        print(
+            "refusing MCUBoot --version 0.1.0: that value was hardcoded on "
+            "every zip through m19; pass 0.1.N from kVersion instead",
+            file=sys.stderr,
+        )
+        return 1
+    if args.version and args.version != derived:
+        print(
+            f"warning: --version {args.version} does not match kVersion → {derived}",
+            file=sys.stderr,
+        )
 
     imgtool = shutil.which("imgtool") or shutil.which("imgtool.py")
     if not imgtool:
@@ -70,13 +123,13 @@ def main() -> int:
         "--slot-size",
         str(SLOT_SIZE),
         "--version",
-        args.version,
+        version,
         str(args.bin),
         str(image),
     ]
     print(" ".join(cmd))
     subprocess.check_call(cmd)
-    print(f"wrote {image}")
+    print(f"wrote {image} (MCUBoot {version})")
 
     if args.skip_zip:
         return 0

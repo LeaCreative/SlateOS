@@ -20,6 +20,7 @@ Build a PineTime-capable MCUBoot against this map only for SWD factory / custom 
 | Validate primary | on |
 | Revert | if `IMAGE_OK` not set within **3** boots |
 | Image header | 32 bytes (`--pad-header`) |
+| Image version | `0.1.N` from `kVersion` `0.1.0-mN`. Keep in lockstep with the face stamp. InfiniTime README says “newer version”; this watch has already swapped equal `0.1.0` after `IMAGE_OK`. |
 
 ## Factory flash order (devkit / opened housing)
 

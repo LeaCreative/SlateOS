@@ -15,8 +15,9 @@ import slate.session.Vitals
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Buffers watch vitals (CONTROL VITALS) and flushes to Health Connect on the
- * planned cadence. Also serves JS [HealthAdapter] snapshots.
+ * Buffers watch vitals (CONTROL VITALS): always records BPM for the companion
+ * 24 h graph, and flushes to Health Connect on the planned cadence when sync
+ * is on. Also serves JS [HealthAdapter] snapshots.
  */
 class VitalsIngest(
     private val context: Context,
@@ -35,18 +36,22 @@ class VitalsIngest(
     private var flushJob: Job? = null
 
     fun onVitals(snap: Vitals.Snapshot) {
-        if (!prefs.healthConnectSync) return
         val now = System.currentTimeMillis()
         lastSeenMs = now
         lastSteps = snap.steps
         if (snap.bpm in 30..220) {
             lastBpm = snap.bpm
-            hrSamples += now to snap.bpm.toLong()
-            while (hrSamples.size > MAX_HR_SAMPLES) {
-                hrSamples.removeAt(0)
+            BpmLog.get(context).record(now, snap.bpm)
+            if (prefs.healthConnectSync) {
+                hrSamples += now to snap.bpm.toLong()
+                while (hrSamples.size > MAX_HR_SAMPLES) {
+                    hrSamples.removeAt(0)
+                }
             }
         }
-        maybeScheduleFlush(now)
+        if (prefs.healthConnectSync) {
+            maybeScheduleFlush(now)
+        }
     }
 
     fun latestWatchJson(): JSONObject =
