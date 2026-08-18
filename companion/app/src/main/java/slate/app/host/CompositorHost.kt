@@ -455,6 +455,7 @@ class CompositorHost(
                     for (delayMs in TIME_SYNC_RETRY_DELAYS_MS) {
                         delay(delayMs)
                         if (session.state != SessionClient.State.Ready) return@launch
+                        if (SharedLink.benchmarkPaused) continue
                         sendTimeSync()
                     }
                 }
@@ -503,6 +504,7 @@ class CompositorHost(
      */
     fun sendTimeSync(nowMillis: Long = System.currentTimeMillis()) {
         if (session.state != SessionClient.State.Ready) return
+        if (SharedLink.benchmarkPaused) return
         val offsetMs = TimeZone.getDefault().getOffset(nowMillis)
         val localEpoch = (nowMillis + offsetMs) / 1000L
         LinkLog.i(
@@ -557,6 +559,7 @@ class CompositorHost(
      */
     fun sendSettingsSync(force: Boolean = false) {
         if (session.state != SessionClient.State.Ready) return
+        if (SharedLink.benchmarkPaused) return
         val pending = watchSettings.takePending()
         if (pending == null && !force) return
         val p = pending ?: watchSettings.current()
@@ -586,6 +589,7 @@ class CompositorHost(
         scope.launch {
             delay(SETTINGS_OPEN_DELAY_MS)
             if (session.state != SessionClient.State.Ready) return@launch
+            if (SharedLink.benchmarkPaused) return@launch
             sendSettingsSync(force = true)
         }
     }
@@ -957,7 +961,11 @@ class CompositorHost(
             ) {
                 return@launch
             }
-            syncAllToSystemChannel()
+            if (!SharedLink.benchmarkPaused) {
+                syncAllToSystemChannel()
+            } else {
+                LinkLog.i("notif bulk-sync skipped — OTA/benchmark paused")
+            }
             pushNotifSnapshotToApp()
             startCallMonitor()
             NotifStore.changes.collect { change ->
@@ -965,6 +973,9 @@ class CompositorHost(
                     is NotifChange.Upserted -> {
                         val n = change.item
                         if (n.key in watchClearedKeys) {
+                            return@collect
+                        }
+                        if (SharedLink.benchmarkPaused) {
                             return@collect
                         }
                         // Call-category ongoing posts: CallMonitor owns the
@@ -1535,6 +1546,7 @@ class CompositorHost(
             "subscribe" -> {
                 if (navAdapter == null) {
                     navAdapter = NavAdapter(context, scope) { m ->
+                        if (!navSubscribed) return@NavAdapter
                         scope.launch {
                             compositor.dispatchSystemEvent(
                                 ScriptRuntimeHost.NAV_ID,
@@ -1544,12 +1556,13 @@ class CompositorHost(
                         }
                     }
                 }
-                navAdapter?.start()
                 navSubscribed = true
+                navAdapter?.start()
+                navAdapter?.replayLast()
             }
             "unsubscribe" -> {
                 navSubscribed = false
-                stopNav()
+                // Keep OsmAnd bound so the next open has a live last-maneuver.
             }
             "demo" -> {
                 val kind = try {

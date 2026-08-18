@@ -39,6 +39,8 @@ constexpr std::uint8_t kRegAsicMsb = 0x5Cu;
 constexpr std::uint8_t kRegFeaturesIn = 0x5Eu;
 constexpr std::uint8_t kRegInitCtrl = 0x59u;
 constexpr std::uint8_t kRegCmd = 0x7Eu;
+constexpr std::uint8_t kRegPowerCtrl = 0x7Du;
+constexpr std::uint8_t kRegPowerConf = 0x7Cu;
 
 constexpr std::size_t kFeatureSize = 70u;
 constexpr std::size_t kStepCounterByte = 0x3Au + 1u;
@@ -62,6 +64,8 @@ struct FakeBma {
   FakeBma() {
     regs[kRegChipId] = 0x13u;            // BMA425
     regs[kRegInternalStatus] = 0x01u;    // ASIC initialised
+    regs[kRegPowerCtrl] = 0x04u;         // accel enabled (InfiniTime PWR_CTRL)
+    regs[kRegPowerConf] = 0x03u;         // APS on, fifo_self_wakeup on
   }
 
   void set_accel(std::int16_t x, std::int16_t y, std::int16_t z) {
@@ -80,6 +84,11 @@ struct FakeBma {
   bool read(std::uint8_t reg, std::uint8_t* data, std::size_t len) {
     if (reg == kRegAccData) {
       if (len < 6u) return false;
+      if ((regs[kRegPowerCtrl] & 0x04u) == 0u) {
+        // Suspend / acc_en off: the part ACKs and returns zeros (N-61).
+        for (std::size_t i = 0u; i < 6u; ++i) data[i] = 0u;
+        return true;
+      }
       put12(data + 0, accel_x);
       put12(data + 2, accel_y);
       put12(data + 4, accel_z);
@@ -332,6 +341,31 @@ void test_acc_conf_matches_infinitime() {
   (void)drv.configure(cfg.data(), cfg.size(), 3u);
   expect("ACC_CONF is InfiniTime's 0x28 (not continuous 0xA8)",
          dev.regs[0x40] == 0x28u);
+  expect("PWR_CONF keeps fifo_self_wakeup (0x03, not 0x01)",
+         dev.regs[kRegPowerConf] == 0x03u);
+  expect("PWR_CTRL has acc_en", (dev.regs[kRegPowerCtrl] & 0x04u) != 0u);
+}
+
+/**
+ * All-zero ACC_DATA with a live ACK is how raise-to-wake dies while the chip
+ * id still looks healthy. read_accel must re-enable the accelerometer and
+ * retry rather than feeding the detector a gravity-free sample forever.
+ */
+void test_dead_accel_is_revived() {
+  FakeBma dev;
+  g_dev = &dev;
+  slate::bma::Driver drv;
+  drv.init(make_bus());
+  dev.set_accel(0, 0, 1024);
+  dev.regs[kRegPowerCtrl] = 0u;
+
+  std::int16_t x = 1, y = 1, z = 1;
+  expect("read succeeds after revive", drv.read_accel(&x, &y, &z));
+  expect("acc_en is back on", (dev.regs[kRegPowerCtrl] & 0x04u) != 0u);
+  expect("APS dropped for the retry (fifo_self_wakeup kept)",
+         dev.regs[kRegPowerConf] == 0x02u);
+  expect("gravity is visible after revive", z == 1024);
+  expect("PWR_CTRL snapshot is live", drv.last_power_ctrl() == 0x04u);
 }
 
 }  // namespace
@@ -343,6 +377,7 @@ int main() {
   test_accel_scaling_is_1024_per_g();
   test_config_upload_is_spread_across_the_stream();
   test_acc_conf_matches_infinitime();
+  test_dead_accel_is_revived();
   if (g_fails != 0) {
     std::printf("%d failure(s)\n", g_fails);
     return 1;

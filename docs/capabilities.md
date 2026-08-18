@@ -15,7 +15,7 @@
 | Piece | Identity |
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
-| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`08986117C2BA`**; CONTROL VITALS 0xE2 + prior nav chrome / FLAG_SILENT |
+| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`9FA5215458E0`** (`0.1.0-m18`, N-61 raise/shake zeros). Wrist still on **`0.1.0-m17 Aug 12 18:02`** until SDP OTA |
 | Companion APK | **`slate.app.debug`** — see `companion/app/build.gradle.kts` for versionName / versionCode |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
@@ -43,7 +43,7 @@
 
 ### Sensors / power
 - BMA421/425: Bosch feature upload, pedometer enable (full-block R/W), ACC_CONF **`0x28`** (InfiniTime CIC_AVG), axis swap for mount frame.
-- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60). False-wake on typing / arms-down walk: none observed. Shake-to-wake mirrors InfiniTime EMA (needs DFU for this build).
+- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60), then **both raise and shake died** on the m17 image (N-61: ACC_DATA zeros / `PWR_CONF` cleared `fifo_self_wakeup`). **m18** re-enables acc on dead samples and restores InfiniTime `PWR_CONF` `0x03`. Needs DFU. Overlay line 1 is `uptime/chip.status.step.pwr` (`pwr=4` = acc_en).
 - Battery SAADC InfiniTime-matched curve + charge pin; BAS.
 - HRS3300 **gated by settings** — `hr_enabled` (default Off). On-demand measure
   from local Heart Rate screen or GATT HRS CCCD; asleep otherwise.
@@ -74,7 +74,7 @@
 ### Sub-apps
 - **JS** via androidx.javascriptengine (V8 isolate); Kotlin DSL / JS builder byte-identical lists.
 - **Watch launcher** (`LauncherApp`): swipe face→launcher, tap to focus, swipe back to close.
-- **Bundled demos** (seeded): `timer`, `navigation` (OsmAnd AIDL + dest remaining), `camera`, `vibrate`, `location`, `map`, `news`, `media`, `weather`, `httpdemo`.
+- **Bundled demos** (seeded): `timer`, `navigation` (OsmAnd AIDL + dest remaining + destination reached), `camera`, `vibrate`, `location`, `map`, `news`, `media`, `weather`, `httpdemo`.
 - **Sideload-only examples:** `image`, `image-vector` (zip).
 - Repo UI + third-party sources; official hosted index still **placeholder**.
 - **Open with / Share zip** (`SideloadActivity`, label “Open with Slate”):

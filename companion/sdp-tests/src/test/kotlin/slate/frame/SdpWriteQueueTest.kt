@@ -158,6 +158,17 @@ class SdpWriteQueueTest {
     }
 
     @Test
+    fun containsChannelSeesQueuedOta() {
+        val q = SdpWriteQueue()
+        q.enqueueMessage(SdpFrame.CHAN_SYSTEM, ByteArray(20) { 0x04 })
+        assertTrue(!q.containsChannel(SdpFrame.CHAN_OTA))
+        q.enqueueMessage(SdpFrame.CHAN_OTA, ByteArray(40) { 0x5A })
+        assertTrue(q.containsChannel(SdpFrame.CHAN_OTA))
+        assertEquals(SdpFrame.CHAN_OTA, q.poll()!!.channel)
+        assertTrue(!q.containsChannel(SdpFrame.CHAN_OTA))
+    }
+
+    @Test
     fun requeueFrontRestoresPacket() {
         val q = SdpWriteQueue()
         q.enqueueMessage(SdpFrame.CHAN_CONTROL, byteArrayOf(0x0A))

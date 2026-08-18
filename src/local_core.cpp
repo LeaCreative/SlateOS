@@ -23,6 +23,7 @@ void Core::init(const Hooks& hooks, bma::Driver* bma) {
   // 0xFF = no config upload attempted. The memset above would otherwise leave
   // this at 0, which is indistinguishable from a real INTERNAL_STATUS of 0.
   block_.state.diag_bma_status = 0xFFu;
+  block_.state.diag_bma_pwr = 0xFFu;
   notif::init(&notifs_);
   alarm::init(&alarms_);
   alarm::load(&alarms_);
@@ -48,6 +49,7 @@ void Core::init(const Hooks& hooks, bma::Driver* bma) {
     local_state().diag_bma_chip = static_cast<std::uint8_t>(bma_->chip());
     local_state().diag_bma_status = bma_->last_init_status();
     local_state().diag_bma_step_en = bma_->step_counter_enabled() ? 1u : 0u;
+    local_state().diag_bma_pwr = bma_->last_power_ctrl();
   }
   show_current();
 }
@@ -555,31 +557,40 @@ void Core::poll_raise(std::uint32_t now_ms) {
   }
   const bool raise_on = local_state().settings.tilt_enabled != 0u;
   const bool shake_on = local_state().settings.shake_enabled != 0u;
+  const bool diag_on = local_state().settings.face_show_diag != 0u;
   raise_.set_sensitivity(
       motion::clamp_sensitivity(local_state().settings.raise_sensitivity));
   shake_.set_sensitivity(
       motion::clamp_sensitivity(local_state().settings.shake_sensitivity));
 
-  if (!raise_on && !shake_on) {
+  if (!raise_on && !shake_on && !diag_on) {
     raise_.reset();
     shake_.reset();
     return;
   }
+
+  const auto take_sample = [&]() -> bool {
+    std::int16_t x = 0, y = 0, z = 0;
+    if (!bma_->read_accel(&x, &y, &z)) {
+      return false;
+    }
+    local_state().diag_ax = x;
+    local_state().diag_ay = y;
+    local_state().diag_az = z;
+    local_state().diag_bma_pwr = bma_->last_power_ctrl();
+    return true;
+  };
+
   if (power_ != Power::Sleeping) {
     // Awake: keep the history empty so the next sleep starts cold.
     raise_.reset();
     shake_.reset();
     // Still sample accel for the diag overlay so a sealed watch can show the
     // mount-frame orientation without sleeping (axis-swap / dead-sensor check).
-    if (local_state().settings.face_show_diag &&
+    if (diag_on &&
         static_cast<std::uint32_t>(now_ms - last_raise_ms_) >= 200u) {
       last_raise_ms_ = now_ms;
-      std::int16_t x = 0, y = 0, z = 0;
-      if (bma_->read_accel(&x, &y, &z)) {
-        local_state().diag_ax = x;
-        local_state().diag_ay = y;
-        local_state().diag_az = z;
-      }
+      (void)take_sample();
     }
     return;
   }
@@ -588,15 +599,18 @@ void Core::poll_raise(std::uint32_t now_ms) {
   }
   last_raise_ms_ = now_ms;
 
-  std::int16_t x = 0, y = 0, z = 0;
-  if (!bma_->read_accel(&x, &y, &z)) {
+  if (!take_sample()) {
     return;
   }
-  local_state().diag_ax = x;
-  local_state().diag_ay = y;
-  local_state().diag_az = z;
+  const std::int16_t x = local_state().diag_ax;
+  const std::int16_t y = local_state().diag_ay;
+  const std::int16_t z = local_state().diag_az;
   if (local_state().diag_raise_samples < 0xFFFFu) {
     ++local_state().diag_raise_samples;
+  }
+
+  if (!raise_on && !shake_on) {
+    return;
   }
 
   bool woke = false;

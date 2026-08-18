@@ -66,12 +66,27 @@ class NavAdapter(
         osmAnd?.start()
     }
 
-    fun stop() {
-        osmAnd?.stop()
-        osmAnd = null
+    /** Keep OsmAnd bound; only drop the broadcast receiver. */
+    fun stopListening() {
         if (!registered) return
         runCatching { context.unregisterReceiver(receiver) }
         registered = false
+    }
+
+    fun stop() {
+        osmAnd?.stop()
+        osmAnd = null
+        stopListening()
+    }
+
+    fun replayLast() {
+        val m = osmAnd?.lastManeuver ?: last
+        if (m != null) {
+            last = m
+            listener.onManeuver(m)
+        } else {
+            osmAnd?.replayLast()
+        }
     }
 
     fun injectDemo(kind: String) {

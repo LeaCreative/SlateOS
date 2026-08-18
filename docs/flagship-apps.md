@@ -15,7 +15,8 @@ apps are runnable before a hosted index exists.
 | Action | Role |
 |---|---|
 | OsmAnd AIDL `registerForNavigationUpdates` | Turn type + metres to next turn (travel-relative) |
-| OsmAnd navigation notification (NLS) | Remaining metres to destination + street text |
+| OsmAnd AIDL `registerForVoiceRouterMessages` | `reached_destination` → arrive |
+| OsmAnd navigation notification (NLS) | Remaining metres to destination + street text; arrival phrases; 0 m remaining |
 | `slate.app.NAV_MANEUVER` | Slate demo / CI |
 | `net.osmand.navigation` / `net.osmand.plus.NAVIGATION` | OsmAnd-style extras |
 
@@ -31,7 +32,9 @@ travel**, not phone compass orientation.
 
 ### Screen
 
-Maneuver glyph, distance, street, `progressArc`, ETA. Manifest `refreshPolicy: on-change`.
+Maneuver glyph (up-arrow for continue; checkmark on arrive), distance, street,
+remaining to destination, or a **Destination reached** face. Manifest
+`refreshPolicy: on-change`.
 The script pushes **one display list per maneuver event** (plus `retain(120)`), never a
 periodic refresh.
 
@@ -41,7 +44,7 @@ periodic refresh.
 |---|---|
 | **GPS lost** | Host posts `status=lost_gps` (keep last turn/distance). UI shows “GPS lost”; no haptic spam. |
 | **Phone ↔ watch disconnect** | Host calls `NavAdapter.notifyDisconnected()` → `status=disconnected`. Script would push a DL if the link were up; **watch keeps the last retained frame** (`RETAIN`). On reconnect, the next maneuver event refreshes. |
-| **Demo** | Long-press / double-tap → `slate.nav.demo('left')`. Also `demo('lost_gps')` / `demo('disconnected')`. |
+| **Demo** | Long-press / double-tap → `slate.nav.demo('left')`. Slide-up → `demo('arrive')`. Also `demo('lost_gps')` / `demo('disconnected')`. |
 
 ## B) Camera — binding design
 

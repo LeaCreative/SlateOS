@@ -217,6 +217,17 @@ class LinkForegroundService : Service() {
                     LinkLog.i("ignoring disappearance for non-selected association $gone")
                     return START_STICKY
                 }
+                // CDM "disappeared" means the watch is not in CDM's scan, not
+                // that GATT dropped. A connected peripheral often stops
+                // advertising, so this fires in the middle of a live session —
+                // SDP OTA included. Closing here is what made OTA crawl: drop,
+                // full rediscovery, 32 notif upserts, repeat.
+                if (client.metrics.value.connected) {
+                    LinkLog.i(
+                        "presence disappeared ${gone ?: ""} while GATT up — keeping link",
+                    )
+                    return START_STICKY
+                }
                 LinkLog.i("presence disappeared ${gone ?: ""}")
                 stopReconnect()
                 client.close()

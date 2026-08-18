@@ -203,6 +203,11 @@ struct State {
    * the watch was in on 8 Aug.
    */
   std::uint8_t diag_bma_step_en = 0u;
+  /**
+   * Live PWR_CTRL (0x7D) from the last accel poll. 4 = acc_en. 0 with a
+   * working chip-id is why raise/shake see 0/0/0 (N-61). 0xFF = never read.
+   */
+  std::uint8_t diag_bma_pwr = 0xFFu;
   // How many times the local face took the screen back from a remote screen,
   // and the last caller to do it. Three fixes have each gated a different
   // path and a fourth still exists; guessing again is not the way to find it.
@@ -232,8 +237,8 @@ struct State {
    *   rej     last RaiseDetector::reject_code while history was full
    *           (0 fire, 1 filling, 2 |x|, 3 y-var, 4 face-down, 5 y-mean, 6 roll)
    *   fires   raise-to-wake successes
-   *   wake    last wake source: 0 none, 1 raise, 2 button, 3 double-tap, 4 charge
-   *   x/y/z   last accel sample (mount frame, 1g ≈ 1024)
+   *   wake    last wake source: 0 none, 1 raise, 2 button, 3 double-tap, 4 charge, 6 shake
+   *   x/y/z   last accel sample / 16 (1g ≈ 64 on the overlay; raw 1g ≈ 1024)
    */
   std::uint16_t diag_sleep_enters = 0u;
   std::uint16_t diag_raise_samples = 0u;

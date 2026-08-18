@@ -97,6 +97,11 @@ class SdpWriteQueue {
 
     fun isEmpty(): Boolean = synchronized(lock) { pkts.isEmpty() }
 
+    /** True when any queued fragment is on [channel] (used to skip pacing ahead of OTA). */
+    fun containsChannel(channel: Int): Boolean = synchronized(lock) {
+        pkts.any { it.channel == channel }
+    }
+
     private fun isHighPriority(channel: Int): Boolean =
         channel == SdpFrame.CHAN_CONTROL ||
             channel == SdpFrame.CHAN_DISPLAY ||

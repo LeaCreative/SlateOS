@@ -13,6 +13,9 @@ object OsmAndNotifParser {
         val distanceToTurnM: Int,
         val destinationDistanceM: Int,
         val street: String,
+        val roundaboutExit: Int = 0,
+        /** True when the summary line was present, even if remaining metres are 0. */
+        val hasDestination: Boolean = false,
     )
 
     private val DIST_RE =
@@ -33,26 +36,35 @@ object OsmAndNotifParser {
         } else {
             "none"
         }
+        val exit = OsmAndTurnTypes.roundaboutExit(turnPhrase)
         val street = text.lineSequence()
             .map { it.trim() }
-            .firstOrNull { it.isNotEmpty() && !looksLikeSummaryLine(it) }
+            .firstOrNull { it.isNotEmpty() && !looksLikeSummaryLine(it) && !looksLikeInstruction(it) }
             .orEmpty()
-        val dest = text.lineSequence()
+        val destLine = text.lineSequence()
             .map { it.trim() }
             .lastOrNull { looksLikeSummaryLine(it) }
-            ?.let { firstDistanceMetres(it) }
-            ?: 0
+        val dest = destLine?.let { firstDistanceMetres(it) } ?: 0
         if (turnDist <= 0 && dest <= 0 && turn == "none") return null
         return Parsed(
             turn = turn,
             distanceToTurnM = turnDist.coerceAtLeast(0),
             destinationDistanceM = dest.coerceAtLeast(0),
             street = street.take(48),
+            roundaboutExit = exit,
+            hasDestination = destLine != null,
         )
     }
 
     private fun looksLikeSummaryLine(line: String): Boolean =
         line.contains('•') && DIST_RE.containsMatchIn(line)
+
+    private fun looksLikeInstruction(line: String): Boolean {
+        val p = line.lowercase()
+        return p.startsWith("take ") || p.startsWith("turn ") || p.startsWith("keep ") ||
+            p.startsWith("go ") || p.startsWith("continue ") ||
+            p.contains("arrived") || p.contains("destination reached")
+    }
 
     fun firstDistanceMetres(s: String): Int {
         val m = DIST_RE.find(s) ?: return 0

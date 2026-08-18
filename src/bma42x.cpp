@@ -29,6 +29,12 @@ constexpr std::uint8_t kRegAsicMsb = 0x5Cu;       // BMA4_RESERVED_REG_5C_ADDR
 constexpr std::uint8_t kRegInternalStatus = 0x2Au;  // BMA4_INTERNAL_STAT
 constexpr std::uint8_t kRegPowerConf = 0x7Cu;     // BMA4_POWER_CONF_ADDR
 constexpr std::uint8_t kInternalStatusInitOk = 0x01u;
+// PWR_CONF bits: 0 = adv_power_save, 1 = fifo_self_wakeup. Reset value is
+// 0x03. Bosch's bma4_set_advance_power_save is a read-modify-write that
+// leaves fifo_self_wakeup set; writing 0x00 / 0x01 cleared it (N-61).
+constexpr std::uint8_t kPwrConfApsOff = 0x02u;
+constexpr std::uint8_t kPwrConfApsOn = 0x03u;
+constexpr std::uint8_t kPwrCtrlAccEn = 0x04u;
 // Bosch's read_write_len for I2C. The ASIC address advances by len/2 per chunk.
 constexpr std::size_t kStreamChunk = 8u;
 
@@ -96,7 +102,7 @@ bool Driver::write_feature_config(const std::uint8_t* cfg, std::size_t len) {
   if (cfg == nullptr || len == 0u || bus_.write_reg == nullptr) {
     return false;
   }
-  if (!wr(kRegPowerConf, 0x00u)) {
+  if (!wr(kRegPowerConf, kPwrConfApsOff)) {
     return false;
   }
   if (bus_.delay_ms) {
@@ -139,7 +145,7 @@ bool Driver::write_feature_config(const std::uint8_t* cfg, std::size_t len) {
   (void)rd(kRegAsicLsb, &feature_addr_lsb_);
   (void)rd(kRegAsicMsb, &feature_addr_msb_);
   feature_addr_lsb_ &= 0x0Fu;
-  (void)wr(kRegPowerConf, 0x01u);
+  (void)wr(kRegPowerConf, kPwrConfApsOn);
   return (status & 0x0Fu) == kInternalStatusInitOk;
 }
 
@@ -170,7 +176,7 @@ bool Driver::enable_step_counter() {
   static_assert(kFeatureSize % 2u == 0u, "BMA feature block length must be even");
 
   // 1. APS off + settle.
-  if (!wr(kRegPowerConf, 0x00u)) {
+  if (!wr(kRegPowerConf, kPwrConfApsOff)) {
     return false;
   }
   if (bus_.delay_ms) {
@@ -223,27 +229,30 @@ bool Driver::enable_step_counter() {
   }
 
   // Restore APS whatever happened - leaving it off costs current.
-  (void)wr(kRegPowerConf, 0x01u);
+  (void)wr(kRegPowerConf, kPwrConfApsOn);
   step_enabled_ = verified;
   return verified;
 }
 
 bool Driver::enable_any_motion(std::uint8_t sens) {
-  // Match InfiniTime's Bma421::Init accel_conf exactly:
+  // Match InfiniTime's Bma421::Init order: accel enable, then accel_conf.
   //   odr=100 Hz, bandwidth=NORMAL_AVG4, perf_mode=CIC_AVG → ACC_CONF 0x28.
   // Slate previously wrote 0xA8 (same ODR/BW, but CONTINUOUS perf_mode). The
   // feature ASIC's pedometer is tuned for the CIC-averaged stream; continuous
   // mode was a silent divergence and a plausible cause of soft step counts
   // once the enable bit finally reached the sensor (N-59).
+  if (!wr(kRegPowerCtrl, kPwrCtrlAccEn)) {
+    return false;
+  }
   if (!wr(kRegAccConf, 0x28u)) {
     return false;
   }
   if (!wr(kRegAccRange, 0x00u)) {  // ±2g
     return false;
   }
-  if (!wr(kRegPowerCtrl, 0x04u)) {  // accel enable
-    return false;
-  }
+  // InfiniTime's Bosch helper is a RMW that keeps fifo_self_wakeup. Restoring
+  // the reset value (0x03) is the same end state.
+  (void)wr(kRegPowerConf, kPwrConfApsOn);
   // INT1 push-pull active-high.
   (void)wr(kRegInt1Io, 0x0Au);
   // Map any-motion / data-ready loosely; threshold via ACC_CONF avg bits + sens.
@@ -251,6 +260,7 @@ bool Driver::enable_any_motion(std::uint8_t sens) {
   const std::uint8_t thr = static_cast<std::uint8_t>(8u + (7u - (sens & 7u)));
   (void)thr;
   (void)wr(kRegIntMapData, 0x04u);  // any-motion → INT1 (feature bit when cfg present)
+  last_power_ctrl_ = kPwrCtrlAccEn;
   return true;
 }
 
@@ -276,29 +286,69 @@ bool Driver::read_accel(std::int16_t* x, std::int16_t* y, std::int16_t* z) {
   if (bus_.read_reg == nullptr) {
     return false;
   }
-  std::uint8_t b[6] = {};
-  if (!bus_.read_reg(kRegAccData, b, sizeof(b), bus_.ctx)) {
+
+  const auto fetch = [&](std::int16_t* ox, std::int16_t* oy,
+                         std::int16_t* oz) -> bool {
+    std::uint8_t b[6] = {};
+    if (!bus_.read_reg(kRegAccData, b, sizeof(b), bus_.ctx)) {
+      return false;
+    }
+    // 12-bit left-justified in a 16-bit little-endian pair; >> 4 restores sign.
+    const auto axis = [](std::uint8_t lo, std::uint8_t hi) -> std::int16_t {
+      const std::int16_t raw =
+          static_cast<std::int16_t>(static_cast<std::uint16_t>(lo) |
+                                    (static_cast<std::uint16_t>(hi) << 8u));
+      return static_cast<std::int16_t>(raw / 16);
+    };
+    // X and Y are SWAPPED, because the BMA is mounted rotated in the PineTime.
+    // This mirrors InfiniTime's Bma421::Process, which returns
+    // {steps, data.y, data.x, data.z} with the same comment.
+    //
+    // It matters because RaiseDetector's thresholds are InfiniTime's and are
+    // expressed in this frame. Handed the chip's frame, the "arm is not level"
+    // check read an axis that sits near +/-1 g on a wrist, far above the 384
+    // threshold, so every gesture was rejected and the watch never woke on a
+    // raise (N-60).
+    if (ox != nullptr) *ox = axis(b[2], b[3]);
+    if (oy != nullptr) *oy = axis(b[0], b[1]);
+    if (oz != nullptr) *oz = axis(b[4], b[5]);
+    return true;
+  };
+
+  std::int16_t lx = 0, ly = 0, lz = 0;
+  if (!fetch(&lx, &ly, &lz)) {
     return false;
   }
-  // 12-bit left-justified in a 16-bit little-endian pair; >> 4 restores sign.
-  const auto axis = [](std::uint8_t lo, std::uint8_t hi) -> std::int16_t {
-    const std::int16_t raw =
-        static_cast<std::int16_t>(static_cast<std::uint16_t>(lo) |
-                                  (static_cast<std::uint16_t>(hi) << 8u));
-    return static_cast<std::int16_t>(raw / 16);
+
+  std::uint8_t pwr = 0u;
+  if (rd(kRegPowerCtrl, &pwr)) {
+    last_power_ctrl_ = pwr;
+  }
+
+  // Gravity is ~1024 counts. A live ACK with |x|+|y|+|z| ≈ 0 means the part
+  // accepted the transfer while producing no measurement — acc_en dropped, or
+  // APS suspend with fifo_self_wakeup cleared (N-61). Re-enable and drop APS
+  // for one sample; leave APS off so the next poll is not the same zero.
+  const auto abs16 = [](std::int16_t v) -> std::int32_t {
+    return v < 0 ? -static_cast<std::int32_t>(v) : static_cast<std::int32_t>(v);
   };
-  // X and Y are SWAPPED, because the BMA is mounted rotated in the PineTime.
-  // This mirrors InfiniTime's Bma421::Process, which returns
-  // {steps, data.y, data.x, data.z} with the same comment.
-  //
-  // It matters because RaiseDetector's thresholds are InfiniTime's and are
-  // expressed in this frame. Handed the chip's frame, the "arm is not level"
-  // check read an axis that sits near +/-1 g on a wrist, far above the 384
-  // threshold, so every gesture was rejected and the watch never woke on a
-  // raise (N-60).
-  if (x != nullptr) *x = axis(b[2], b[3]);
-  if (y != nullptr) *y = axis(b[0], b[1]);
-  if (z != nullptr) *z = axis(b[4], b[5]);
+  if (abs16(lx) + abs16(ly) + abs16(lz) < 32) {
+    (void)wr(kRegPowerCtrl, kPwrCtrlAccEn);
+    (void)wr(kRegPowerConf, kPwrConfApsOff);
+    if (bus_.delay_ms) {
+      bus_.delay_ms(1u, bus_.ctx);
+    }
+    if (!fetch(&lx, &ly, &lz)) {
+      return false;
+    }
+    if (rd(kRegPowerCtrl, &pwr)) {
+      last_power_ctrl_ = pwr;
+    }
+  }
+
+  if (x != nullptr) *x = lx;
+  if (y != nullptr) *y = ly;
+  if (z != nullptr) *z = lz;
   return true;
 }
 

@@ -20,6 +20,9 @@ object OsmAndTurnTypes {
     const val RNDB = 13
     const val RNLB = 14
 
+    /** OsmAnd's own arrival radius is speed-based; 40 m matches walking/city car. */
+    const val ARRIVE_RADIUS_M = 40
+
     fun toTurn(value: Int): String = when (value) {
         C -> "straight"
         TL -> "left"
@@ -36,6 +39,11 @@ object OsmAndTurnTypes {
         else -> "none"
     }
 
+    private val EXIT_RE = Regex(
+        """(?:take\s+(\d+)\s+exit|exit\s+(\d+)|(\d+)(?:st|nd|rd|th)?\s+exit)""",
+        RegexOption.IGNORE_CASE,
+    )
+
     fun fromPhrase(phrase: String): String {
         val p = phrase.lowercase()
         return when {
@@ -46,8 +54,8 @@ object OsmAndTurnTypes {
             p.contains("slight right") || p.contains("bear right") -> "slight_right"
             p.contains("keep left") -> "keep_left"
             p.contains("keep right") -> "keep_right"
-            p.contains("roundabout") || p.contains("rotary") -> "roundabout"
-            p.contains("arrive") || p.contains("destination") -> "arrive"
+            p.contains("roundabout") || p.contains("rotary") || looksLikeExit(p) -> "roundabout"
+            isArrivalPhrase(p) -> "arrive"
             p.contains("off route") || p.contains("off-route") -> "off_route"
             p.contains("left") -> "left"
             p.contains("right") -> "right"
@@ -55,4 +63,48 @@ object OsmAndTurnTypes {
             else -> "none"
         }
     }
+
+    /**
+     * True arrival wording. "Go ahead and arrive at destination" is still
+     * approaching — only "arrived" / "reached" mean you are there.
+     */
+    fun isArrivalPhrase(phrase: String): Boolean {
+        val p = phrase.lowercase()
+        return p.contains("arrived") ||
+            p.contains("destination reached") ||
+            p.contains("reached your destination")
+    }
+
+    /** OsmAnd voice-router command ids, e.g. `reached_destination`. */
+    fun isArrivalVoiceCommand(cmds: List<*>): Boolean =
+        cmds.any { cmd ->
+            val s = cmd.toString().lowercase()
+            s.contains("reached_destination")
+        }
+
+    /**
+     * OsmAnd has no TurnType for arrival (1–14, Continue=1). Promote the last
+     * "go ahead" stretch once remaining distance is inside [ARRIVE_RADIUS_M].
+     */
+    fun promoteArrive(
+        turn: String,
+        distanceToTurnM: Int,
+        destinationDistanceM: Int,
+        sawDestination: Boolean,
+    ): String {
+        if (turn == "arrive") return "arrive"
+        if (!sawDestination) return turn
+        if (destinationDistanceM > ARRIVE_RADIUS_M) return turn
+        if (turn != "straight" && turn != "none") return turn
+        if (distanceToTurnM > 0 && distanceToTurnM + 15 < destinationDistanceM) return turn
+        return "arrive"
+    }
+
+    fun roundaboutExit(phrase: String): Int {
+        val m = EXIT_RE.find(phrase) ?: return 0
+        return m.groupValues.drop(1).firstOrNull { it.isNotEmpty() }?.toIntOrNull() ?: 0
+    }
+
+    private fun looksLikeExit(p: String): Boolean =
+        EXIT_RE.containsMatchIn(p) || (p.contains("take") && p.contains("exit"))
 }

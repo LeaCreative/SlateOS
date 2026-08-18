@@ -23,6 +23,8 @@ data class NavManeuver(
     val etaEpochSec: Long,
     /** Remaining route distance to destination, metres (0 if unknown). */
     val destinationDistanceM: Int = 0,
+    /** Roundabout exit number, 0 if not a numbered exit. */
+    val roundaboutExit: Int = 0,
     /** lost_gps | disconnected | ok */
     val status: String = "ok",
 ) {
@@ -34,6 +36,7 @@ data class NavManeuver(
         .put("progressPct", progressPct.coerceIn(0, 100))
         .put("etaEpochSec", etaEpochSec)
         .put("destinationDistanceM", destinationDistanceM.coerceAtLeast(0))
+        .put("roundaboutExit", roundaboutExit.coerceAtLeast(0))
         .put("status", status)
         .toString()
 
@@ -65,13 +68,14 @@ data class NavManeuver(
                 "roundabout" -> "roundabout"
                 else -> "left"
             }
+            val arrived = turn == "arrive"
             return NavManeuver(
                 turn = turn,
-                distanceM = 250,
-                street = "Demo St",
-                progressPct = 42,
-                etaEpochSec = System.currentTimeMillis() / 1000L + 12 * 60,
-                destinationDistanceM = 5200,
+                distanceM = if (arrived) 0 else 250,
+                street = if (arrived) "" else "Demo St",
+                progressPct = if (arrived) 100 else 42,
+                etaEpochSec = if (arrived) 0L else System.currentTimeMillis() / 1000L + 12 * 60,
+                destinationDistanceM = if (arrived) 0 else 5200,
                 status = "ok",
             )
         }

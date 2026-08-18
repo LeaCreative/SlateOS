@@ -178,7 +178,7 @@ void fmt_u32(char* o, std::size_t cap, std::uint32_t v) {
 // Line 1 — identity only. Dropped (stable since N-17 / N-36, ate width):
 // reset reason, paints, stall_ms, tick_catchup, stall_events, phase/ms,
 // millivolts, parse/render. Battery % is already on the face; stalls and BLE
-// bring-up no longer move. Format: "<uptime s>/<chip>.<status>.<step_en>"
+// bring-up no longer move. Format: "<uptime s>/<chip>.<status>.<step_en>.<pwr>"
 void fmt_diag(char* o, std::size_t cap, const local::State& st) {
   char part[12];
   std::size_t i = 0u;
@@ -197,6 +197,9 @@ void fmt_diag(char* o, std::size_t cap, const local::State& st) {
   append(part);
   append(".");
   fmt_u32(part, sizeof(part), st.diag_bma_step_en);
+  append(part);
+  append(".");
+  fmt_u32(part, sizeof(part), st.diag_bma_pwr);
   append(part);
   o[i] = '\0';
 }
@@ -221,7 +224,7 @@ void fmt_i32(char* o, std::size_t cap, std::int32_t v) {
 // Accel shown as counts/16 so ±1g (~1024) fits in 3 digits with sign.
 // Format: "<sleeps>.<samples>/<rej>.<fires>.<wake>/<x16>/<y16>/<z16>"
 // Reject: 0 fire, 1 filling, 2 |x|, 3 y-var, 4 face-down, 5 y-mean, 6 roll.
-// Wake: 0 none, 1 raise, 2 button, 3 double-tap, 4 charge, 5 alert.
+// Wake: 0 none, 1 raise, 2 button, 3 double-tap, 4 charge, 5 alert, 6 shake.
 void fmt_diag2(char* o, std::size_t cap, const local::State& st) {
   char part[12];
   std::size_t i = 0u;

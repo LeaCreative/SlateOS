@@ -7,6 +7,65 @@
 
 ---
 
+## Current state (17 Aug 2026)
+
+### Navigation — destination reached + turn glyph (companion `0.8.2-p74`)
+
+OsmAnd has no TurnType for arrival (1–14, Continue=1), so the watch stayed on
+the last **go-ahead** face. The large cyan mark is that turn glyph: a 5x7 `^`
+caret (continue straight) that reads as a short vertical dash; `!` is
+off-route (a real vertical bar + dot); `-` is waiting. Dest remaining never
+fell to 0 because the bridge ignored 0 m updates.
+
+Fix: voice `reached_destination`, dest ≤ 40 m on the last go-ahead, arrival
+phrases, and nav-notif dismiss near the pin → `turn=arrive`. Watch face is
+now a checkmark + “Destination reached”. Straight is an up-arrow drawn with
+rects. Bundled `slate.navigation` **1.2.2**; swipe-up demos arrive.
+
+### OTA crawl — CDM false-disappear (companion `0.8.2-p73`)
+
+Operator log on p72: SDP OTA of 160 KB with `credit=512` was not slow on
+the wire (~100 ms/chunk when the link stayed up). CDM fired
+`onDeviceDisappeared` **while `writeCharacteristic` still returned rc=0**.
+The link FGS treated that as gone, `close()`d GATT, `stopSelf()`, then
+reconnected (MTU + `gatt.refresh()` + 32 ch=4 stubs + 500 ms gap). Repeat
+every ~10 s; OTA timeouts/resyncs stacked.
+
+Cause: connected peripherals often stop advertising, so CDM scan ≠ GATT.
+Fix: ignore presence-disappeared while GATT is up; skip notif/time/settings
+pacing during `benchmarkPaused`; do not 500 ms-gap when an OTA packet is
+queued.
+
+### N-61 — raise-to-wake and shake-to-wake both dead (accel reads 0)
+
+Operator screenshot on **`0.1.0-m17 Aug 12 18:02`**, Soft claimed on both
+gestures. Face diag still shows the raise overlay:
+
+- Line 1 `21974/2.1.1` — ~6.1 h uptime, BMA425, ASIC status 1, pedometer
+  enable verified. Those three are **boot snapshots**.
+- Line 2 `47.19/5.0.3/0/0/0` — 47 sleeps, 19 accel samples last sleep,
+  **reject 5** (y_mean / “not looking”), **fires 0**, last wake **3**
+  (double-tap), **ax/ay/az all 0**.
+
+Reject 5 with a zero vector is Normal/Hard, not Soft (`y_mean_thresh` is 0
+on Soft, so zeros fail roll=6 instead). Phone SETTINGS_SYNC has been seen
+pushing `raiseSens=1 shake=false`. Sensitivity is secondary: zeros starve
+**both** detectors.
+
+Cause in the driver (not the detector): `PWR_CONF` was written `0x00`/`0x01`,
+which clears Bosch `fifo_self_wakeup` (reset / InfiniTime keep `0x03`).
+ACC_DATA then ACKs as zeros; raise never fires; shake has no delta. Chip-id
+and INTERNAL_STATUS stay healthy.
+
+**Fix in `0.1.0-m18` (needs DFU):** PWR_CONF `0x02`/`0x03`; InfiniTime
+enable-then-config order; `read_accel` re-enables acc and drops APS when a
+sample has no gravity. Line 1 gains live `PWR_CTRL` (`…/chip.status.step.pwr`;
+`4` = acc_en). Packaged: `build/dfu/slate-dfu.zip` SHA-256 prefix
+**`9FA5215458E0`**.
+
+Workaround until flashed: double-tap / side button. After flash, a raise
+should show non-zero `x/y/z` (1 g ≈ 64 on the overlay) and `pwr=4`.
+
 ## Current state (12 Aug 2026)
 
 ### Nav chrome + paged settings (12 Aug)

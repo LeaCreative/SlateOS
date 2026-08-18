@@ -69,8 +69,15 @@ public:
    * the feature config blob — which is what makes raise-to-wake possible on a
    * sensor whose ASIC never loaded. Returns false if the read fails; leaves the
    * outputs untouched in that case so a caller can hold its last sample.
+   *
+   * Near-zero samples (no gravity) re-enable the accelerometer and drop
+   * advanced power save for the retry. All-zero ACC_DATA with a live I2C ACK
+   * is how raise/shake die while chip-id / INTERNAL_STATUS still look fine.
    */
   bool read_accel(std::int16_t* x, std::int16_t* y, std::int16_t* z);
+
+  /** Last PWR_CTRL (0x7D) observed during [read_accel]. 0xFF = never read. */
+  std::uint8_t last_power_ctrl() const { return last_power_ctrl_; }
 
 private:
   bool wr(std::uint8_t reg, std::uint8_t v);
@@ -87,6 +94,7 @@ private:
   std::uint8_t feature_addr_lsb_ = 0u;
   std::uint8_t feature_addr_msb_ = 0u;
   bool step_enabled_ = false;
+  std::uint8_t last_power_ctrl_ = 0xFFu;
 };
 
 }  // namespace bma

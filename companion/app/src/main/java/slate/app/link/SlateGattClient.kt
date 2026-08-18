@@ -533,6 +533,7 @@ class SlateGattClient(
     private fun continuePump() {
         val gap = lastPktEndedMessage &&
             lastPktChannel != SdpFrame.CHAN_OTA &&
+            !writeQueue.containsChannel(SdpFrame.CHAN_OTA) &&
             !writeQueue.isEmpty()
         if (gap) {
             gapUntilMs = System.currentTimeMillis() + INTER_MESSAGE_GAP_MS

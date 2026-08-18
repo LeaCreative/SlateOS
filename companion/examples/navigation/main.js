@@ -5,14 +5,16 @@
  * Turn arrows are relative to direction of travel (route course), never the
  * phone's compass orientation.
  *
- * Draws: large turn arrow, distance to next turn, street (optional), distance
- *        to destination. Status line only when GPS lost / phone gone.
+ * Draws: large turn glyph (up-arrow rects for straight; 5x7 `{` tick is the
+ *        built-in checkmark on arrive), distance to next turn, street,
+ *        distance to destination; a dedicated Destination reached face.
  * Does:  onFocus subscribes; onBlur / BACK / swipe-right leave. Long-press or
  *        double-tap injects a demo left turn (no OsmAnd needed). Slide-down
- *        demos lost GPS. Haptic once when the turn token changes.
+ *        demos lost GPS. Slide-up demos destination reached. Haptic once when
+ *        the turn token changes.
  * Perms: navigation, storage (units setting).
  * Settings: units (metric | imperial).
- * Budget: text + retain only; no loops.
+ * Budget: text + a few rects/lines; no loops.
  *
  * Downloaded JavaScript only — never dex/JAR/.so.
  */
@@ -31,6 +33,7 @@
     progressPct: 0,
     etaEpochSec: 0,
     destinationDistanceM: 0,
+    roundaboutExit: 0,
     status: 'ok'
   };
 
@@ -42,6 +45,11 @@
   /**
    * Arrow glyph for a travel-relative turn. Not a compass — OsmAnd's turn is
    * already in the vehicle's direction of motion.
+   *
+   * 5x7 `{` is the tick pictogram (not a brace). `!` is a vertical bar + dot
+   * (off-route). `-` is a horizontal dash (waiting). Straight is drawn with
+   * rects because the caret `^` sits in the top 3 rows of the cell and reads
+   * as a short cyan dash on the wrist.
    */
   function turnGlyph(turn) {
     switch (turn) {
@@ -60,13 +68,11 @@
       case 'u_turn':
         return 'U';
       case 'arrive':
-        return '*';
+        return '{';
       case 'roundabout':
         return 'O';
       case 'off_route':
         return '!';
-      case 'straight':
-        return '^';
       default:
         return '-';
     }
@@ -83,8 +89,9 @@
       case 'keep_left': return 'Keep L';
       case 'keep_right': return 'Keep R';
       case 'u_turn': return 'U-turn';
-      case 'arrive': return 'Arrive';
-      case 'roundabout': return 'Roundabt';
+      case 'arrive': return 'Reached';
+      case 'roundabout':
+        return last.roundaboutExit ? ('Exit ' + last.roundaboutExit) : 'Roundabt';
       case 'off_route': return 'Off route';
       case 'straight': return 'Straight';
       default: return 'Nav';
@@ -102,10 +109,18 @@
     return m + ' m';
   }
 
+  /** Continue / go-ahead: shaft + chevron, travel-relative (up the screen). */
+  function drawStraight(b, c) {
+    b.line(120, 44, 98, 68, c, 5);
+    b.line(120, 44, 142, 68, c, 5);
+    b.rect(114, 56, 12, 38, c, slate.FILL);
+  }
+
   function face() {
     var statusLine = '';
     if (last.status === 'lost_gps') statusLine = 'GPS lost';
     else if (last.status === 'disconnected') statusLine = 'Phone gone';
+    var arrived = last.turn === 'arrive';
     var glyph = turnGlyph(last.turn);
     var turnDist = fmtDist(last.distanceM);
     var destDist = fmtDist(last.destinationDistanceM);
@@ -116,16 +131,29 @@
       b.palette(2, 0x07ff);
       b.palette(3, 0xfd20);
       b.palette(4, 0x8410);
+      b.palette(5, 0x07e0);
       b.clear(slate.PAL(0));
       b.textScaled(1, 120, 8, 'CENTER', slate.PAL(4), 1, turnLabel(last.turn));
-      b.textScaled(1, 120, 48, 'CENTER', slate.PAL(2), 5, glyph);
-      b.textScaled(1, 120, 100, 'CENTER', slate.PAL(1), 3, turnDist);
-      b.textScaled(1, 120, 132, 'CENTER', slate.PAL(4), 1, 'to turn');
-      if (street) {
-        b.textScaled(1, 120, 156, 'CENTER', slate.PAL(1), 1, street);
+      if (last.turn === 'straight') {
+        drawStraight(b, slate.PAL(2));
+      } else {
+        b.textScaled(1, 120, 48, 'CENTER', slate.PAL(arrived ? 5 : 2), 5, glyph);
       }
-      b.textScaled(1, 120, 188, 'CENTER', slate.PAL(1), 2, destDist);
-      b.textScaled(1, 120, 214, 'CENTER', slate.PAL(4), 1, 'to destination');
+      if (arrived) {
+        b.textScaled(1, 120, 120, 'CENTER', slate.PAL(1), 2, 'Destination');
+        b.textScaled(1, 120, 148, 'CENTER', slate.PAL(1), 2, 'reached');
+        if (street) {
+          b.textScaled(1, 120, 188, 'CENTER', slate.PAL(4), 1, street);
+        }
+      } else {
+        b.textScaled(1, 120, 100, 'CENTER', slate.PAL(1), 3, turnDist);
+        b.textScaled(1, 120, 132, 'CENTER', slate.PAL(4), 1, 'to turn');
+        if (street) {
+          b.textScaled(1, 120, 156, 'CENTER', slate.PAL(1), 1, street);
+        }
+        b.textScaled(1, 120, 188, 'CENTER', slate.PAL(1), 2, destDist);
+        b.textScaled(1, 120, 214, 'CENTER', slate.PAL(4), 1, 'to destination');
+      }
       if (statusLine) {
         b.textScaled(1, 120, 232, 'CENTER', slate.PAL(3), 1, statusLine);
       }
@@ -157,6 +185,9 @@
     if (ev.op === 0x01) {
       return [slate.nav.demo('lost_gps'), { type: 'inputHandled' }];
     }
+    if (ev.op === 0x02) {
+      return [slate.nav.demo('arrive'), { type: 'inputHandled' }];
+    }
     return [{ type: 'inputUnhandled' }];
   };
 
@@ -167,10 +198,11 @@
     var prevTurn = last.turn;
     last.turn = payload.turn || last.turn;
     last.distanceM = payload.distanceM | 0;
-    last.street = payload.street || last.street;
+    last.street = (typeof payload.street === 'string') ? payload.street : last.street;
     last.progressPct = payload.progressPct | 0;
     last.etaEpochSec = payload.etaEpochSec | 0;
     last.destinationDistanceM = payload.destinationDistanceM | 0;
+    last.roundaboutExit = payload.roundaboutExit | 0;
     last.status = payload.status || 'ok';
     var out = [
       slate.invalidate(),
