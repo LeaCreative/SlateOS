@@ -25,9 +25,11 @@
    submodule. They are unused; only these names change, not the call sites. */
 #define ble_npl_hw_enter_critical npl_upstream_hw_enter_critical
 #define ble_npl_hw_exit_critical  npl_upstream_hw_exit_critical
+#define ble_npl_hw_is_in_critical npl_upstream_hw_is_in_critical
 #include_next <nimble/nimble_npl_os.h>
 #undef ble_npl_hw_enter_critical
 #undef ble_npl_hw_exit_critical
+#undef ble_npl_hw_is_in_critical
 
 #ifdef __cplusplus
 extern "C" {
@@ -43,6 +45,10 @@ static inline void ble_npl_hw_exit_critical(uint32_t ctx) {
   if (!ctx) {
     __enable_irq();
   }
+}
+
+static inline bool ble_npl_hw_is_in_critical(void) {
+  return (__get_PRIMASK() & 1u) != 0u;
 }
 
 #ifdef __cplusplus

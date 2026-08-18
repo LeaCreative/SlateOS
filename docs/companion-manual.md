@@ -1,6 +1,6 @@
 # Slate companion — what every control does
 
-**Companion `0.8.2-p53` (build 54).** Updated 11 August 2026.
+**Companion `0.8.2-p75` (build 76).** Updated 18 August 2026.
 
 > Capability overview: [`capabilities.md`](capabilities.md). Sub-apps launch from
 > the **watch launcher**, not from per-app phone buttons.
@@ -17,7 +17,7 @@ Permissions, Debug, Watch settings, and the repository.
 | **Permissions** | Grants and OEM background settings |
 | **Associate watch (CDM)** | CompanionDeviceManager `watch` profile |
 | **Start / reconnect link service** | Starts `LinkForegroundService` (owns GATT) |
-| **Watch settings** | Raise / timeout / steps / face colours; syncs with watch |
+| **Watch settings** | Raise / timeout / steps / face diag (incl. version line on watch) / HR / colours; syncs with watch |
 | **Sub-app repository** | Browse/install JS apps, launcher visibility, per-app settings |
 | **Install Slate on sealed PineTime** | Nordic legacy DFU — InfiniTime → Slate first hop |
 | **Update Slate firmware (SDP OTA)** | Channel-5 OTA, Slate→Slate |
@@ -73,6 +73,6 @@ system settings (no dedicated button).
 ## Adapters (quick)
 
 Wired for JS: UI, store, timer, haptic, phone vibrate, location, map, nav,
-camera, news (host RSS). **HTTP** is a stub. **Media** and **health** have
-permissions but no host adapter yet. Details: `docs/script-runtime.md`,
+camera, news (host RSS), media (NLS), weather, calendar, alarms, home, health,
+HTTP. Details: `docs/script-runtime.md`, `docs/flagship-apps.md` (nav/camera),
 `docs/capabilities.md`.

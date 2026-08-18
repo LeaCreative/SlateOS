@@ -4,7 +4,7 @@
 > noted). Roadmap wishes and closed defects live elsewhere; this file is the
 > capability map so agents and operators do not under- or over-claim.
 >
-> Written **10 August 2026**. Prefer this over stale sections of
+> Written **18 August 2026**. Prefer this over stale sections of
 > `companion-manual.md` / older handover text. Open bugs and next work remain in
 > [`issue-prompts-open.md`](issue-prompts-open.md).
 
@@ -15,8 +15,8 @@
 | Piece | Identity |
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
-| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`9FA5215458E0`** (`0.1.0-m18`, N-61 raise/shake zeros). Wrist still on **`0.1.0-m17 Aug 12 18:02`** until SDP OTA |
-| Companion APK | **`slate.app.debug`** — see `companion/app/build.gradle.kts` for versionName / versionCode |
+| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`2D7C272691C8`** (`0.1.0-m19`: version line gated with Face diag; includes N-61 m18 accel fix) |
+| Companion APK | **`0.8.2-p75`** (versionCode **76**, `slate.app.debug`) |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
 
@@ -33,7 +33,7 @@
 - Input: tap / swipe / button → phone when remote owns the panel.
 
 ### Local resilient core
-- **Face:** time, date, optional steps, battery, link cue, trial amber bar, version/diag overlay.
+- **Face:** time, date, optional steps, battery, link cue, trial amber bar, version/diag overlay (all of Face diag, including the version line, hide together).
 - **Settings** (swipe face **left→right**): raise-to-wake + Soft/Normal/Hard sensitivity, shake-to-wake (default Off) + sensitivity, display timeout (incl. never), show steps, face diag, HR. Bidirectional `SETTINGS_SYNC` v4 (0x21) with phone; persisted (`SLTY`).
 - **Swipe policy:** settings **right→left** → face (not launcher); launcher **left→right** → close (not settings); face **right→left** → launcher when linked.
 - **Notifs shade** (swipe down from face): SYSTEM ch4 stubs (notification titles); body on demand via INPUT `NOTIF_REQ` + SYSTEM `BODY`. Amber status glyph while stubs remain. Live stubs wake + DOUBLE haptic; **reconnect bulk sync and NLS resync use FLAG_SILENT** (no wake/haptic — needs matching firmware). Companion also skips unchanged NLS re-ingests and debounces NLS reconnect storms (`0.8.2-p65`).
@@ -43,7 +43,7 @@
 
 ### Sensors / power
 - BMA421/425: Bosch feature upload, pedometer enable (full-block R/W), ACC_CONF **`0x28`** (InfiniTime CIC_AVG), axis swap for mount frame.
-- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60), then **both raise and shake died** on the m17 image (N-61: ACC_DATA zeros / `PWR_CONF` cleared `fifo_self_wakeup`). **m18** re-enables acc on dead samples and restores InfiniTime `PWR_CONF` `0x03`. Needs DFU. Overlay line 1 is `uptime/chip.status.step.pwr` (`pwr=4` = acc_en).
+- **Steps** and **raise-to-wake** confirmed on hardware (N-59/N-60), then **both raise and shake died** on the m17 image (N-61: ACC_DATA zeros / `PWR_CONF` cleared `fifo_self_wakeup`). **m18** restores InfiniTime `PWR_CONF` and re-enables acc on dead samples (packaged **`9FA5215458E0`**). **m19** adds Face-diag gating for the version line (**`2D7C272691C8`**). Confirm on wrist after SDP OTA. Overlay line 1 is `uptime/chip.status.step.pwr` (`pwr=4` = acc_en).
 - Battery SAADC InfiniTime-matched curve + charge pin; BAS.
 - HRS3300 **gated by settings** — `hr_enabled` (default Off). On-demand measure
   from local Heart Rate screen or GATT HRS CCCD; asleep otherwise.
@@ -66,10 +66,10 @@
 ## Companion (phone)
 
 ### Link / host
-- CDM association, presence service, FGS `connectedDevice` (+ location type when granted).
+- CDM association, presence service, FGS `connectedDevice` (+ location type when granted). **CDM `onDeviceDisappeared` ignored while GATT is up** (`0.8.2-p73+`) — connected watches stop advertising and were tearing down OTA.
 - GATT session, compositor (focus, credit, push quota), in-app log, contention / troubleshooting UI.
 - Empty focus stack → watch **local face** (Kotlin `ClockApp` is not forced as ambient base — N-34 mitigated this way).
-- Watch settings UI + sync; confirm banner for trial firmware.
+- **Watch settings UI + sync** (Face diag hides version + counter lines from **m19**); confirm banner for trial firmware.
 
 ### Sub-apps
 - **JS** via androidx.javascriptengine (V8 isolate); Kotlin DSL / JS builder byte-identical lists.
@@ -88,7 +88,7 @@
 |---|---|
 | Notifications (NLS → stub store + local shade; body on tap) | Working |
 | Incoming call alert (Telephony / call-notif fallback) | Working (display-only) |
-| Navigation (OsmAnd-style + demo) | Working |
+| Navigation (OsmAnd AIDL + NLS + voice `reached_destination`; destination reached face) | Working (`slate.navigation` **1.2.2**) |
 | Camera (CameraX → RGB332 PATCH) | Working |
 | Location | Working |
 | Map (Overpass + host vector render) | Working |
@@ -97,8 +97,10 @@
 | News (`slate.news`) | Host RSS/Atom adapter; JS UI |
 | Media (`slate.media`) | Now-playing + transport (NLS) |
 | Weather (`slate.weather`) | Open-Meteo snapshot; JS UI |
-| Calendar / Alarms / Home / Health | Working (p66) — CalendarContract; Clock/exact alarms; HA REST; HC read + VITALS write |
-| Health | Permission gate only — **no adapter yet** |
+| Calendar | Working (p66) — CalendarContract next events |
+| Alarms | Working (p66) — Clock intent / exact AlarmManager |
+| Home | Working (p66) — Home Assistant REST |
+| Health | Working (p66) — Health Connect read; companion writes watch steps/BPM via VITALS |
 
 ### OTA UI
 - **Install Slate on sealed PineTime** — Nordic DFU first hop.

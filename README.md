@@ -63,12 +63,19 @@ bootloader/       MCUBoot / key notes for sealed installs
 
 **Highlights (today)**
 
-- Sealed install from InfiniTime via Nordic legacy DFU; later updates over SDP OTA
-- Local face (time, steps, optional heart-rate BPM), scrollable settings, raise-to-wake
+- Sealed install from InfiniTime via Nordic legacy DFU
+- Updates over SDP OTA
+- Local face (time, steps, optional heart-rate BPM), scrollable settings
+- Customisable colour scheme! 
+- Raise-to-wake and shake-to-wake, each with three sensitivity settings
+- Tap-twice-to-wake
+- Notifications
 - Phone compositor + JS sub-apps (timer, map, navigation demos, …)
 - Dual 240×8 tile renderer — no full framebuffer (RAM hard limit)
+- Sub-apps for turn-by-turn nav, weather, buzz the phone, Local Map, media control, RSS news reader,
+- Sub-app repository in companion app with sub-app settings
 
-Capability map (keep this honest): [`docs/capabilities.md`](docs/capabilities.md).
+Capability map: [`docs/capabilities.md`](docs/capabilities.md).
 
 ## Quick start
 

@@ -44,7 +44,7 @@ struct Settings {
    */
   std::uint8_t wake_seconds = 20u;
   std::uint8_t face_show_steps = 1u;
-  /** Bring-up diagnostic lines on the watch face (and the 2 s band refresh). */
+  /** Face diagnostics: counter lines, firmware version/stamp, 2 s band refresh. */
   std::uint8_t face_show_diag = 1u;
   /**
    * Master gate for HRS3300. Off = sensor stays asleep; On measures continuously

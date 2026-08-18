@@ -26,6 +26,15 @@ Extras mapped: `turn` / `turn_type` / `maneuver`, `distanceM` / `distance`, `str
 
 JSON to script: `turn`, `distanceM`, `destinationDistanceM`, `street`, `status`, …
 
+Turn tokens: `left` / `right` / `slight_*` / `sharp_*` / `keep_*` / `straight` /
+`u_turn` / `roundabout` / `arrive` / `off_route` / `none`. OsmAnd has **no**
+arrival TurnType (1–14, Continue=1); the host promotes `arrive` from voice
+`reached_destination`, dest remaining ≤ 40 m on the last go-ahead, arrival
+phrases, or the nav notification going away near the pin.
+
+Watch glyphs: up-arrow (continue; drawn with rects because 5x7 `^` reads as a
+short cyan bar), `{` tick pictogram on arrive, `!` off-route, `-` waiting.
+
 Script API: `slate.nav.subscribe()` / `unsubscribe()` / `demo(kind)`. Maneuvers arrive as
 `onEvent('nav', json)` with `type=maneuver`. Turn arrows are relative to **direction of
 travel**, not phone compass orientation.

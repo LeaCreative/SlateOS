@@ -6,7 +6,7 @@ Kotlin. The watch is **sealed — no SWD**. The only way to see what it is doing
 is the on-screen diagnostic overlay and the companion's in-app log, both of
 which the operator photographs and pastes to you.
 
-Written **10 August 2026**. Replaces the 9 August 14:00 version.
+Written **18 August 2026**. Replaces the 10 August version.
 
 ## Read these first, in this order
 
@@ -25,30 +25,30 @@ last used for driver diffs).
 **Read it before debugging any driver.** Every driver defect this project has
 had was a divergence from it.
 
-## State as of 10 August 2026
+## State as of 18 August 2026
 
 | | |
 |---|---|
-| **Firmware in `build/dfu/slate-dfu.zip`** | SHA-256 prefix **`9421B271FDC3`** (face ~`14:38`) — ACC_CONF `0x28`, ScreenBlock 256 B, swipe routing |
-| **Prior confirmed HW image** | `5543D0BF9804` — steps + raise-to-wake confirmed after flash |
-| **Companion on Pixel** | build **39**, `0.8.2-p38` (`slate.app.debug`) — includes dual ZIP Open-with |
+| **Firmware packaged** | `build/dfu/slate-dfu.zip` SHA-256 prefix **`2D7C272691C8`** (`0.1.0-m19`) — Face diag hides version line; includes N-61 m18 accel `PWR_CONF` |
+| **Prior packaged** | `9FA5215458E0` (`0.1.0-m18`, N-61 raise/shake zeros) |
+| **Wrist until SDP OTA** | Last confirmed operator image was **`0.1.0-m17 Aug 12 18:02`** unless they have flashed since |
+| **Companion on Pixel** | **`0.8.2-p75`** / versionCode **76** (`slate.app.debug`) — nav destination reached, CDM ignore-disappear, Face diag subtitle |
 | **Host tests** | Run with `-E ble_link`; `ble_link` still fails (`drop/reject`) |
 | **RAM link slack** | **~3016 B** (~89% static) after I-19 ScreenBlock 3072→256 |
 
-**Working tree:** much of 8–10 August may still be uncommitted relative to
-`HEAD`. Do not `stash`, `reset`, or `checkout` source to “get a baseline”
-unless the operator asks — you will destroy work. Do not commit unprompted.
+**Working tree:** uncommitted work is common. Do not `stash`, `reset`, or
+`checkout` source to “get a baseline” unless the operator asks — you will
+destroy work. Do not commit unprompted.
 
 ### Confirmed working on hardware
 
 Taps and the app launcher; JS sub-apps (timer, nav, camera, vibrate, location,
 map); OSM vector map; SDP OTA; display sleep (20 s default); wake on charger
 edges; watch settings + companion settings sync; **steps (non-zero)**;
-**raise-to-wake**; no false-wake on typing / arms-down walk; settings↔face and
-launcher↔face swipe routing (in `9421B271FDC3` — confirm after flash if not
-already on that image).
+**raise-to-wake** (after m18 DFU — m17 had ACC zeros); no false-wake on typing /
+arms-down walk; settings↔face and launcher↔face swipe routing.
 
-### Companion Open-with (10 Aug)
+### Companion Open-with
 
 `SideloadActivity` (label **Open with Slate**) classifies zips via `ZipIntake`:
 sub-app → install; `slate-dfu.zip` → `SlateOtaActivity` with URI pre-selected.
@@ -99,7 +99,9 @@ stamp changes.
 ## Traps that have already cost time
 
 - **On-screen build stamp only changes when `src/local_ui.cpp` recompiles.**
-- **Confirm which image is running** before diagnosing (version line vs bin/`__TIME__`).
+- **Confirm which image is running** before diagnosing (version line vs bin/`__TIME__`). The version line is **Face diag On only** from m19.
+- **Face diag Off still showed the version** until m19 — do not treat a missing version as “old firmware” after that flash.
+- **OsmAnd continue is not arrival.** Cyan bar / caret was “go ahead”; destination reached is a checkmark + copy (`slate.navigation` 1.2.2).
 - **Test fixtures can pass spuriously** — see `test_bma42x` history (bit already set).
 - **Gradle** may print SUCCESS then FAILED on a Windows daemon lock; trust JUnit XML.
 - **`generated/SdpWire.kt`** — generator cross-checks opcodes; add new opcodes in

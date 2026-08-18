@@ -74,7 +74,7 @@ before it did.
 | `slate.calendar` | `calendar` | yes | Next events (CalendarContract) |
 | `slate.alarms` | `alarms` | yes | Clock intent or exact AlarmManager |
 | `slate.home` | `home` | yes | Home Assistant REST |
-| `slate.nav` | `navigation` | yes | Bound to one app id host-side |
+| `slate.nav` | `navigation` | yes | OsmAnd AIDL + NLS; `onEvent('nav')`; `demo('arrive')` |
 | `slate.camera` | `camera` | yes | Bound to one app id host-side |
 | `slate.notifications` | `notifications` | partial | Host handles `action`; no JS read binding yet |
 | `slate.health` | `health.read` | yes | HC read; companion writes watch steps/BPM via VITALS |
@@ -167,6 +167,7 @@ The official `slate.news` demo reads `feedUrl` from settings (`type: string`)
 and draws the list / article UI itself.
 
 Normative API summaries for media / http / weather: `docs/subapp-rules.md` §8.
+Navigation adapter and watch glyphs: `docs/flagship-apps.md`.
 
 ## Governor (§6.5)
 

@@ -329,38 +329,40 @@ std::size_t build_face(W& w, const ViewModel& vm) {
       fmt_diag_ota(diag, sizeof(diag), st);
       w.text_big(4, 40, sdp::align::LEFT, 2u, 1u, diag);
     }
-  }
-  // Which image is actually running. A sealed watch has no SWD, so without
-  // this the only way to tell one flash from the next is to infer it from
-  // behaviour — which is exactly how we mis-attributed N-23 and N-24.
-  {
-    char ver[40];
-    std::size_t vi = 0u;
-    const auto put = [&](const char* s) {
-      for (const char* p = s; *p != '\0' && vi + 1u < sizeof(ver); ++p) {
-        ver[vi++] = *p;
+    // Which image is actually running. A sealed watch has no SWD, so without
+    // this the only way to tell one flash from the next is to infer it from
+    // behaviour — which is exactly how we mis-attributed N-23 and N-24.
+    // Gated with the rest of Face diag: the version is a diagnostic, not
+    // chrome (operator: hide with Face diag Off on watch or companion).
+    {
+      char ver[40];
+      std::size_t vi = 0u;
+      const auto put = [&](const char* s) {
+        for (const char* p = s; *p != '\0' && vi + 1u < sizeof(ver); ++p) {
+          ver[vi++] = *p;
+        }
+      };
+      put(slate::version::kVersion);
+      put(" ");
+      // "Mmm dd yyyy" -> "Mmm dd", then HH:MM from "hh:mm:ss".
+      for (std::size_t k = 0u; k < 6u && slate::version::kBuildDate[k] != '\0';
+           ++k) {
+        if (vi + 1u < sizeof(ver)) {
+          ver[vi++] = slate::version::kBuildDate[k];
+        }
       }
-    };
-    put(slate::version::kVersion);
-    put(" ");
-    // "Mmm dd yyyy" -> "Mmm dd", then HH:MM from "hh:mm:ss".
-    for (std::size_t k = 0u; k < 6u && slate::version::kBuildDate[k] != '\0';
-         ++k) {
-      if (vi + 1u < sizeof(ver)) {
-        ver[vi++] = slate::version::kBuildDate[k];
+      put(" ");
+      for (std::size_t k = 0u; k < 5u && slate::version::kBuildTime[k] != '\0';
+           ++k) {
+        if (vi + 1u < sizeof(ver)) {
+          ver[vi++] = slate::version::kBuildTime[k];
+        }
       }
+      ver[vi] = '\0';
+      // Scale 2, matching the diag lines — scale 1 is legible on a bench but
+      // not on a wrist or in a photograph.
+      w.text_big(4, 178, sdp::align::LEFT, 2u, 1u, ver);
     }
-    put(" ");
-    for (std::size_t k = 0u; k < 5u && slate::version::kBuildTime[k] != '\0';
-         ++k) {
-      if (vi + 1u < sizeof(ver)) {
-        ver[vi++] = slate::version::kBuildTime[k];
-      }
-    }
-    ver[vi] = '\0';
-    // Scale 2, matching the diag lines — scale 1 is legible on a bench but
-    // not on a wrist or in a photograph.
-    w.text_big(4, 178, sdp::align::LEFT, 2u, 1u, ver);
   }
 #endif
 

@@ -3,11 +3,21 @@
 > **This file is the single point of truth for open work.** `issues.md` is older
 > and now partial; where they disagree, this file wins. Capability inventory
 > (what works today): [`capabilities.md`](capabilities.md). Updated
-> **10 August 2026**.
+> **18 August 2026**.
 
 ---
 
-## Current state (17 Aug 2026)
+## Current state (18 Aug 2026)
+
+### Face version line gated with Face diag (firmware `0.1.0-m19`)
+
+The firmware version/build stamp at y=178 was compiled into diag builds but
+always drawn, even with Face diag Off. It now paints only when
+`face_show_diag` is on — same toggle on the watch Settings page and in the
+companion Watch settings screen. Companion subtitle updated (`0.8.2-p75`).
+Packaged: `build/dfu/slate-dfu.zip` SHA-256 prefix **`2D7C272691C8`**. Needs
+SDP OTA; Face diag Off on the current wrist image will still leave the version
+visible until this lands.
 
 ### Navigation — destination reached + turn glyph (companion `0.8.2-p74`)
 

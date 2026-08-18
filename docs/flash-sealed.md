@@ -51,8 +51,9 @@ twice on hardware). Booting to InfiniTime to flash is now a fallback, not the
 routine, and hold-to-blue remains the guaranteed recovery.
 
 Since `E43C26CBE325` the running image identifies itself: the watch face
-carries a version line (`0.1.0-m16 Aug 03 14:12`) in diag builds, so a sealed
-watch no longer has to be identified by inference.
+carries a version line (`0.1.0-m19 Aug 18 HH:MM` style) in **Face diag On**
+builds. From `0.1.0-m19` (`2D7C272691C8`) that line hides with Face diag Off
+on the watch or in the companion. Current packaged zip: `build/dfu/slate-dfu.zip`.
 
 **Flashing from InfiniTime is the reliable path** while the watch still runs a
 build without N-20/N-21/N-22. Those fixes are what make Slate a dependable DFU

@@ -4,8 +4,8 @@ What is on the watch, what every element means, and how to move between
 screens. Written for the sealed PineTime — no SWD, no serial console, so the
 screen is the only instrument you have.
 
-**Applies to:** firmware `CFEDE90DE7F4` (`0.1.0-m16`) and later.
-**Last updated:** 3 August 2026.
+**Applies to:** firmware `0.1.0-m19` and later (version line respects Face diag).
+**Last updated:** 18 August 2026.
 
 > Anything described as a *diagnostic* is only drawn in builds with
 > `SLATE_DIAG_OVERLAY` enabled, which is every build you have flashed so far.
@@ -66,7 +66,7 @@ Vertical bands, top to bottom, on the 240×240 panel:
 | 110–124 | Date, `DD-MM-YY` |
 | 136–150 | Step count |
 | 176–180 | Remote-stale marker (amber) |
-| 180–193 | Firmware version line |
+| 180–193 | Firmware version line (Face diag On only) |
 | 186–195 | OTA progress bar + blink glyph (only during a transfer) |
 | 196–203 | Battery gauge |
 | 212–226 | Battery percent, charge bolt, display-list glyph, link block |
@@ -154,16 +154,21 @@ provisional.**
 At y=180, small and dim:
 
 ```
-0.1.0-m16 Aug 03 14:12
+0.1.0-m19 Aug 18 06:00
 ```
 
 Firmware version, then the compiler build stamp (date and HH:MM). The build
 stamp is what actually distinguishes two flashes of the same version — use it
-to confirm an update landed. Diagnostic builds only.
+to confirm an update landed. Part of **Face diag**: hidden when that setting
+is Off on the watch or in the companion. Diagnostic builds only.
 
 ---
 
 ## 3. Diagnostic lines on the face
+
+Shown only when **Face diag** is On (watch Settings or companion Watch settings).
+The firmware version line (§2.6) uses the same toggle — from **m19** onward it
+is not drawn when Face diag is Off.
 
 Two dense numeric lines under the trial marker. Both are bring-up instruments;
 neither is meant to be readable at a glance.
@@ -272,10 +277,12 @@ list (swipe up/down). Rows, top to bottom:
 | Shake wake | On/Off (default Off) + Soft/Normal/Hard |
 | Timeout | 10s … Never |
 | Show steps | On/Off |
-| Face diag | On/Off |
+| Face diag | On/Off — counter lines, firmware version/build stamp, OTA diag line |
 | Heart rate | On/Off — continuous measure; BPM on the face |
 
-The same settings sync to the companion **Watch settings** screen.
+The same settings sync to the companion **Watch settings** screen. Face diag
+Off hides the version line, both counter lines, and the OTA diag line (needs
+firmware **m19**).
 
 One more press returns to the face.
 

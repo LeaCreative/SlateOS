@@ -4,6 +4,7 @@
 #include "persist.hpp"
 #include "sdp_opcodes.hpp"
 #include "sdp_parser.hpp"
+#include "slate_version.hpp"
 #include "wall_clock.hpp"
 
 #include <cstdio>
@@ -123,6 +124,19 @@ void fill_notifs(slate::notif::Store* store, std::uint8_t n, bool stale) {
     std::memcpy(e.title, name, 16u);
     e.stale = stale ? 1u : 0u;
   }
+}
+
+bool list_contains(const std::uint8_t* p, std::size_t n, const char* needle) {
+  const std::size_t nl = std::strlen(needle);
+  if (p == nullptr || needle == nullptr || nl == 0u || n < nl) {
+    return false;
+  }
+  for (std::size_t i = 0u; i + nl <= n; ++i) {
+    if (std::memcmp(p + i, needle, nl) == 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace
@@ -323,6 +337,26 @@ static void test_notifs_empty() {
   expect("notifs empty parse", parse_ok(buf, n));
 }
 
+static void test_face_version_follows_diag() {
+  slate::local::State st{};
+  st.screen = slate::local::Screen::Face;
+  st.settings.face_show_diag = 1u;
+  slate::ui::ViewModel vm{&st, nullptr, nullptr};
+  std::uint8_t buf[2048];
+  const std::size_t n_on = slate::ui::build_screen(vm, buf, sizeof(buf));
+  expect("face with diag non-empty", n_on > 0u && n_on <= sizeof(buf));
+  expect("face with diag parse", parse_ok(buf, n_on));
+  expect("face with diag includes version",
+         list_contains(buf, n_on, slate::version::kVersion));
+
+  st.settings.face_show_diag = 0u;
+  const std::size_t n_off = slate::ui::build_screen(vm, buf, sizeof(buf));
+  expect("face without diag non-empty", n_off > 0u && n_off <= sizeof(buf));
+  expect("face without diag parse", parse_ok(buf, n_off));
+  expect("face without diag omits version",
+         !list_contains(buf, n_off, slate::version::kVersion));
+}
+
 int main() {
   slate::persist::Hooks ph{&host_read, &host_write, nullptr};
   slate::persist::init(ph);
@@ -335,6 +369,7 @@ int main() {
   test_settings_timeout_off_reads_as_off();
   test_notifs_empty();
   test_notifs_budget();
+  test_face_version_follows_diag();
 
   if (g_fails != 0) {
     std::printf("%d failures\n", g_fails);
