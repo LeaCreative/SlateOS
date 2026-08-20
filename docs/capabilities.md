@@ -15,8 +15,8 @@
 | Piece | Identity |
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
-| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`6FDCCEAF209D`** (`0.1.0-m23 Aug 20 11:41`, MCUBoot 0.1.23). **Not yet on wrist** (m21 still running until OTA). |
-| Companion APK | **`0.8.2-p87`** (versionCode **88**, `slate.app.debug`) — STATUS Read for Conn interval; Vibrations setting (wire v5). Built; install pending Pixel reconnect (p86 was last confirmed install). |
+| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`EB04CD78EB7F`** (`0.1.0-m24 Aug 20 13:24`, MCUBoot 0.1.24). OTA needed; wrist may still be m21. |
+| Companion APK | **`0.8.2-p88`** (versionCode **89**) — adaptive conn priority (Ambient idle / Active focused / Streaming camera). |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
 

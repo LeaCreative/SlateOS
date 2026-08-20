@@ -84,6 +84,16 @@ class SlateOtaService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_CANCEL -> {
+                // Must ABORT before tearing down: CancellationException used to
+                // skip the send path, so the watch stayed transfer_active with
+                // the OTA banner up and core.tick gated off (frozen clock).
+                LinkLog.i("OTA cancel — sending ABORT")
+                runCatching {
+                    SharedLink.gatt(applicationContext)
+                        .sendMessage(SdpFrame.CHAN_OTA, slate.ota.encodeAbort())
+                }.onFailure {
+                    LinkLog.w("OTA ABORT on cancel failed: ${it.message}")
+                }
                 job?.cancel()
                 publish(SlateOtaState(message = "OTA cancelled"))
                 stopSelf()
@@ -106,17 +116,35 @@ class SlateOtaService : Service() {
         val gatt = SharedLink.gatt(applicationContext)
         gatt.removeOtaListener(otaListener)
         SharedLink.benchmarkPaused = false
+        endOtaRadioBoost(gatt)
         scope.cancel()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun beginOtaRadioBoost(gatt: slate.app.link.SlateGattClient) {
+        SharedLink.otaTransferActive = true
+        gatt.setRadioDemand(slate.app.link.SlateGattClient.RadioDemand.Streaming)
+        LinkLog.i("OTA radio boost: Streaming / HIGH")
+    }
+
+    private fun endOtaRadioBoost(gatt: slate.app.link.SlateGattClient) {
+        if (!SharedLink.otaTransferActive) return
+        SharedLink.otaTransferActive = false
+        // Back to idle linked face; focus sync will raise again if needed.
+        gatt.setRadioDemand(slate.app.link.SlateGattClient.RadioDemand.Ambient)
+        LinkLog.i("OTA radio boost cleared → Ambient / LOW_POWER")
+    }
+
     private fun startOta(uri: Uri) {
         job = scope.launch {
             val gatt = SharedLink.gatt(applicationContext)
             gatt.addOtaListener(otaListener)
             SharedLink.benchmarkPaused = true
+            beginOtaRadioBoost(gatt)
+            // Cancel / failure must ABORT; success must not (watch is rebooting).
+            var abortOnExit = true
             try {
                 publish(SlateOtaState(active = true, message = "Validating package"))
                 val pkg = NordicDfuPackageReader.read(contentResolver, uri)
@@ -227,22 +255,29 @@ class SlateOtaService : Service() {
 
                 // After COMMIT the watch reboots; wait briefly then let link reconnect
                 delay(3_000)
+                abortOnExit = false
                 publish(SlateOtaState(
                     active = false,
                     progress = 100,
                     message = "OTA complete. Watch is rebooting; IMAGE_OK will be confirmed on reconnect.",
                 ))
             } catch (t: CancellationException) {
-                // Propagate normally
+                LinkLog.i("OTA job cancelled")
                 throw t
             } catch (t: Throwable) {
-                runCatching {
-                    gatt.sendMessage(SdpFrame.CHAN_OTA, slate.ota.encodeAbort())
-                }
                 fail(t.message ?: t::class.java.simpleName)
             } finally {
+                if (abortOnExit) {
+                    runCatching {
+                        gatt.sendMessage(SdpFrame.CHAN_OTA, slate.ota.encodeAbort())
+                        LinkLog.i("OTA ABORT sent")
+                    }.onFailure {
+                        LinkLog.w("OTA ABORT failed: ${it.message}")
+                    }
+                }
                 gatt.removeOtaListener(otaListener)
                 SharedLink.benchmarkPaused = false
+                endOtaRadioBoost(gatt)
                 stopSelf()
             }
         }

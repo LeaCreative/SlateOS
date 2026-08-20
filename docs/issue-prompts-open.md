@@ -9,6 +9,25 @@
 
 ## Current state (20 Aug 2026)
 
+### OTA cancel left watch frozen (`0.8.2-p90` / m25)
+
+Cancel never sent SDP `ABORT`, so `transfer_active` stayed set: OTA banner,
+`updating_` blocked `show_current`, and `core.tick` was skipped (frozen clock).
+Reconnect did not clear it. p90 sends ABORT on cancel / failure and once on
+session Ready; m25 also aborts OTA on link down. Zip **`1238BA228E08`**
+(`0.1.0-m25`), companion **p90** installed.
+
+### Adaptive BLE connection priority (`0.8.2-p88` / m24)
+
+Companion had pinned `CONNECTION_PRIORITY_HIGH` after CCCD → STATUS
+`interval_units=12` (~15 ms) all session. p88 maps focus → LOW_POWER /
+BALANCED / HIGH and sends SET_PROFILE Ambient/Active/Streaming. m24:
+`apply_profile(Ambient)` no longer blanks the LCD on HELLO.
+
+Packaged: `build/dfu/slate-dfu.zip` / `Download/slate-dfu-m24.zip` — SHA prefix
+**`EB04CD78EB7F`**, stamp **`0.1.0-m24 Aug 20 13:24`**, MCUBoot **0.1.24**.
+Companion **p88** installed on Pixel.
+
 ### m23 DFU packaged (Vibrations + STATUS publish)
 
 `build/dfu/slate-dfu.zip` — SHA-256 prefix **`6FDCCEAF209D`**, face stamp

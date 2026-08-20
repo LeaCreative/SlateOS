@@ -25,7 +25,7 @@ class SessionClientTest {
 
         val accept = result.outbound[0]
         assertEquals(SdpWire.ControlOp.HELLO_ACCEPT, accept[0].toInt() and 0xFF)
-        assertEquals(SessionClient.PROFILE_ID_ACTIVE, accept[1].toInt() and 0xFF)
+        assertEquals(SessionClient.PROFILE_ID_AMBIENT, accept[1].toInt() and 0xFF)
         assertContentEquals(phoneId, accept.copyOfRange(2, 10))
         assertEquals(hostVersion.length, accept[10].toInt() and 0xFF)
         assertEquals(
@@ -133,6 +133,28 @@ class SessionClientTest {
         assertEquals(SessionClient.State.Connected, client.state)
         assertTrue(result.outbound.isEmpty())
         assertNull(client.helloOffer)
+    }
+
+    @Test
+    fun encodeSetProfileWire() {
+        val client = SessionClient(phoneId, hostVersion)
+        assertContentEquals(
+            byteArrayOf(SdpWire.ControlOp.SET_PROFILE.toByte(), 1),
+            client.encodeSetProfile(1),
+        )
+    }
+
+    @Test
+    fun selectProfileEmitsOnlyOnChange() {
+        val client = SessionClient(phoneId, hostVersion)
+        assertEquals(SessionClient.PROFILE_ID_AMBIENT, client.selectedProfileId)
+        assertNull(client.selectProfile(SessionClient.PROFILE_ID_AMBIENT))
+        val msg = client.selectProfile(SessionClient.PROFILE_ID_ACTIVE)
+        assertContentEquals(
+            byteArrayOf(SdpWire.ControlOp.SET_PROFILE.toByte(), 1),
+            msg,
+        )
+        assertEquals(SessionClient.PROFILE_ID_ACTIVE, client.selectedProfileId)
     }
 
     @Test

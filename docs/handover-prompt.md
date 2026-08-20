@@ -29,9 +29,9 @@ had was a divergence from it.
 
 | | |
 |---|---|
-| **Firmware packaged** | `build/dfu/slate-dfu.zip` SHA-256 prefix **`6FDCCEAF209D`** (`0.1.0-m23 Aug 20 11:41`, MCUBoot **0.1.23**) |
-| **Wrist** | Still **m21** until OTA of m23 (m22 was never packaged; m23 includes Vibrations + STATUS notify) |
-| **Companion on Pixel** | **`0.8.2-p86`** / 87 last installed; **p87** / 88 built (STATUS Read) — reinstall when Pixel is back |
+| **Firmware packaged** | `build/dfu/slate-dfu.zip` SHA-256 prefix **`EB04CD78EB7F`** (`0.1.0-m24 Aug 20 13:24`, MCUBoot **0.1.24**) |
+| **Wrist** | OTA **m24** (includes Vibrations + STATUS + Ambient radio-only). Prior wrist **m21** until then |
+| **Companion on Pixel** | **`0.8.2-p88`** / versionCode **89** (adaptive conn priority) |
 | **Host tests** | Run with `-E ble_link`; `ble_link` still fails (`drop/reject`) |
 | **RAM link slack** | **~3016 B** (~89% static) after I-19 ScreenBlock 3072→256 |
 

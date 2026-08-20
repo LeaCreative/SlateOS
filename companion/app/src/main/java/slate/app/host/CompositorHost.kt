@@ -142,6 +142,7 @@ class CompositorHost(
                 gatt.sendMessage(SdpFrame.CHAN_CONTROL, session.encodeScreenPop())
             }
         },
+        onFocusChanged = { syncLinkRadioToFocus() },
     )
 
     private var tickJob: Job? = null
@@ -477,6 +478,15 @@ class CompositorHost(
         }
         if (!wasReady && session.state == SessionClient.State.Ready) {
             cancelHelloWatchdog()
+            // Recover a watch left transfer_active after a cancel that never
+            // sent ABORT (banner stuck, clock frozen). Harmless if idle.
+            if (!SharedLink.otaTransferActive) {
+                gatt.sendMessage(SdpFrame.CHAN_OTA, slate.ota.encodeAbort())
+                LinkLog.i("OTA ABORT on Ready (clear stale transfer if any)")
+            }
+            // HELLO accepted Ambient by default; pin Android priority to match
+            // and re-sync if a focused app somehow already sits on the stack.
+            syncLinkRadioToFocus()
             openSettingsExchange()
             if (pendingLauncherOpen) {
                 pendingLauncherOpen = false
@@ -502,6 +512,48 @@ class CompositorHost(
         }
         session.confirmStatus?.let { snap ->
             applyConfirmSnapshot(snap)
+        }
+    }
+
+    /**
+     * Stretch or tighten the BLE link to match compositor focus.
+     *
+     * Idle / local face / Ambient-priority → Ambient (LOW_POWER + profile 0).
+     * Focused Normal/Critical apps (nav, map, launcher, …) → Active.
+     * Camera preview → Streaming (HIGH).
+     */
+    private fun syncLinkRadioToFocus() {
+        if (SharedLink.otaTransferActive) {
+            gatt.setRadioDemand(SlateGattClient.RadioDemand.Streaming)
+            return
+        }
+        val focused = compositor.focusedAppId
+        val prio = compositor.focusedPriority
+        val demand = when {
+            focused == null || prio == PriorityClass.AMBIENT ->
+                SlateGattClient.RadioDemand.Ambient
+            focused == ScriptRuntimeHost.CAMERA_ID ->
+                SlateGattClient.RadioDemand.Streaming
+            else -> SlateGattClient.RadioDemand.Active
+        }
+        val profileId = when (demand) {
+            SlateGattClient.RadioDemand.Ambient -> SessionClient.PROFILE_ID_AMBIENT
+            SlateGattClient.RadioDemand.Active -> SessionClient.PROFILE_ID_ACTIVE
+            SlateGattClient.RadioDemand.Streaming -> SessionClient.PROFILE_ID_STREAMING
+        }
+        gatt.setRadioDemand(demand)
+        if (session.state == SessionClient.State.Ready ||
+            session.state == SessionClient.State.Connected
+        ) {
+            session.selectProfile(profileId)?.let { msg ->
+                if (session.state == SessionClient.State.Ready) {
+                    LinkLog.i(
+                        "SET_PROFILE id=$profileId demand=$demand " +
+                            "focused=${focused ?: "—"}",
+                    )
+                    gatt.sendMessage(SdpFrame.CHAN_CONTROL, msg)
+                }
+            }
         }
     }
 

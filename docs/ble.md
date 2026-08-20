@@ -58,6 +58,22 @@ companion never **read** the characteristic. m23 notifies on STATUS CCCD /
 MTU / CONN_UPDATE / PHY and snapshots the interval on connect; p87 reads
 STATUS after subscribe (and again ~2 s later after HIGH-priority may settle).
 
+**Connection priority (p88 / m24):** the companion used to call
+`requestConnectionPriority(HIGH)` once after CCCD and leave it there, which
+locked `interval_units≈12` (~15 ms) for the whole session. It now follows
+compositor focus:
+
+| Focus | Android priority | SET_PROFILE |
+|---|---|---|
+| Local face / none / Ambient app | `LOW_POWER` | Ambient (0) |
+| Nav, map, launcher, other Normal | `BALANCED` | Active (1) |
+| Camera / **SDP OTA in flight** | `HIGH` | Streaming (2) |
+
+Firmware `apply_profile(Ambient)` only requests the 500 ms interval; it no
+longer forces LCD sleep on HELLO (app_loop still enters Ambient when the local
+face owns the screen). SDP OTA must boost to Streaming for the transfer
+(`SharedLink.otaTransferActive`); otherwise Ambient LOW_POWER throttles it.
+
 ## Companion GATT (central)
 
 `SlateGattClient` / `LinkForegroundService` (companion `0.8.2-p84`+):

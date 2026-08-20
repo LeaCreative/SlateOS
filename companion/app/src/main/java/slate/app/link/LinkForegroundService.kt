@@ -584,6 +584,13 @@ object SharedLink {
     @Volatile
     var benchmarkPaused: Boolean = false
 
+    /**
+     * SDP channel-5 OTA in flight. Forces Streaming / HIGH connection priority
+     * so Ambient LOW_POWER does not throttle the transfer (p88 regression).
+     */
+    @Volatile
+    var otaTransferActive: Boolean = false
+
     /** Last CONTROL 0xE1 snapshot from the watch (trial / IMAGE_OK). */
     @Volatile
     var lastConfirmStatus: ConfirmStatus.Snapshot? = null

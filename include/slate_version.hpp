@@ -11,7 +11,7 @@
 namespace slate {
 namespace version {
 
-constexpr const char kVersion[] = "0.1.0-m23";
+constexpr const char kVersion[] = "0.1.0-m25";
 
 // __DATE__ is "Mmm dd yyyy", __TIME__ is "hh:mm:ss".
 constexpr const char kBuildDate[] = __DATE__;

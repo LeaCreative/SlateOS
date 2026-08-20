@@ -250,20 +250,21 @@ void enter(State s) {
 }
 
 void apply_profile(const profile::Desc& desc) {
-  State s = State::Active;
-  if (desc.id == profile::kIdAmbient) {
-    s = State::Ambient;
-  } else if (desc.id == profile::kIdStreaming) {
-    s = State::Streaming;
-  } else {
-    s = State::Active;
-  }
-  // Honour profile backlight for non-ambient; ambient forces off.
-  enter(s);
-  if (s != State::Ambient) {
-    backlight::set(desc.backlight);
-  }
+  // Always stretch/tighten the radio to the catalog interval. Android may
+  // still override via connection priority; this is the watch's request.
   apply_radio(desc.interval_units);
+  if (desc.id == profile::kIdAmbient) {
+    // Do not enter full Ambient here (LCD sleep / backlight off). That used to
+    // blank the face the moment HELLO_ACCEPT chose ambient. App_loop enters
+    // Ambient when the local face owns the screen and profile_id is ambient.
+    return;
+  }
+  if (desc.id == profile::kIdStreaming) {
+    enter(State::Streaming);
+  } else {
+    enter(State::Active);
+  }
+  backlight::set(desc.backlight);
 }
 
 void sleep_ms(std::uint32_t max_ms) {

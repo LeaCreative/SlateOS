@@ -40,6 +40,12 @@ class Compositor(
      * does not appear, this says why in one line.
      */
     private val onPushDropped: (appId: String, reason: String, bytes: Int) -> Unit = { _, _, _ -> },
+    /**
+     * Fired whenever the focused app id changes (including to null after the
+     * last relinquish / [resetStack]). Used to stretch or tighten the BLE
+     * connection interval.
+     */
+    private val onFocusChanged: (focusedAppId: String?) -> Unit = {},
 ) {
     data class StackEntry(
         val appId: String,
@@ -72,6 +78,11 @@ class Compositor(
 
     val stackSnapshot: List<StackEntry> get() = stack.toList()
     val focusedAppId: String? get() = stack.lastOrNull()?.appId
+    val focusedPriority: PriorityClass? get() = stack.lastOrNull()?.priority
+
+    private fun notifyFocusChanged() {
+        onFocusChanged(focusedAppId)
+    }
     val freeCreditBytes: Int get() = credit.freeBytes
 
     fun setCredit(freeBytes: Int) = credit.setAdvertised(freeBytes)
@@ -175,6 +186,7 @@ class Compositor(
         applyOutbound(reg, reg.endpoint.dispatch(HostInbound.Focus))
         reg.dirty = true
         flushApp(appId)
+        notifyFocusChanged()
         return null
     }
 
@@ -183,12 +195,17 @@ class Compositor(
         stack.removeAt(stack.lastIndex)
         onScreenPop()
         blur(appId)
-        val next = stack.lastOrNull() ?: return
+        val next = stack.lastOrNull()
+        if (next == null) {
+            notifyFocusChanged()
+            return
+        }
         apps[next.appId]?.let { reg ->
             applyOutbound(reg, reg.endpoint.dispatch(HostInbound.Focus))
             reg.dirty = true
             flushApp(next.appId)
         }
+        notifyFocusChanged()
     }
 
     /**
@@ -204,10 +221,12 @@ class Compositor(
      * No SCREEN_POP is sent — there is nobody to send it to.
      */
     suspend fun resetStack() {
+        if (stack.isEmpty()) return
         while (stack.isNotEmpty()) {
             val top = stack.removeAt(stack.lastIndex)
             blur(top.appId)
         }
+        notifyFocusChanged()
     }
 
     suspend fun dispatchSystemEvent(appId: String, source: String, jsonPayload: String) {

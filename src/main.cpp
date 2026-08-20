@@ -655,6 +655,14 @@ static void app_loop() {
         } else {
           g_session.on_link_down(tnow);
           g_core.on_link_down();
+          // Phone cancel used to tear the link without OTA ABORT, leaving
+          // transfer_active stuck: OTA banner forever, core.tick gated off
+          // (frozen clock), input dead. Clear the receiver on disconnect.
+          if (g_ota.transfer_active()) {
+            const std::uint8_t abort_msg[] = {slate::ota::kOpAbort};
+            g_ota.on_message(abort_msg, sizeof(abort_msg));
+            rtt::log(rtt::Level::Info, "OTA: aborted on link down");
+          }
         }
       }
     }

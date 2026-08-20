@@ -785,10 +785,52 @@ class SlateGattClient(
                 BluetoothDevice.PHY_OPTION_NO_PREFERRED,
             )
             LinkLog.i("setPreferredPhy(2M) after CCCD; will log onPhyUpdate")
-            val prio = g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
-            LinkLog.i("requestConnectionPriority(HIGH)=$prio")
         }
+        // Do not pin HIGH here — that locked interval_units=12 (~15 ms) for the
+        // whole session and flattened the battery. Idle linked face uses Ambient.
+        applyRadioDemand(RadioDemand.Ambient)
         bleHandler.postDelayed({ readPhy(g) }, 500)
+    }
+
+    /**
+     * Android connection-priority hint aligned with firmware session profiles.
+     *
+     * Ambient → LOW_POWER (~hundreds of ms). Active → BALANCED (~tens of ms).
+     * Streaming → HIGH (~15 ms). OTA uses HIGH on its own GATT client.
+     */
+    enum class RadioDemand {
+        Ambient,
+        Active,
+        Streaming,
+    }
+
+    @Volatile
+    private var radioDemand: RadioDemand = RadioDemand.Ambient
+
+    fun setRadioDemand(demand: RadioDemand) {
+        bleHandler.post {
+            radioDemand = demand
+            applyRadioDemand(demand)
+        }
+    }
+
+    private fun applyRadioDemand(demand: RadioDemand) {
+        val g = gatt ?: return
+        if (Build.VERSION.SDK_INT < 21) return
+        val prio = when (demand) {
+            RadioDemand.Ambient -> BluetoothGatt.CONNECTION_PRIORITY_LOW_POWER
+            RadioDemand.Active -> BluetoothGatt.CONNECTION_PRIORITY_BALANCED
+            RadioDemand.Streaming -> BluetoothGatt.CONNECTION_PRIORITY_HIGH
+        }
+        val label = when (demand) {
+            RadioDemand.Ambient -> "LOW_POWER"
+            RadioDemand.Active -> "BALANCED"
+            RadioDemand.Streaming -> "HIGH"
+        }
+        val ok = g.requestConnectionPriority(prio)
+        LinkLog.i("requestConnectionPriority($label) demand=$demand rc=$ok")
+        // Interval may take a moment to settle — refresh STATUS for the UI.
+        scheduleStatusRead(g, delayMs = 800L)
     }
 
     fun close() {

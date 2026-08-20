@@ -10,7 +10,8 @@ import slate.generated.SdpWire
 class SessionClient(
     private val phoneId: ByteArray,
     private val hostVersion: String,
-    private val defaultProfileId: Int = PROFILE_ID_ACTIVE,
+    /** Default HELLO profile — Ambient (500 ms) unless the catalog lacks it. */
+    private val defaultProfileId: Int = PROFILE_ID_AMBIENT,
 ) {
     enum class State {
         Disconnected,
@@ -125,6 +126,19 @@ class SessionClient(
     fun encodeHelloReject(reason: Int = 0): ByteArray =
         byteArrayOf(SdpWire.ControlOp.HELLO_REJECT.toByte(), reason.toByte())
 
+    fun encodeSetProfile(profileId: Int): ByteArray =
+        byteArrayOf(SdpWire.ControlOp.SET_PROFILE.toByte(), profileId.toByte())
+
+    /**
+     * Select a catalog profile. Returns SET_PROFILE bytes when the id changes
+     * and the session can carry CONTROL; null when unchanged.
+     */
+    fun selectProfile(profileId: Int): ByteArray? {
+        if (profileId == selectedProfileId) return null
+        selectedProfileId = profileId
+        return encodeSetProfile(profileId)
+    }
+
     fun scheduleDisplay(op: PendingDisplay) {
         pendingDisplay = op
     }
@@ -220,7 +234,9 @@ class SessionClient(
         const val PHONE_ID_BYTES = 8
         const val OPCODE_BITMAP_BYTES = 32
         const val MAX_PROFILE_NAME_LEN = 16
+        const val PROFILE_ID_AMBIENT = 0
         const val PROFILE_ID_ACTIVE = 1
+        const val PROFILE_ID_STREAMING = 2
 
         fun u16Le(buf: ByteArray, off: Int): Int =
             (buf[off].toInt() and 0xFF) or ((buf[off + 1].toInt() and 0xFF) shl 8)
