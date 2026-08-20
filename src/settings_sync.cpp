@@ -36,6 +36,7 @@ std::size_t encode(const Payload& p, std::uint8_t* out, std::size_t cap) {
   out[17] = clamp_sens(p.raise_sensitivity);
   out[18] = p.shake_enabled ? 1u : 0u;
   out[19] = clamp_sens(p.shake_sensitivity);
+  out[20] = p.haptic_enabled ? 1u : 0u;
   return kPayloadBytes;
 }
 
@@ -70,6 +71,7 @@ bool decode(const std::uint8_t* msg, std::size_t len, Payload* out) {
   out->raise_sensitivity = clamp_sens(msg[17]);
   out->shake_enabled = msg[18] ? 1u : 0u;
   out->shake_sensitivity = clamp_sens(msg[19]);
+  out->haptic_enabled = msg[20] ? 1u : 0u;
   return true;
 }
 
@@ -81,7 +83,8 @@ bool differs(const Payload& a, const Payload& b) {
          a.face_bright != b.face_bright || a.face_dim != b.face_dim ||
          a.raise_sensitivity != b.raise_sensitivity ||
          a.shake_enabled != b.shake_enabled ||
-         a.shake_sensitivity != b.shake_sensitivity;
+         a.shake_sensitivity != b.shake_sensitivity ||
+         a.haptic_enabled != b.haptic_enabled;
 }
 
 bool should_apply(const Payload& current, const Payload& incoming,
@@ -129,6 +132,7 @@ void apply_to(const Payload& p, local::Settings* s) {
   s->raise_sensitivity = clamp_sens(p.raise_sensitivity);
   s->shake_enabled = p.shake_enabled ? 1u : 0u;
   s->shake_sensitivity = clamp_sens(p.shake_sensitivity);
+  s->haptic_enabled = p.haptic_enabled ? 1u : 0u;
 }
 
 Payload from(const local::Settings& s, std::uint32_t revision) {
@@ -145,6 +149,7 @@ Payload from(const local::Settings& s, std::uint32_t revision) {
   p.raise_sensitivity = clamp_sens(s.raise_sensitivity);
   p.shake_enabled = s.shake_enabled ? 1u : 0u;
   p.shake_sensitivity = clamp_sens(s.shake_sensitivity);
+  p.haptic_enabled = s.haptic_enabled ? 1u : 0u;
   return p;
 }
 

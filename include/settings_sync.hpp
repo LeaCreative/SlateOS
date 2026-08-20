@@ -15,12 +15,12 @@
 namespace slate {
 namespace settings_sync {
 
-constexpr std::uint8_t kWireVersion = 4u;
+constexpr std::uint8_t kWireVersion = 5u;
 /**
  * op + version + u32 revision + tilt + wake + steps + diag + hr + 3×u16 RGB565
- * + raise_sens + shake_enabled + shake_sens.
+ * + raise_sens + shake_enabled + shake_sens + haptic_enabled.
  */
-constexpr std::size_t kPayloadBytes = 20u;
+constexpr std::size_t kPayloadBytes = 21u;
 
 /**
  * The synced subset of local::Settings.
@@ -40,6 +40,8 @@ struct Payload {
    * continuously and shows BPM on the watch face.
    */
   std::uint8_t hr_enabled = 0u;
+  /** Off silences all haptic patterns (local UI, SDP, notifications). */
+  std::uint8_t haptic_enabled = 1u;
   std::uint16_t ui_chrome = 0xFFFFu;
   std::uint16_t face_bright = 0xFFFFu;
   std::uint16_t face_dim = 0x8410u;

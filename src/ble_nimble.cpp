@@ -126,6 +126,33 @@ void log_line(const char* msg) {
   rtt::log(rtt::Level::Info, msg);
 }
 
+/** Push the current STATUS value if a central is connected and subscribed. */
+void publish_status_notify() {
+  if (g_gatt == nullptr || g_attr_status == 0 ||
+      g_conn_handle == BLE_HS_CONN_HANDLE_NONE) {
+    return;
+  }
+  struct os_mbuf* om =
+      ble_hs_mbuf_from_flat(g_gatt->status_value(), g_gatt->status_len());
+  if (om) {
+    (void)ble_gatts_notify_custom(g_conn_handle, g_attr_status, om);
+  }
+}
+
+/** Snapshot live GAP params into g_last_nego and refresh the STATUS buffer. */
+void capture_conn_into_status() {
+  if (g_conn_handle == BLE_HS_CONN_HANDLE_NONE) {
+    return;
+  }
+  struct ble_gap_conn_desc desc;
+  if (ble_gap_conn_find(g_conn_handle, &desc) == 0) {
+    g_last_nego.conn_interval_units = desc.conn_itvl;
+  }
+  if (g_gatt != nullptr) {
+    g_gatt->refresh_status(g_last_nego, true);
+  }
+}
+
 std::uint16_t hook_mtu(std::uint16_t want) {
   if (g_conn_handle == BLE_HS_CONN_HANDLE_NONE) {
     return 23u;
@@ -215,13 +242,7 @@ void run_negotiate() {
   g_phy_rx = n.phy_rx ? n.phy_rx : g_phy_rx;
   if (g_gatt != nullptr) {
     g_gatt->refresh_status(n, true);
-    if (g_attr_status != 0 && g_conn_handle != BLE_HS_CONN_HANDLE_NONE) {
-      struct os_mbuf* om =
-          ble_hs_mbuf_from_flat(g_gatt->status_value(), g_gatt->status_len());
-      if (om) {
-        (void)ble_gatts_notify_custom(g_conn_handle, g_attr_status, om);
-      }
-    }
+    publish_status_notify();
   }
 
   rtt::write("BLE negotiated MTU=0x");
@@ -490,6 +511,10 @@ int gap_event(struct ble_gap_event* event, void* arg) {
         // The preferred MTU is published once at sync, so the central's own
         // exchange lands at 247 and arrives as BLE_GAP_EVENT_MTU below.
         // Session-up waits for the TX subscription, not this event (N-23).
+        // Capture the interval now so a STATUS Read (or later Notify) is not
+        // stuck at 0 until a CONN_UPDATE fires — Android often never
+        // updates if HIGH priority already matches what it wanted.
+        capture_conn_into_status();
         rtt::log(rtt::Level::Info, "BLE: connected — awaiting central");
       } else if (gap_adv::should_resume(
                      gap_adv::connect_event(event->connect.status))) {
@@ -535,6 +560,14 @@ int gap_event(struct ble_gap_event* event, void* arg) {
           g_hrs_cccd(g_hrs_notify, g_hrs_cccd_ctx);
         }
       }
+      // STATUS was only notified from negotiate_now() (benchmark path). Ordinary
+      // sessions refreshed the buffer on MTU/PHY/interval events but never
+      // pushed it, so the companion's Conn interval stayed blank forever.
+      if (event->subscribe.attr_handle == g_attr_status &&
+          event->subscribe.cur_notify) {
+        capture_conn_into_status();
+        publish_status_notify();
+      }
       break;
     case BLE_GAP_EVENT_MTU:
       rtt::write("BLE: MTU event mtu=0x");
@@ -545,18 +578,14 @@ int gap_event(struct ble_gap_event* event, void* arg) {
       g_last_nego.mtu_ok = event->mtu.value >= kTargetAttMtu;
       if (g_gatt != nullptr) {
         g_gatt->refresh_status(g_last_nego, true);
+        publish_status_notify();
       }
       break;
     case BLE_GAP_EVENT_CONN_UPDATE:
       // The central owns connection parameters; just record the result.
       if (event->conn_update.status == 0) {
-        struct ble_gap_conn_desc desc;
-        if (ble_gap_conn_find(g_conn_handle, &desc) == 0) {
-          g_last_nego.conn_interval_units = desc.conn_itvl;
-          if (g_gatt != nullptr) {
-            g_gatt->refresh_status(g_last_nego, true);
-          }
-        }
+        capture_conn_into_status();
+        publish_status_notify();
       }
       break;
     case BLE_GAP_EVENT_PHY_UPDATE_COMPLETE:
@@ -573,6 +602,7 @@ int gap_event(struct ble_gap_event* event, void* arg) {
         rtt::write_line("");
         if (g_gatt != nullptr) {
           g_gatt->refresh_status(g_last_nego, true);
+          publish_status_notify();
         }
       }
       break;

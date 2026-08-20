@@ -903,6 +903,10 @@ bool Core::on_tap_elem(std::uint16_t elem_id) {
       local_state().settings.hr_enabled =
           local_state().settings.hr_enabled ? 0u : 1u;
       break;
+    case local::kSettingHaptic:
+      local_state().settings.haptic_enabled =
+          local_state().settings.haptic_enabled ? 0u : 1u;
+      break;
     default:
       changed = false;
       break;

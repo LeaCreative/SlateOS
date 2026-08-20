@@ -127,6 +127,9 @@ class Seq {
  */
 void init();
 
+/** Master gate from settings. Off cancels any pattern in flight. */
+void set_enabled(bool on);
+
 /** InfiniTime `RunForDuration` — one non-blocking pulse. 0 ms is a no-op. */
 void run_for_duration(std::uint16_t ms);
 

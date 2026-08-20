@@ -3,11 +3,26 @@
 > **This file is the single point of truth for open work.** `issues.md` is older
 > and now partial; where they disagree, this file wins. Capability inventory
 > (what works today): [`capabilities.md`](capabilities.md). Updated
-> **18 August 2026**.
+> **20 August 2026**.
 
 ---
 
-## Current state (18 Aug 2026)
+## Current state (20 Aug 2026)
+
+### m23 DFU packaged (Vibrations + STATUS publish)
+
+`build/dfu/slate-dfu.zip` — SHA-256 prefix **`6FDCCEAF209D`**, face stamp
+**`0.1.0-m23 Aug 20 11:41`**, MCUBoot **0.1.23**, 160796 B. m22 was never
+zipped (only source); this package includes SETTINGS_SYNC v5 / Vibrations and
+STATUS notify-on-subscribe + connect interval snapshot. Wrist still **m21**
+until OTA. Companion **p87** reads STATUS so Conn interval is not blank on
+older firmware either; APK install pending Pixel reconnect.
+
+### Conn interval blank on main screen
+
+STATUS Notify used to fire only from `negotiate_now()` (benchmarks). Ordinary
+sessions never pushed STATUS; companion never Read it. Fixed in m23 + p87
+(see [`ble.md`](ble.md)).
 
 ### Launcher deferred: session stuck Connected (`0.8.2-p85`)
 
@@ -21,6 +36,11 @@ p85: if HELLO is missing ~2 s after TX subscribe, rewrite TX CCCD 0 then 1;
 the first deferred swipe does the same. PHY 2M is requested after CCCD, not
 on top of it. Judge by `CONTROL op=1` (HELLO_OFFER) then Ready, then the
 launcher list — not by GATT connected.
+
+Also updated: [`session.md`](session.md) (negotiation timing), [`ble.md`](ble.md)
+(companion GATT table), [`companion-manual.md`](companion-manual.md),
+[`operator-manual.md`](operator-manual.md) §8, [`compositor.md`](compositor.md),
+[`handover-prompt.md`](handover-prompt.md), [`capabilities.md`](capabilities.md).
 
 ### `connectGatt` hung with no callback (`0.8.2-p84`)
 

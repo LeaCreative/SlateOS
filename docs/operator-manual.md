@@ -25,7 +25,7 @@ There is one physical control: the **side button**, plus touch swipes.
 | Notifs, swipe **left** | Face (back) |
 | Face, swipe **right** (L→R) | Settings |
 | Settings, swipe **left** (R→L) | Face |
-| Face, swipe **left** (linked) | Phone launcher |
+| Face, swipe **left** (linked) | Phone launcher (needs SDP session **Ready**, not only BLE connected) |
 | Phone sub-app, swipe **left** | Back (detail→list→close app); not launcher |
 | Side button | Always returns toward the **Face** (from Notifs, detail, Settings, Call, Alert). Does **not** open Notifs from the Face |
 
@@ -308,7 +308,9 @@ One more press returns to the face.
 | Clock off by whole hours | Companion sent the wrong offset (see N-26); the watch renders what it is given |
 | Amber strip at the very top persists | Image still on trial; `IMAGE_OK` not yet written. Keep the phone connected |
 | Amber bar under the steps | Phone owns the screen but has stopped refreshing it |
-| Link block dark with the phone nearby | BLE connected but the SDP session never negotiated — check for HELLO in the companion log |
+| Link block dark with the phone nearby | BLE connected but the SDP session never negotiated — check for `CONTROL op=1` (HELLO_OFFER) in the companion log |
+| Swipe-left does nothing, phone log `deferred until Ready (session=Connected)` | GATT is up, HELLO never ran. p85 bounces TX CCCD; wait for Ready or swipe again. `connectGatt` issued is not Ready |
+| **Start / reconnect** logs `ignored — already connecting` | Hung `connectGatt(false)` with no callback (p83). p84 force-aborts that path and scans first |
 | Line 1 reset reason `4` after a reboot | Watchdog fired. Either the button was held, or the app task wedged |
 | Line 2 phase `6` large | App task starved, not slow — something is hogging the CPU |
 | OTA line NAK `8` | The running image is unconfirmed and is refusing an update, on purpose |

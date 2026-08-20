@@ -795,11 +795,17 @@ std::size_t build_settings(W& w, const ViewModel& vm) {
         *value = st.settings.face_show_diag ? "On" : "Off";
         *pal = st.settings.face_show_diag ? kPalOn : kPalOff;
         break;
-      default:
+      case 7u:
         *id = local::kSettingHr;
         *label = "Heart rate";
         *value = st.settings.hr_enabled ? "On" : "Off";
         *pal = st.settings.hr_enabled ? kPalOn : kPalOff;
+        break;
+      default:
+        *id = local::kSettingHaptic;
+        *label = "Vibrations";
+        *value = st.settings.haptic_enabled ? "On" : "Off";
+        *pal = st.settings.haptic_enabled ? kPalOn : kPalOff;
         break;
     }
   };

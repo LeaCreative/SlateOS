@@ -6,7 +6,7 @@ Kotlin. The watch is **sealed — no SWD**. The only way to see what it is doing
 is the on-screen diagnostic overlay and the companion's in-app log, both of
 which the operator photographs and pastes to you.
 
-Written **18 August 2026**. Replaces the 10 August version.
+Written **20 August 2026**. Replaces the 18 August version.
 
 ## Read these first, in this order
 
@@ -25,19 +25,25 @@ last used for driver diffs).
 **Read it before debugging any driver.** Every driver defect this project has
 had was a divergence from it.
 
-## State as of 18 August 2026
+## State as of 20 August 2026
 
 | | |
 |---|---|
-| **Firmware packaged** | `build/dfu/slate-dfu.zip` SHA-256 prefix **`EDAC341E7A03`** (`0.1.0-m21 Aug 18 15:56`, MCUBoot **0.1.21**) |
-| **Wrist** | **m21 booted**. Equal-version `IMAGE_OK` was **not** the stall (m16–m18 already did that at `ih_ver` 0.1.0; m20 was 0.1.20 and still did not boot) |
-| **Companion on Pixel** | **`0.8.2-p85`** / versionCode **86** |
+| **Firmware packaged** | `build/dfu/slate-dfu.zip` SHA-256 prefix **`6FDCCEAF209D`** (`0.1.0-m23 Aug 20 11:41`, MCUBoot **0.1.23**) |
+| **Wrist** | Still **m21** until OTA of m23 (m22 was never packaged; m23 includes Vibrations + STATUS notify) |
+| **Companion on Pixel** | **`0.8.2-p86`** / 87 last installed; **p87** / 88 built (STATUS Read) — reinstall when Pixel is back |
 | **Host tests** | Run with `-E ble_link`; `ble_link` still fails (`drop/reject`) |
 | **RAM link slack** | **~3016 B** (~89% static) after I-19 ScreenBlock 3072→256 |
 
 **Working tree:** uncommitted work is common. Do not `stash`, `reset`, or
 `checkout` source to “get a baseline” unless the operator asks — you will
 destroy work. Do not commit unprompted.
+
+### Companion reconnect / HELLO (18 Aug, p84–p85)
+
+p84: MAC-filtered scan then `connectGatt(false)`; force-abort hung attempts;
+`autoConnect` fallback. p85: TX CCCD 0→1 if `HELLO_OFFER` never arrives so the
+session can reach Ready and the launcher can paint.
 
 ### Confirmed working on hardware
 
@@ -111,6 +117,8 @@ stamp changes.
 - **`uiautomator dump`** often null on this Pixel — use `screencap`.
 - **adb cannot start non-exported components** — drive Watch settings / FGS via UI.
 - **Reinstalling the companion while linked orphans BLE** — expect reconnect (N-58).
+- **GATT connected ≠ session Ready.** Launcher waits for `HELLO_OFFER` (`CONTROL op=1`). p85 bounces TX CCCD if that offer never arrives (bonded CCCD restore / N-23 edge).
+- **`connectGatt(false)` via `getRemoteDevice` can hang with no callback.** p84 scans by MAC first; **Start / reconnect** force-aborts an in-flight attempt. Do not treat `connectGatt issued` as linked.
 - **ACC_CONF is `0x28` now** (matched InfiniTime). Older notes saying `0xA8` are stale.
 - **Raise-to-wake is software `RaiseDetector`**, not a BMA hardware tilt IRQ.
 

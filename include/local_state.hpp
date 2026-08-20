@@ -51,8 +51,10 @@ struct Settings {
    * and shows BPM on the watch face (graph/history belongs in a JS sub-app).
    */
   std::uint8_t hr_enabled = 0u;
+  /** Master gate for the haptic motor. Off silences all vibration patterns. */
+  std::uint8_t haptic_enabled = 1u;
   /**
-   * Theme colours (RGB565). Synced via SETTINGS_SYNC v4.
+   * Theme colours (RGB565). Synced via SETTINGS_SYNC v5.
    * ui_chrome: non-face button outlines + button/label text.
    * face_bright: time + battery fill.
    * face_dim: date, steps/HR, battery %, version/diag, battery track.
@@ -101,10 +103,11 @@ constexpr std::uint16_t kSettingHr = 5u;
 constexpr std::uint16_t kSettingRaiseSens = 6u;
 constexpr std::uint16_t kSettingShake = 7u;
 constexpr std::uint16_t kSettingShakeSens = 8u;
+constexpr std::uint16_t kSettingHaptic = 9u;
 
 /** Same page size as the notification shade / launcher. */
 constexpr std::uint8_t kSettingsPageRows = 4u;
-constexpr std::uint8_t kSettingsRowCount = 8u;
+constexpr std::uint8_t kSettingsRowCount = 9u;
 
 /** Horizontal section strip: Settings | Face | Launcher (left → right). */
 enum class SectionId : std::uint8_t {
@@ -120,8 +123,8 @@ constexpr std::uint16_t kNotifScrollDown = 91u;
 /** How many app-name rows fit beside the scroll arrows. */
 constexpr std::uint8_t kNotifPageRows = 4u;
 
-// Bumped 12 Aug 2026 ('SLTX' -> 'SLTY'): raise/shake sensitivity + shake enable.
-constexpr std::uint32_t kSettingsMagic = 0x534C5459u;  // 'SLTY'
+// Bumped 20 Aug 2026 ('SLTY' -> 'SLTZ'): haptic_enabled master gate.
+constexpr std::uint32_t kSettingsMagic = 0x534C545Au;  // 'SLTZ'
 
 struct State {
   Screen screen = Screen::Face;

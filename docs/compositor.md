@@ -26,6 +26,17 @@ See [script-runtime.md](script-runtime.md). `JsSlateAppEndpoint` evaluates
 decodes outbound JSON — the [Compositor] never knows which runtime answered.
 Display lists are base64 of the same SDP bytes the Kotlin DSL emits (golden-tested).
 
+## Launcher vs session Ready
+
+`LauncherApp` is a phone-side display list. `pushToWatch` drops until
+`SessionClient` is **Ready** (post-accept CREDIT). A face swipe-left while still
+`Connected` sets `pendingLauncherOpen` and must not look like a dead gesture —
+flush on the Ready edge (and the compositor tick as a safety net).
+
+If HELLO never arrives, bouncing TX CCCD (`SlateGattClient.resubscribeTx`,
+`0.8.2-p85`) is what starts firmware session-up, not another swipe into the
+same `Connected` state.
+
 ## Focus-stealing rules
 
 Priority: **CRITICAL > INTERRUPT > NORMAL > AMBIENT**

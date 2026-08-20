@@ -4,7 +4,7 @@
 > noted). Roadmap wishes and closed defects live elsewhere; this file is the
 > capability map so agents and operators do not under- or over-claim.
 >
-> Written **18 August 2026**. Prefer this over stale sections of
+> Written **20 August 2026**. Prefer this over stale sections of
 > `companion-manual.md` / older handover text. Open bugs and next work remain in
 > [`issue-prompts-open.md`](issue-prompts-open.md).
 
@@ -15,8 +15,8 @@
 | Piece | Identity |
 |---|---|
 | Accuracy after ACC_CONF `0x28` | **Acceptable** (operator, 10 Aug) |
-| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`EDAC341E7A03`** (`0.1.0-m21 Aug 18 15:56`, MCUBoot 0.1.21). **On wrist** after SDP OTA. |
-| Companion APK | **`0.8.2-p85`** (versionCode **86**, `slate.app.debug`) — TX CCCD bounce if HELLO_OFFER missing |
+| Last packaged DFU | `build/dfu/slate-dfu.zip` — SHA-256 prefix **`6FDCCEAF209D`** (`0.1.0-m23 Aug 20 11:41`, MCUBoot 0.1.23). **Not yet on wrist** (m21 still running until OTA). |
+| Companion APK | **`0.8.2-p87`** (versionCode **88**, `slate.app.debug`) — STATUS Read for Conn interval; Vibrations setting (wire v5). Built; install pending Pixel reconnect (p86 was last confirmed install). |
 | Host tests | Run with `-E ble_link` (`ble_link` still fails on purpose until investigated) |
 | Link RAM slack | **~3016 B** (`__StackLimit` − `__heap_end__`); static RAM ~89% after I-19 ScreenBlock reclaim |
 
@@ -73,7 +73,7 @@
 
 ### Sub-apps
 - **JS** via androidx.javascriptengine (V8 isolate); Kotlin DSL / JS builder byte-identical lists.
-- **Watch launcher** (`LauncherApp`): swipe face→launcher, tap to focus, swipe back to close.
+- **Watch launcher** (`LauncherApp`): swipe face→launcher, tap to focus, swipe back to close. Needs session **Ready** (HELLO), not merely GATT up; deferred swipes flush on Ready (`0.8.2-p85` CCCD bounce if HELLO is missing).
 - **Bundled demos** (seeded): `timer`, `navigation` (OsmAnd AIDL + dest remaining + destination reached), `camera`, `vibrate`, `location`, `map`, `news`, `media`, `weather`, `httpdemo`.
 - **Sideload-only examples:** `image`, `image-vector` (zip).
 - Repo UI + third-party sources; official hosted index still **placeholder**.

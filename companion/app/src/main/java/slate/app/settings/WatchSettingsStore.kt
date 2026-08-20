@@ -126,6 +126,7 @@ class WatchSettingsStore(context: Context) {
         shakeSensitivity = WatchSettings.clampSens(
             sp.getInt(KEY_SHAKE_SENS, WatchSettings.SENS_NORMAL),
         ),
+        hapticEnabled = sp.getBoolean(KEY_HAPTIC, true),
     )
 
     private fun persist(p: WatchSettings.Payload, dirty: Boolean) {
@@ -142,6 +143,7 @@ class WatchSettingsStore(context: Context) {
             .putInt(KEY_RAISE_SENS, WatchSettings.clampSens(p.raiseSensitivity))
             .putBoolean(KEY_SHAKE, p.shakeEnabled)
             .putInt(KEY_SHAKE_SENS, WatchSettings.clampSens(p.shakeSensitivity))
+            .putBoolean(KEY_HAPTIC, p.hapticEnabled)
             .putLong(KEY_HIGHEST_SEEN, highestSeenRevision)
             .putBoolean(KEY_DIRTY, dirty)
             .apply()
@@ -162,6 +164,7 @@ class WatchSettingsStore(context: Context) {
         private const val KEY_RAISE_SENS = "raise_sensitivity"
         private const val KEY_SHAKE = "shake_enabled"
         private const val KEY_SHAKE_SENS = "shake_sensitivity"
+        private const val KEY_HAPTIC = "haptic_enabled"
         private const val KEY_DIRTY = "dirty"
 
         @Volatile

@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 /**
  * The phone half of settings sync must agree with the watch half exactly.
  *
- * Golden vectors match `slate::settings_sync::encode` (wire version 4).
+ * Golden vectors match `slate::settings_sync::encode` (wire version 5).
  */
 class WatchSettingsTest {
     @Test
@@ -28,13 +28,14 @@ class WatchSettingsTest {
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x04, 0x00, 0x00, 0x00, 0x00, 0x01, 0x14, 0x01, 0x01, 0x00,
+                0x21, 0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x14, 0x01, 0x01, 0x00,
                 0xFF.toByte(), 0xFF.toByte(),
                 0xFF.toByte(), 0xFF.toByte(),
                 0x10, 0x84.toByte(),
                 0x01, // raise Normal
                 0x00, // shake Off
                 0x01, // shake Normal
+                0x01, // haptic On
             ),
             bytes,
         )
@@ -53,15 +54,17 @@ class WatchSettingsTest {
                 raiseSensitivity = WatchSettings.SENS_SOFT,
                 shakeEnabled = true,
                 shakeSensitivity = WatchSettings.SENS_HARD,
+                hapticEnabled = false,
             ),
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x21, 0x05, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0xFF.toByte(), 0xFF.toByte(),
                 0xFF.toByte(), 0xFF.toByte(),
                 0x10, 0x84.toByte(),
                 0x00, 0x01, 0x02,
+                0x00, // haptic Off
             ),
             bytes,
         )
@@ -87,11 +90,12 @@ class WatchSettingsTest {
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x04, 0x07, 0x00, 0x00, 0x00, 0x01, 0x78, 0x00, 0x00, 0x01,
+                0x21, 0x05, 0x07, 0x00, 0x00, 0x00, 0x01, 0x78, 0x00, 0x00, 0x01,
                 0xE0.toByte(), 0x07,
                 0x00, 0xF8.toByte(),
                 0x1F, 0x00,
                 0x02, 0x01, 0x00,
+                0x01, // haptic On (default)
             ),
             bytes,
         )
@@ -111,12 +115,13 @@ class WatchSettingsTest {
         )
         assertContentEquals(
             byteArrayOf(
-                0x21, 0x04, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
+                0x21, 0x05, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
                 0x00, 0x3C, 0x01, 0x00, 0x01,
                 0xFF.toByte(), 0xFF.toByte(),
                 0xFF.toByte(), 0xFF.toByte(),
                 0x10, 0x84.toByte(),
                 0x01, 0x00, 0x01,
+                0x01, // haptic On (default)
             ),
             bytes,
         )
@@ -125,12 +130,13 @@ class WatchSettingsTest {
     @Test
     fun decodesWhatTheFirmwareEncodes() {
         val fromWatch = byteArrayOf(
-            0x21, 0x04, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
+            0x21, 0x05, 0xEF.toByte(), 0xBE.toByte(), 0xAD.toByte(), 0xDE.toByte(),
             0x00, 0x3C, 0x01, 0x00, 0x01,
             0xFF.toByte(), 0xFF.toByte(),
             0xFF.toByte(), 0xFF.toByte(),
             0x10, 0x84.toByte(),
             0x02, 0x01, 0x00,
+            0x00, // haptic Off
         )
         val p = WatchSettings.decode(fromWatch)
         assertNotNull(p)
@@ -146,6 +152,7 @@ class WatchSettingsTest {
         assertEquals(WatchSettings.SENS_HARD, p.raiseSensitivity)
         assertTrue(p.shakeEnabled)
         assertEquals(WatchSettings.SENS_SOFT, p.shakeSensitivity)
+        assertFalse(p.hapticEnabled)
     }
 
     @Test
@@ -175,6 +182,7 @@ class WatchSettingsTest {
         assertTrue(WatchSettings.differs(a, b.copy(hrEnabled = false)))
         assertTrue(WatchSettings.differs(a, b.copy(uiChrome = 0x07E0)))
         assertTrue(WatchSettings.differs(a, b.copy(shakeEnabled = true)))
+        assertTrue(WatchSettings.differs(a, b.copy(hapticEnabled = false)))
     }
 
     @Test

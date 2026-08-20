@@ -47,6 +47,33 @@ Opaque payloads (no known opcode) still echo for M5 bring-up.
 
 STATUS reports the **actual** PHY from `ble_gap_read_le_phy` / PHY-update events
 (never hardcoded). Phones often refuse 2M; never assume the request was granted.
+The companion requests 2M **after** TX/STATUS CCCD, not during service discovery
+— a PHY update (`onPhyUpdate status=6` on nRF52832) must not sit on top of
+HELLO_OFFER (`0.8.2-p85`).
+
+STATUS also carries `conn_interval_units` (×1.25 ms). Until m23 / companion
+`0.8.2-p87`, that field never reached the phone on ordinary sessions: firmware
+only **notified** STATUS from `negotiate_now()` (throughput gates), and the
+companion never **read** the characteristic. m23 notifies on STATUS CCCD /
+MTU / CONN_UPDATE / PHY and snapshots the interval on connect; p87 reads
+STATUS after subscribe (and again ~2 s later after HIGH-priority may settle).
+
+## Companion GATT (central)
+
+`SlateGattClient` / `LinkForegroundService` (companion `0.8.2-p84`+):
+
+| Path | Behaviour |
+|---|---|
+| Open Main / **Start / reconnect** | `force` abort if a connect is in flight (`disconnect` then `close`); MAC-filtered LE scan; `connectGatt(autoConnect=false)` on the scan result. Does **not** tear down a live GATT session. |
+| Boot | `autoConnect=true` (no short timeout). |
+| Package replace | Scan then direct connect (watch is usually nearby). |
+| Direct `connectGatt(false)` timeout (20 s) | `disconnect`+`close`, then `autoConnect=true`. |
+| Watchdog retry | `autoConnect=true`; does not abort an in-flight attempt. |
+| HELLO missing after TX subscribe | Rewrite TX CCCD 0→1 so firmware emits `SUBSCRIBE` and `HELLO_OFFER` (`0.8.2-p85`). |
+
+`getRemoteDevice(mac)` + `autoConnect=false` with no recent scan often never
+callbacks on Pixel — that hung p83 (`ignored — already connecting` on tap).
+Judge link by `onConnectionStateChange`, then session by `CONTROL op=1`.
 
 ### Why `BLE_LL_PHY=0`
 

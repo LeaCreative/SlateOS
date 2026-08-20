@@ -57,6 +57,7 @@ void test_round_trip() {
   expect("show steps survives", out.face_show_steps == in.face_show_steps);
   expect("show diag survives", out.face_show_diag == in.face_show_diag);
   expect("hr_enabled survives", out.hr_enabled == in.hr_enabled);
+  expect("haptic_enabled survives", out.haptic_enabled == in.haptic_enabled);
   expect("ui_chrome survives", out.ui_chrome == in.ui_chrome);
   expect("face_bright survives", out.face_bright == in.face_bright);
   expect("face_dim survives", out.face_dim == in.face_dim);
@@ -170,6 +171,7 @@ void test_from_settings_round_trips() {
   s.raise_sensitivity = 2u;
   s.shake_enabled = 1u;
   s.shake_sensitivity = 0u;
+  s.haptic_enabled = 0u;
   const Payload p = ss::from(s, 12u);
   expect("from() captures the synced fields",
          p.revision == 12u && p.tilt_enabled == 0u && p.wake_seconds == 35u &&
@@ -177,7 +179,7 @@ void test_from_settings_round_trips() {
              p.hr_enabled == 1u && p.ui_chrome == 0xF800u &&
              p.face_bright == 0x07E0u && p.face_dim == 0x001Fu &&
              p.raise_sensitivity == 2u && p.shake_enabled == 1u &&
-             p.shake_sensitivity == 0u);
+             p.shake_sensitivity == 0u && p.haptic_enabled == 0u);
 }
 
 void test_round_trip_includes_wake_sens() {
@@ -185,15 +187,17 @@ void test_round_trip_includes_wake_sens() {
   in.raise_sensitivity = 0u;
   in.shake_enabled = 1u;
   in.shake_sensitivity = 2u;
+  in.haptic_enabled = 1u;
   std::uint8_t buf[32] = {};
   const std::size_t n = ss::encode(in, buf, sizeof(buf));
-  expect("v4 length", n == 20u);
-  expect("wire version 4", buf[1] == 4u);
+  expect("v5 length", n == 21u);
+  expect("wire version 5", buf[1] == 5u);
   Payload out;
-  expect("decodes v4", ss::decode(buf, n, &out));
+  expect("decodes v5", ss::decode(buf, n, &out));
   expect("raise sens", out.raise_sensitivity == 0u);
   expect("shake on", out.shake_enabled == 1u);
   expect("shake sens", out.shake_sensitivity == 2u);
+  expect("haptic on", out.haptic_enabled == 1u);
 }
 
 }  // namespace

@@ -1,6 +1,6 @@
 # Slate companion — what every control does
 
-**Companion `0.8.2-p76` (build 77).** Updated 18 August 2026.
+**Companion `0.8.2-p85` (build 86).** Updated 18 August 2026.
 
 > Capability overview: [`capabilities.md`](capabilities.md). Sub-apps launch from
 > the **watch launcher**, not from per-app phone buttons.
@@ -16,7 +16,7 @@ Permissions, Debug, Watch settings, and the repository.
 |---|---|
 | **Permissions** | Grants and OEM background settings |
 | **Associate watch (CDM)** | CompanionDeviceManager `watch` profile |
-| **Start / reconnect link service** | Starts `LinkForegroundService` (owns GATT) |
+| **Start / reconnect link service** | Starts `LinkForegroundService` (owns GATT). Aborts a hung `connectGatt`, MAC-scans, then connects; does not drop a live session |
 | **Heart rate** | Rolling 24 h BPM graph vs time of day (from watch VITALS; HR must be On) |
 | **Watch settings** | Raise / timeout / steps / face diag (incl. version line on watch) / HR / colours; syncs with watch |
 | **Sub-app repository** | Browse/install JS apps, launcher visibility, per-app settings |
@@ -28,6 +28,12 @@ Permissions, Debug, Watch settings, and the repository.
 Link metrics (MTU, PHY, errors) and the trial-image confirm banner stay on this
 screen. Link RTT is measured under **Debug → Benchmarks** gate B (not a
 one-shot on Main).
+
+GATT **connected** is not session **Ready**. The watch launcher only paints
+after `HELLO_OFFER` (log `CONTROL op=1`). Opening Main / tapping reconnect
+starts a MAC-filtered LE scan then `connectGatt(false)` (`0.8.2-p84`); boot
+uses `autoConnect`. If HELLO never arrives, the host rewrites TX CCCD 0→1
+(`0.8.2-p85`). A swipe while still `Connected` is deferred and flushed on Ready.
 
 **Open with / Share a `.zip`:** Sub-app zip → sideload. `slate-dfu.zip` → SDP OTA.
 Sealed first-hop is **not** routed via Open-with.

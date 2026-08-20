@@ -221,7 +221,8 @@ constexpr std::uint8_t TIME_SYNC      = 0x20u;  // phone → watch
  *   [op][wire_version:u8][revision:u32 LE][tilt_enabled][wake_seconds]
  *   [face_show_steps][face_show_diag][hr_enabled]
  *   [ui_chrome:u16 LE][face_bright:u16 LE][face_dim:u16 LE]
- *   [raise_sensitivity][shake_enabled][shake_sensitivity]   = 20 bytes (v4)
+ *   [raise_sensitivity][shake_enabled][shake_sensitivity]
+ *   [haptic_enabled]                                          = 21 bytes (v5)
  *
  * `revision` is a Lamport counter, not a plain sequence: a side that applies a
  * remote update adopts its revision, and a local edit sets

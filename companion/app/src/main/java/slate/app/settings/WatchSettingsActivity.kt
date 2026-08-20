@@ -195,6 +195,16 @@ fun WatchSettingsScreen(store: WatchSettingsStore) {
         }
 
         SettingCard {
+            ToggleRow(
+                title = "Vibrations",
+                subtitle = "Haptic feedback on taps, alerts, and notification previews. " +
+                    "Turn off to save a little power and silence all buzzes.",
+                checked = settings.hapticEnabled,
+                onCheckedChange = { on -> store.edit { it.copy(hapticEnabled = on) } },
+            )
+        }
+
+        SettingCard {
             Text("Appearance", fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(2.dp))
             Text(

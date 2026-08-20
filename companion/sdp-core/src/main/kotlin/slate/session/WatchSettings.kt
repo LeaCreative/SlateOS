@@ -10,15 +10,15 @@ import slate.generated.SdpWire
  * their own point of view, which is what stops them overwriting each other
  * forever when the user has edited on both sides.
  *
- * Wire v4: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds]
+ * Wire v5: [op][version][revision:u32 LE][tiltEnabled][wakeSeconds]
  *          [showSteps][showDiag][hrEnabled]
  *          [uiChrome:u16 LE][faceBright:u16 LE][faceDim:u16 LE]
- *          [raiseSensitivity][shakeEnabled][shakeSensitivity]
+ *          [raiseSensitivity][shakeEnabled][shakeSensitivity][hapticEnabled]
  */
 object WatchSettings {
     const val OP: Int = SdpWire.ControlOp.SETTINGS_SYNC
-    const val WIRE_VERSION: Int = 4
-    const val PAYLOAD_BYTES: Int = 20
+    const val WIRE_VERSION: Int = 5
+    const val PAYLOAD_BYTES: Int = 21
 
     const val DEFAULT_UI_CHROME: Int = 0xFFFF
     const val DEFAULT_FACE_BRIGHT: Int = 0xFFFF
@@ -72,6 +72,8 @@ object WatchSettings {
         val raiseSensitivity: Int = SENS_NORMAL,
         val shakeEnabled: Boolean = false,
         val shakeSensitivity: Int = SENS_NORMAL,
+        /** Master gate for the haptic motor. Off silences all vibration patterns. */
+        val hapticEnabled: Boolean = true,
     )
 
     fun encode(p: Payload): ByteArray {
@@ -93,6 +95,7 @@ object WatchSettings {
         out[17] = clampSens(p.raiseSensitivity).toByte()
         out[18] = if (p.shakeEnabled) 1 else 0
         out[19] = clampSens(p.shakeSensitivity).toByte()
+        out[20] = if (p.hapticEnabled) 1 else 0
         return out
     }
 
@@ -120,6 +123,7 @@ object WatchSettings {
             raiseSensitivity = clampSens(msg[17].toInt() and 0xFF),
             shakeEnabled = (msg[18].toInt() and 0xFF) != 0,
             shakeSensitivity = clampSens(msg[19].toInt() and 0xFF),
+            hapticEnabled = (msg[20].toInt() and 0xFF) != 0,
         )
     }
 
@@ -135,7 +139,8 @@ object WatchSettings {
             a.faceDim != b.faceDim ||
             a.raiseSensitivity != b.raiseSensitivity ||
             a.shakeEnabled != b.shakeEnabled ||
-            a.shakeSensitivity != b.shakeSensitivity
+            a.shakeSensitivity != b.shakeSensitivity ||
+            a.hapticEnabled != b.hapticEnabled
 
     /**
      * Should [incoming] replace [current]?

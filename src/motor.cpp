@@ -14,6 +14,7 @@ namespace motor {
 namespace {
 
 Seq g_seq;
+bool g_enabled = true;
 
 #if defined(SLATE_HAS_FREERTOS) && (SLATE_HAS_FREERTOS == 1)
 
@@ -85,8 +86,15 @@ void init() {
 #endif
 }
 
+void set_enabled(bool on) {
+  g_enabled = on;
+  if (!g_enabled) {
+    stop();
+  }
+}
+
 void run_for_duration(std::uint16_t ms) {
-  if (ms == 0u) {
+  if (!g_enabled || ms == 0u) {
     return;
   }
   const PatternDesc d{ms, 1u, 0u};
@@ -102,6 +110,9 @@ void run_for_duration(std::uint16_t ms) {
 }
 
 void play(std::uint8_t pattern) {
+  if (!g_enabled) {
+    return;
+  }
   const PatternDesc d = pattern_desc(pattern);
 #if defined(SLATE_HAS_FREERTOS) && (SLATE_HAS_FREERTOS == 1)
   stop();

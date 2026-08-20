@@ -363,6 +363,38 @@ class SlateGattClient(
             handleNotify(characteristic.uuid.toString(), value)
         }
 
+        override fun onCharacteristicRead(
+            g: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray,
+            status: Int,
+        ) {
+            LinkLog.i(
+                "onCharacteristicRead uuid=${characteristic.uuid} " +
+                    "status=$status len=${value.size}",
+            )
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                applyStatusIfPresent(characteristic.uuid.toString(), value)
+            }
+        }
+
+        @Deprecated("Deprecated in API 33")
+        override fun onCharacteristicRead(
+            g: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int,
+        ) {
+            @Suppress("DEPRECATION")
+            val value = characteristic.value ?: ByteArray(0)
+            LinkLog.i(
+                "onCharacteristicRead uuid=${characteristic.uuid} " +
+                    "status=$status len=${value.size}",
+            )
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                applyStatusIfPresent(characteristic.uuid.toString(), value)
+            }
+        }
+
         override fun onCharacteristicWrite(
             g: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,
@@ -717,7 +749,32 @@ class SlateGattClient(
             )
         }
         requestPhyAfterSubscribe(g)
+        // STATUS Notify used to fire only from negotiate_now() (benchmarks).
+        // Read the characteristic so Conn interval is available on ordinary
+        // sessions; a second read after HIGH-priority settles catches updates.
+        scheduleStatusRead(g, delayMs = 350L)
+        scheduleStatusRead(g, delayMs = 2000L)
         bleHandler.post { pumpWrites() }
+    }
+
+    /**
+     * Read STATUS when the GATT write pump is idle.
+     *
+     * Android allows one outstanding ATT op; overlapping a read with RX writes
+     * returns false or ERROR_GATT_WRITE_REQUEST_BUSY.
+     */
+    private fun scheduleStatusRead(g: BluetoothGatt, delayMs: Long) {
+        bleHandler.postDelayed({
+            val ch = statusChar
+            if (ch == null || gatt !== g) return@postDelayed
+            if (writing.get()) {
+                scheduleStatusRead(g, 200L)
+                return@postDelayed
+            }
+            @Suppress("DEPRECATION")
+            val ok = g.readCharacteristic(ch)
+            LinkLog.i("readCharacteristic(STATUS) rc=${if (ok) 0 else -1}")
+        }, delayMs)
     }
 
     private fun requestPhyAfterSubscribe(g: BluetoothGatt) {
@@ -968,20 +1025,7 @@ class SlateGattClient(
 
     private fun handleNotify(uuid: String, value: ByteArray) {
         LinkLog.i("notify $uuid len=${value.size}")
-        // STATUS characteristic (time_mid 0003).
-        if (uuid.contains("0003", ignoreCase = true) && value.size >= 12) {
-            val mtu = (value[0].toInt() and 0xFF) or ((value[1].toInt() and 0xFF) shl 8)
-            val iv = (value[8].toInt() and 0xFF) or ((value[9].toInt() and 0xFF) shl 8)
-            val intervalMs = if (iv > 0) iv * 1.25 else null
-            update {
-                copy(
-                    attMtu = mtu.takeIf { it > 0 } ?: attMtu,
-                    intervalMs = intervalMs,
-                    notes = "STATUS mtu=$mtu interval_units=$iv",
-                )
-            }
-            return
-        }
+        if (applyStatusIfPresent(uuid, value)) return
 
         // TX characteristic — framed SDP packets.
         when (txReasm.ingest(value)) {
@@ -1004,6 +1048,25 @@ class SlateGattClient(
                 }
             }
         }
+    }
+
+    /** STATUS characteristic (time_mid 0003). Returns true when handled. */
+    private fun applyStatusIfPresent(uuid: String, value: ByteArray): Boolean {
+        if (!uuid.contains("0003", ignoreCase = true) || value.size < 12) {
+            return false
+        }
+        val mtu = (value[0].toInt() and 0xFF) or ((value[1].toInt() and 0xFF) shl 8)
+        val iv = (value[8].toInt() and 0xFF) or ((value[9].toInt() and 0xFF) shl 8)
+        val intervalMs = if (iv > 0) iv * 1.25 else null
+        LinkLog.i("STATUS mtu=$mtu interval_units=$iv")
+        update {
+            copy(
+                attMtu = mtu.takeIf { it > 0 } ?: attMtu,
+                intervalMs = intervalMs,
+                notes = "STATUS mtu=$mtu interval_units=$iv",
+            )
+        }
+        return true
     }
 
     private fun dispatchControl(msg: ByteArray) {

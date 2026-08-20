@@ -395,6 +395,7 @@ static void hr_refresh_hook(void*) {
   g_core.local_state().hr_bpm = g_hr_ctrl.heart_rate();
   g_core.local_state().hr_status =
       static_cast<std::uint8_t>(g_hr_ctrl.state());
+  slate::motor::set_enabled(g_core.local_state().settings.haptic_enabled != 0u);
 }
 
 static void hrs_cccd_hook(bool subscribed, void*) {
